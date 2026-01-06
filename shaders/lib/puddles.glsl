@@ -7,7 +7,7 @@ vec2 hash3( vec2 p )
 
 float raindropNoise(in vec2 x)
 {
-    float intensity = 0.3;
+    float intensity = 0.15;
     x *= intensity;
 
     vec2 p = floor(x);
@@ -63,7 +63,8 @@ vec3 puddles(in vec3 color, in vec3 worldPos, in vec3 reflectedskyBoxCol, in vec
     float puddle = getRainPuddles(dropPos, iswet);
     
     // Height masking: raised parallax areas stay dry
-    float heightMask = smoothstep(1.0, 0.85, surfaceHeight);
+    //float heightMask = smoothstep(1.0, 0.85, surfaceHeight);
+    float heightMask = 1.0;
     #ifndef Parallax
           heightMask = 1.0;
     #endif

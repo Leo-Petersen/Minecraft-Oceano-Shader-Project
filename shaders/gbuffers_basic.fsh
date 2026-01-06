@@ -1,4 +1,4 @@
-#version 120
+#version 130
 
 uniform sampler2D lightmap;
 
@@ -10,7 +10,9 @@ void main() {
 	color *= texture2D(lightmap, lmcoord);
 	//color.a = .6;
 
-/* DRAWBUFFERS:01 */
+/* RENDERTARGETS: 0,1,2,13 */
 	gl_FragData[0] = color; //gcolor
     gl_FragData[1] = vec4(vec2(0.0), vec2(1));
+	gl_FragData[2] = vec4(0.0, 0.0, 0.0, 1.0);
+	gl_FragData[3] = vec4(0.0, 0.0, 1.0, 1.0); 
 }
