@@ -36,11 +36,17 @@ float distort(vec2 pos) {
 float Visibility(in sampler2D ShadowMap, in vec3 SampleCoords) {
     float shadowDepth = texture2D(ShadowMap, SampleCoords.xy).x;
     
-    // Distance from shadow map center (0-1 range, 0 = center, ~0.7 = corners)
     float dist = length(SampleCoords.xy - 0.5);
     
-    // Bias increases with distance
-    float bias = 0.00012 + dist * 0.0006;
+    // smooth distance factor - 0 at center, 1 at edges
+    float distFactor = smoothstep(0.0, 0.5, dist);
+    
+    // slope bias - scales up with distance
+    float NdotL = max(dot(viewNormal, normalize(shadowLightPosition)), 0.0);
+    float slopeBias = 0.00041 * (1.0 - NdotL) * distFactor;
+    
+    float baseBias = 0.00012 + dist * 0.0006;
+    float bias = baseBias + slopeBias;
     
     return clamp(1.0 - max(SampleCoords.z - bias - shadowDepth, 0.0) * 40963.0, 0.0, 1.0);
 }
