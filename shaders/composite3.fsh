@@ -104,8 +104,8 @@ void main() {
 	vec3 reflectedskyBoxCol = texture2D(colortex8, texcoord).rgb;
 	vec3 skyBoxCol = texture2D(colortex9, texcoord).rgb;
 
-
-	if (iswater == 1.0 || isglass == 1.0){
+	// Water Refraction and Reflection //
+	if (iswater == 1.0){
 		vec3 viewDir = normalize(viewPos.xyz);
 		float normalDotEye = dot(waterNormal, -viewDir);
 
@@ -133,7 +133,7 @@ void main() {
 
 		// Chromatic aberration
 		float chromaMaterial = 0.02;
-		if (isglass == 1.0) chromaMaterial = 0.0; //off for now, broken
+		//if (isglass == 1.0) chromaMaterial = 0.0; //off for now, broken
 		float chromaStrength = chromaMaterial * clamp(depthDifference * 0.1, 0.0, 1.0);
 		vec2 chromaOffset = waterNormal.xy * chromaStrength;
 
@@ -145,15 +145,15 @@ void main() {
 			float terrainAtRefract = texture2D(depthtex1, testCoord).r;
 			float waterColumnRaw = terrainAtRefract - waterSurfaceAtRefract;
 			destFade = smoothstep(0.0, 0.025, waterColumnRaw);
-		} else if (isglass == 1.0) {
-			float destMaterial = texture2D(colortex2, testCoord).p;
-			float isGlassAtDest = float(destMaterial > 0.10 && destMaterial < 0.12);
+		 } //else if (isglass == 1.0) {
+		// 	float destMaterial = texture2D(colortex2, testCoord).p;
+		// 	float isGlassAtDest = float(destMaterial > 0.10 && destMaterial < 0.12);
 			
-			float destTerrainDepth = texture2D(depthtex1, testCoord).r;
-			float behindGlass = smoothstep(Depth - 0.0001, Depth + 0.0001, destTerrainDepth);
+		// 	float destTerrainDepth = texture2D(depthtex1, testCoord).r;
+		// 	float behindGlass = smoothstep(Depth - 0.0001, Depth + 0.0001, destTerrainDepth);
 			
-			destFade = isGlassAtDest * behindGlass;
-		}
+		// 	destFade = isGlassAtDest * behindGlass;
+		// }
 
 		refractOffset *= destFade;
 		chromaStrength *= destFade;
@@ -194,7 +194,34 @@ void main() {
 			color.rgb += (vec3(deepwaterR, deepwaterG, deepwaterB)/255) * frontGlow * 0.3 * fogDepth2;            
 		}
 	}
-	
+
+	// Glass Reflections //
+	if (isglass == 1.0) {
+		float perceptualSmoothness = specularMap.r;
+		
+		// Default smoothness if no texture data
+		if (perceptualSmoothness == 0.0) {
+			perceptualSmoothness = 0.95;
+		}
+		
+		float roughness = 1.0 - perceptualSmoothness;
+		
+		vec3 viewDir = normalize(viewPos.xyz);
+		float NdotV = max(dot(viewNormal, -viewDir), 0.001);
+		
+		// Glass F0 ~0.04
+		float fresnel = 0.04 + (1.0 - 0.04) * pow(1.0 - NdotV, 5.0);
+		fresnel *= (1.0 - roughness * 0.5); // Reduce fresnel with roughness
+		
+		// Simple sky reflection, no raytracing
+		vec3 reflectionCol = reflectedskyBoxCol * lightMap.t;
+		
+		color.rgb = mix(color.rgb, reflectionCol, fresnel * 0.7);
+		
+		// Sun specular
+		color.rgb += reflectedSun;
+	}
+
 	////Fog////
 	//Underground fog, needs to be rewritten to work more cosistently with other fog systems
 	/*

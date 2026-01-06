@@ -116,10 +116,20 @@ void main() {
 
 	bump = bump * vec3(bumpmult, bumpmult, bumpmult) + vec3(0.0, 0.0, 1.0 - bumpmult);
 	bump = normalize(clamp(bump, vec3(-1.0), vec3(1.0)));
-	vec4 normalTangentSpace = vec4(normalize(bump * tbnMatrix) * 0.5 + 0.5, 1.0);
 
+	vec4 normalTangentSpace;
+	if (isglass > 0.5) {
+		// Glass gets smooth flat normal
+		normalTangentSpace = vec4(viewNormal * 0.5 + 0.5, 1.0);
+	} else {
+		// Water gets wavy normal
+		normalTangentSpace = vec4(normalize(bump * tbnMatrix) * 0.5 + 0.5, 1.0);
+	}
 	// Reflected skybox
 	vec3 reflectedVector = reflect(fragpos, normalize(bump * tbnMatrix).xyz) * 300.0;
+	if (isglass > 0.5) {
+		reflectedVector = reflect(fragpos, viewNormal) * 300.0;
+	}
 	vec3 skybox = getSkyTextureFromSequence(position.xyz+reflectedVector);
 		 skybox += vec3(skyColor*0.5) * (rainStrength * 0.5);
 	     skybox = pow(skybox, vec3(3.2))*2;
