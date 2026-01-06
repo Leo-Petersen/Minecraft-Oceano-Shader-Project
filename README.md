@@ -2,8 +2,8 @@
 
 **A Realistic Vibrant Shaderpack for Minecraft Java Edition**
 
-A complete rewrite of the original Oceano Shaders, now with modern rendering techniques and improved performance.
-
+A complete rewrite of the original [Oceano Shaders](https://www.curseforge.com/minecraft/shaders/oceano-shaders), now with modern rendering techniques and improved performance.
+https://www.curseforge.com/minecraft/shaders/oceano-shaders
 ![Oceano Shaders Banner](screenshots/banner.png)
 
 [![Downloads](https://img.shields.io/badge/Original%20Downloads-1.6M+-blue)](https://www.curseforge.com/minecraft/shaders/oceano-shaders)
