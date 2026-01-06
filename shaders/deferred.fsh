@@ -84,11 +84,11 @@ float shadowFactor =  0.42 * (time[0]) +
                       0.42 * (time[4]) +
                       0.25 * (time[5]);
 
-float torchFactor =   0.50 * (time[0]) +
+float torchFactor =   1.00 * (time[0]) +
                       0.33 * (time[1]) +
                       0.33 * (time[2]) +
                       0.33 * (time[3]) +
-                      0.50 * (time[4]) +
+                      1.00* (time[4]) +
                       1.00 * (time[5]);
 
 void main() {
@@ -332,11 +332,13 @@ void main() {
 
 	////Fog////
 	float atmoDepth = 0.0;
-	if (Depth < 1.0 && isEyeInWater < 0.9) {
-		  atmoDepth = pow(length(worldPos.xz) / 140, 3.2);
-		  atmoDepth = clamp(1.0 - exp(-0.3 * atmoDepth), 0, 1);
-		  color.rgb = mix(color.rgb, ((atmoColor)*(1-rainStrength))+(vec3(0.96, 0.96, 1)*5.8*rainStrength*(1-time[5])), atmoDepth*1.0*pow(sunAngleCosine, 0.2));
-	}
+    #ifdef atmosphereFog
+        if (Depth < 1.0 && isEyeInWater < 0.9) {
+            atmoDepth = pow(length(worldPos.xz) / 140, 2.2);
+            atmoDepth = clamp(1.0 - exp(-0.1 * atmoDepth), 0, 1);
+            color.rgb = mix(color.rgb, ((atmoColor)*(1-rainStrength))+(vec3(0.96, 0.96, 1)*5.8*rainStrength*(1-time[5])), atmoDepth*1.0*pow(sunAngleCosine, 0.2));
+        }
+    #endif
 
 	if (isEyeInWater == 1.0){
 	float fogDepth = length(worldPos.xz) / 100;
