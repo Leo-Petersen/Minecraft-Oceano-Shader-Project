@@ -1,0 +1,31 @@
+# Values #
+
+value.ToneMap.0=Minecraft
+value.ToneMap.1=ACES
+value.ToneMap.2=Filmic_Hejl2015
+value.ToneMap.3=Oceano
+value.ToneMap.4=AgX
+
+option.saturation=Strength
+option.filmGrain=Strength
+option.fakecloudshadow = Cloud Shadows
+
+option.BounceLight = Fill Light
+option.BounceColoredLight = Fill Color Light
+option.bounceQuality = Fill Quality
+
+option.AO = Ambient Occlusion
+option.aoRadius = Occlusion Radius
+
+option.rainReflection = Puddles
+
+option.DOF = DOF [experimental]
+option.BLOOM = Bloom
+option.CookTorranceGGXBRDF = Specular Reflections
+
+option.PBRReflection = Material Reflections
+option.PBRReflectionStr = Material Reflections Str
+option.PBR_REFLECTION_HQ = High Quality Reflections
+option.volumetricCloudFog = Cloud Fog
+
+option.parallaxRes = Resource Pack Resolution
