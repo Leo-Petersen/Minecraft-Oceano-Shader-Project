@@ -77,11 +77,11 @@ float transparencyFactor =  0.3 * (time[0]) +
                             0.3 * (time[4]) +
                             0.14 * (time[5]);
 
-float shadowFactor =  0.42 * (time[0]) +
+float shadowFactor =  0.75 * (time[0]) +
                       1.0 * (time[1]) +
                       1.0 * (time[2]) +
                       1.0 * (time[3]) +
-                      0.42 * (time[4]) +
+                      0.75 * (time[4]) +
                       0.25 * (time[5]);
 
 float torchFactor =   1.00 * (time[0]) +
@@ -288,7 +288,9 @@ void main() {
             float bounceMask = 1.0 - smoothstep(0.0, 0.25, litAmount);
             bounceMask *= bounceMask*transitionFade;
             
-            vec3 baseAmbient = shadowCol * 3.0 * invShadowAccum * (1.0 - rainStrength * 0.2) * undergroundBlend;
+            vec3 flatAmbient = pow(shadowCol, vec3(0.3)) * 1 * (1.0 - rainStrength * 0.2) * undergroundBlend;
+            vec3 shadowAmbient = shadowCol * 3.0 * invShadowAccum * (1.0 - rainStrength * 0.2) * undergroundBlend;
+            vec3 baseAmbient = mix(flatAmbient, shadowAmbient, transitionFade);
             vec3 bounceAmbient = ambientStrength * ambientCol * ambientShadowFactorFixed * (1.0 - rainStrength * 0.14) * bounceMask;
             vec3 finalAmbient = (baseAmbient + bounceAmbient) * 0.25 * pow(ao, 0.2) * textureAO;
                 
