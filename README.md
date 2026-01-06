@@ -36,7 +36,7 @@ Oceano Shaders has been downloaded by over 1.6 million players since 2019. This 
 ### Lighting & Shadows
 - **PBR Materials** - Physically-based rendering with roughness, metallic, and emission support
 - **PCSS Soft Shadows** - Percentage-closer soft shadows with realistic penumbra
-- **Fake Colored Bounce Lighting** - A unique system to emulate the same effects given by Gobal Illumination or Ray Tracing with zero performance cost
+- **Fake Colored Bounce Lighting** - A unique system to emulate the same effects given by Global Illumination or Ray Tracing with zero performance cost
 
 ![Lighting Screenshot](screenshots/lighting.png)
 
