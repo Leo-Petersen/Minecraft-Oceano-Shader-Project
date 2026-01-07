@@ -40,6 +40,7 @@ void main() {
 
 	vec4 specularData = texture2D(specular, parallaxedUV);
 	vec2 specularMap = specularData.rg;
+	specularMap.g = 1;
 	float emission = specularData.a < 0.99 ? specularData.a : 0.0;
 
 	vec4 normalRaw = texture2D(normals, parallaxedUV);

@@ -211,7 +211,7 @@ void main() {
 		
 		// Glass F0 ~0.04
 		float fresnel = 0.04 + (1.0 - 0.04) * pow(1.0 - NdotV, 5.0);
-		fresnel *= (1.0 - roughness * 0.5); // Reduce fresnel with roughness
+		fresnel *= (1.0 - roughness * 0.5); 
 		
 		// Simple sky reflection, no raytracing
 		vec3 reflectionCol = reflectedskyBoxCol * lightMap.t;

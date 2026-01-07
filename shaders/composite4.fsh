@@ -51,15 +51,13 @@ vec3 BloomTile(float lod, vec2 coord, vec2 offset) {
 
                 float brightness = dot(sampleColor, vec3(0.2126, 0.7152, 0.0722));
                 
-                // Original non-emissive behavior
                 float brightnessWeight = smoothstep(0.6, 1.0, brightness);
                 
-                // Only check emission for actual terrain
                 float depth = texture2D(depthtex0, sampleCoord).r;
                 if (depth < 1.0) {
                     float emission = texture2D(colortex13, sampleCoord).r;
                     
-                    // Override only for emissive pixels
+                    // Emissive pixels
                     if (emission > 0.01) {
                         float emissiveThreshold = 0.6 - emission * 0.4;
                         brightnessWeight = smoothstep(emissiveThreshold, 1.0, brightness);

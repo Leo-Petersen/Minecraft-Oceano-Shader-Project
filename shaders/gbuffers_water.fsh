@@ -119,12 +119,11 @@ void main() {
 
 	vec4 normalTangentSpace;
 	if (isglass > 0.5) {
-		// Glass gets smooth flat normal
 		normalTangentSpace = vec4(viewNormal * 0.5 + 0.5, 1.0);
 	} else {
-		// Water gets wavy normal
 		normalTangentSpace = vec4(normalize(bump * tbnMatrix) * 0.5 + 0.5, 1.0);
 	}
+	
 	// Reflected skybox
 	vec3 reflectedVector = reflect(fragpos, normalize(bump * tbnMatrix).xyz) * 300.0;
 	if (isglass > 0.5) {

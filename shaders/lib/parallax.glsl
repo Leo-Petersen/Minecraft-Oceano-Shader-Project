@@ -32,7 +32,7 @@ vec2 calcParallax() {
         return baseCoord;
     }
 
-    // Check for flat normal map (skip parallax on surfaces without height data)
+    // check for flat normal map (skip parallax on surfaces without height data)
     vec3 normalMap = readNormal(vtexcoord.xy).xyz * 2.0 - 1.0;
     float normalCheck = normalMap.x + normalMap.y;
     if (normalCheck < -1.999) return baseCoord;
@@ -40,7 +40,7 @@ vec2 calcParallax() {
     float distFactor = (dist - parallaxNearDist) / (parallaxFarDist - parallaxNearDist);
     distFactor = clamp(distFactor * distFactor, 0.0, 1.0);
     
-    // Early exit if fully faded
+    // early exit if fully faded
     if (distFactor >= 1.0) return baseCoord;
     
     float maxSteps = mix(parallaxRes, MIN_PARALLAX_STEPS, distFactor);
@@ -141,7 +141,7 @@ float DirectionalLightmap(float lightmap, float lightmapRaw, vec3 normal, mat3 t
     float gradientX = dFdx(lightmapRaw) * 256.0;
     float gradientY = dFdy(lightmapRaw) * 256.0;
     
-    // Skip if lightmap is uniform
+    // skip if lightmap is uniform
     if (abs(gradientX) + abs(gradientY) < 0.001) return lightmap;
     
     vec3 lightDir = normalize(
