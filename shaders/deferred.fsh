@@ -128,7 +128,7 @@ void main() {
     vec3 normal = normalize(decodeNormal(texture2D(colortex1, texcoord).xy));
 
     float Diffuse = calculateDiffuse(normalize(shadowLightPosition), normalize(-viewPos.xyz), normal, roughness, material);
-          Diffuse = mix(Diffuse, 0.15 + Diffuse * 0.85, distFactor);
+          //Diffuse = mix(Diffuse, 0.15 + Diffuse * 0.85, distFactor);
 
 
     //// SSS ////
@@ -250,7 +250,7 @@ void main() {
 	#ifdef disableRainShadows
 	float rainShadowStr = 24.0;
 	#else
-	float rainShadowStr = 0.5;
+	float rainShadowStr = 0.3;
 	#endif
 
 
@@ -289,7 +289,7 @@ void main() {
             bounceMask *= bounceMask*transitionFade;
             
             vec3 flatAmbient = pow(shadowCol, vec3(0.3)) * 1 * (1.0 - rainStrength * 0.2) * undergroundBlend;
-            vec3 shadowAmbient = shadowCol * 3.0 * invShadowAccum * (1.0 - rainStrength * 0.2) * undergroundBlend;
+            vec3 shadowAmbient = shadowCol * 3.0 * invShadowAccum * (1.0 - rainStrength * 0.7) * undergroundBlend;
             vec3 baseAmbient = mix(flatAmbient, shadowAmbient, transitionFade);
             vec3 bounceAmbient = ambientStrength * ambientCol * ambientShadowFactorFixed * (1.0 - rainStrength * 0.14) * bounceMask;
             vec3 finalAmbient = (baseAmbient + bounceAmbient) * 0.25 * pow(ao, 0.2) * textureAO;
@@ -300,7 +300,8 @@ void main() {
 
             //SSS//
             if (material > 0.00 && material < 0.02 || material > 0.02 && material < 0.04) {
-                finalShadow += SSS(material, Diffuse, color.rgb, sunlightCol, sunAngleCosine, ShadowAccum, lightStrength, lightMap.t, rainStrength);
+                float SSSstrength = mix(1, .5, distFactor); //Fixes shadow offset being obvious at distance
+                finalShadow += SSS(material, Diffuse, color.rgb, sunlightCol, sunAngleCosine, ShadowAccum, lightStrength, lightMap.t, rainStrength, SSSstrength);
             }
             
             color *= (finalShadow + finalAmbient);
@@ -336,9 +337,9 @@ void main() {
 	float atmoDepth = 0.0;
     #ifdef atmosphereFog
         if (Depth < 1.0 && isEyeInWater < 0.9) {
-            atmoDepth = pow(length(worldPos.xz) / 140, 2.2);
-            atmoDepth = clamp(1.0 - exp(-0.1 * atmoDepth), 0, 1);
-            color.rgb = mix(color.rgb, ((atmoColor)*(1-rainStrength))+(vec3(0.96, 0.96, 1)*5.8*rainStrength*(1-time[5])), atmoDepth*1.0*pow(sunAngleCosine, 0.2));
+            atmoDepth = pow(length(worldPos.xz) / (140 - (40*rainStrength)), 2.2);
+            atmoDepth = clamp(1.0 - exp(-0.1 * atmoDepth), 0, 0.35);
+            color.rgb = mix(color.rgb, ((atmoColor)*(1-rainStrength))+(vec3(0.96, 0.96, 1)*30.8*rainStrength*(1-time[5])), atmoDepth*1.0*pow(sunAngleCosine, 0.2));
         }
     #endif
 

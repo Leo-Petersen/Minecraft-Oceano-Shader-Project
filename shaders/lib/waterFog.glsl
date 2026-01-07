@@ -73,7 +73,7 @@ vec3 getWaterDepthFog(vec3 color, vec3 fragpos, vec3 fragpos2, float iswater, fl
     float depthBlend = 1.0 - exp(-depth * 0.15);
     vec3 baseWaterColor = mix(shallowWaterColor, deepWaterColor, depthBlend);
     
-    vec3 rainyWaterColor = mix(baseWaterColor, vec3(0.15, 0.22, 0.28), rainStrength * 0.6);
+    vec3 rainyWaterColor = mix(baseWaterColor, vec3(0.08, 0.1, 0.12), rainStrength * 0.6);
     baseWaterColor = mix(baseWaterColor, rainyWaterColor, rainStrength);
     
     float fogStr = 0.5 * time[0] + 1.0 * time[1] + 1.0 * time[2] + 

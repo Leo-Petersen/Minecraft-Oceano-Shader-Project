@@ -277,9 +277,9 @@ void main() {
 
 	float atmoDepth = 0.0;
 	if (Depth < 1.0 && isglass > 0.9 && isEyeInWater < 0.9) {
-		  atmoDepth = pow(length(worldPos.xz) / 140, 2.2);
+		  atmoDepth = pow(length(worldPos.xz) / (140 - (40*rainStrength)), 2.2);
 		  atmoDepth = 1.0 - exp(-0.4 * atmoDepth);
-		  color.rgb = mix(color.rgb, (atmoColor*(1-rainStrength))+(vec3(0.48, 0.48, 0.56)*rainStrength*(1-time[5])), atmoDepth*0.5);
+		  color.rgb = mix(color.rgb, (atmoColor*(1-rainStrength))+(vec3(0.48, 0.48, 0.56)*3.5*rainStrength*(1-time[5])), atmoDepth*0.5);
 	}
 	
 	if(rainStrength > 0 && iswater == 1) {

@@ -206,13 +206,13 @@ float ambientOcclusion(sampler2D depthTexture) {
 ////SSS////
 vec3 SSS(float material, float Diffuse, vec3 color, vec3 sunlightCol, 
                                   float sunAngleCosine, vec3 ShadowAccum, float lightStrength, 
-                                  float lightMapT, float rainStrength) {
+                                  float lightMapT, float rainStrength, float strength) {
         
     float backlight = max(0.0, -Diffuse * 0.6 + 0.4);
           backlight = pow(backlight, 4.0);
     
     vec3 sssColor = sqrt(color) * sunlightCol; 
-    float sssStrength = 50.0 * backlight * pow(sunAngleCosine, 0.3);
+    float sssStrength = 30.0 * backlight * pow(sunAngleCosine, 0.3) * strength;
     
     vec3 SSS = sssColor * sssStrength * ShadowAccum * lightStrength * clamp(lightMapT, 0.3, 1.0);
     //SSS *= (1.0 - rainStrength * 0.7); 

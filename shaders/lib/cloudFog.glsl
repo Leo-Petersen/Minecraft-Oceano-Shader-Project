@@ -203,7 +203,7 @@ vec4 getVolumetricCloudFog(vec3 camPos, vec3 fogCol) {
         float absorption = tau < 0.001 ? tau : (1.0 - stepTrans);
                 
         float depthRatio = float(i) / float(CLOUD_FOG_SAMPLES);
-        vec3 tintedFog = fogCol * (1.0 + vec3(-0.05, 0.0, 0.08) * depthRatio);
+        vec3 tintedFog = fogCol * (1.0 + vec3(-0.05, 0.0, 0.08) * depthRatio) * (1-rainStrength*0.7);
         
         scattered += tintedFog * totalLight * (1.0 - stepTrans) * transmittance;
         transmittance *= stepTrans;
