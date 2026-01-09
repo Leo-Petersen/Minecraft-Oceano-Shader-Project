@@ -302,20 +302,44 @@ void main() {
 			 lightMap.t * ShadowAccum * (1+(time[5])) * transitionFade;
 			 color.rgb += blinnBRDFReflection;
 
-	#ifdef BorderFog
-		float effects = blindness+darknessFactor;
-		float borderFog = clamp(pow(length(worldPos.xz) / far, 14.0)*0.7, 0.0, 1.0);
-		if (Depth < 1.0) {
-			if (iswater == 1.0) {
-				if (isEyeInWater < 0.9) color.rgb = mix(color.rgb, skyBoxCol*(1-effects*0.95), borderFog);
-			}
-		}
+	//// Atmosphere Fog ////
+	#ifdef atmosphereFog
+	if (Depth < 1.0 && isEyeInWater < 0.9) {
+		vec3 viewDir = normalize(viewPos.xyz);
+		float sunAngleCosine = 1.0 - clamp(dot(viewDir, normalize(shadowLightPosition)), 0.0, 1.0);
+		sunAngleCosine = pow(sunAngleCosine, 2.0) * (3.0 - 2.0 * sunAngleCosine);
+		sunAngleCosine = 1.0 / sunAngleCosine - 1.0;
+		sunAngleCosine = 1.0 - exp(-sunAngleCosine / 12.0);
+		sunAngleCosine = clamp(sunAngleCosine, 0.01, 2.0) * (1.0 - rainStrength * 0.999);
+		
+		// Normal atmospheric fog
+		float normalFogDist = pow(length(worldPos.xz) / 140.0, 2.2);
+		float normalFogDepth = clamp(1.0 - exp(-0.1 * normalFogDist), 0.0, 0.35);
+		vec3 normalFog = mix(color.rgb, atmoColor, normalFogDepth * pow(sunAngleCosine, 0.2));
+		
+		// Rain fog 
+		float rainFogDist = pow(length(worldPos.xz) / 100.0, 1.5);
+		float rainFogDepth = clamp(1.0 - exp(-0.15 * rainFogDist), 0.0, 0.35);
+		vec3 rainFogColor = vec3(2.5, 2.5, 2.8) * 0.05 * (1.0 - time[5] * 0.7);
+		vec3 rainFog = mix(color.rgb, rainFogColor, rainFogDepth);
+		
+		// Blend between normal and rain fog
+		color.rgb = mix(normalFog, rainFog, rainStrength);
+	}
 	#endif
 
 	#ifdef volumetricCloudFog
 	if (isEyeInWater < 0.5){
 		vec4 cloudFog = getVolumetricCloudFog(cameraPosition, fogCol2);
 			 color.rgb = color.rgb * cloudFog.a + cloudFog.rgb;
+	}
+	#endif
+
+	#ifdef BorderFog
+	float effects = blindness + darknessFactor;
+	float borderFog = clamp(pow(length(worldPos.xz) / far, 14.0) * 0.7, 0.0, 1.0);
+	if (Depth < 1.0 && isEyeInWater < 0.9) {
+		color.rgb = mix(color.rgb, skyBoxCol * (1.0 - effects * 0.95), borderFog);
 	}
 	#endif
 
