@@ -139,6 +139,7 @@ void main() {
 
     //// Setup LightMap ////
     vec2 lightMap = texture2D(colortex2, texcoord).st;
+         lightMap.t = pow(lightMap.t, 1.5);
     float rawSkyLight = lightMap.t;
          lightMap.t = clamp(lightMap.t, ((1.0 - nightVision) * min_skyLightMap) + (0.5 * nightVision), 1.0);
          lightMap.t = pow(lightMap.t * (1.0 - darknessLightFactor), 0.5);
@@ -186,10 +187,10 @@ void main() {
     float torchTimeBlend = mix(1.0, torchFactor, rawSkyLight);
     float torchmapLight = max(lightMap.s, handlight) * lightMap.t * torchTimeBlend;
     float torchmapCovered = max(lightMap.s, handlight) * (1.0 - lightMap.t);
-    lightMap.s = (torchmapLight * pow(ao, 0.24) * 0.5) + torchmapCovered;
+    lightMap.s = (torchmapLight * pow(ao, 0.42) * 0.5) + torchmapCovered;
     
     // Torch intensity
-    float torchIntensity = lightMap.s * lightMap.s * 3.2;
+    float torchIntensity = lightMap.s * lightMap.s * 2.5;
     
     // Default torch color
     vec3 torchColorBase = vec3(torchR, torchG, torchB) / 255.0;
@@ -373,7 +374,7 @@ void main() {
             vec3 shadowAmbient = shadowCol * 3.0 * invShadowAccum * (1.0 - rainStrength * 0.7) * undergroundBlend;
             vec3 baseAmbient = mix(flatAmbient, shadowAmbient, transitionFade);
             vec3 bounceAmbient = ambientStrength * ambientCol * ambientShadowFactorFixed * (1.0 - rainStrength * 0.14) * bounceMask;
-            vec3 finalAmbient = (baseAmbient + bounceAmbient) * 0.25 * pow(ao, 0.2) * textureAO;
+            vec3 finalAmbient = (baseAmbient + bounceAmbient) * 0.25 * pow(ao, 0.3) * textureAO;
                 
             // Underground ambient
             vec3 undergroundBaseAmbient = vec3(0.025, 0.028, 0.035) * (1.0 - undergroundBlend) * pow(ao, 0.42) * textureAO * 5;
