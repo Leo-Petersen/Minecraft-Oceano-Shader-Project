@@ -1,10 +1,10 @@
+
+const bool shadowHardwareFiltering0 = true;
+const bool shadowHardwareFiltering1 = true;
 const bool shadowcolor0Nearest = true;
 const bool shadowcolor1Nearest = true;
-const bool shadowtex0Nearest = true;
-const bool shadowtex1Nearest = true;
-const bool shadowHardwareFiltering0 = false;
-const bool shadowHardwareFiltering1 = false;
 
+// NOTE: shadowcolor still uses sampler2D (to get actual color values)
 float Depth = texture2D(depthtex0, texcoord).r;
 vec3 viewNormal = normalize(decodeNormal(texture2D(colortex1, texcoord).xy));
 
@@ -33,39 +33,49 @@ float distort(vec2 pos) {
     return 1.0 / ((1.0 - shadowDistortion) + length(pos) * shadowDistortion);
 }
 
-float Visibility(in sampler2D ShadowMap, in vec3 SampleCoords) {
-    float shadowDepth = texture2D(ShadowMap, SampleCoords.xy).x;
-    
+float getShadowBias(vec3 SampleCoords) {
     float dist = length(SampleCoords.xy - 0.5);
-    
-    // smooth distance factor - 0 at center, 1 at edges
     float distFactor = smoothstep(0.0, 0.5, dist);
     
-    // slope bias - scales up with distance
     float NdotL = max(dot(viewNormal, normalize(shadowLightPosition)), 0.0);
-    float slopeBias = 0.00041 * (1.0 - NdotL) * distFactor;
+    float slopeBias = 0.0004 * (1.0 - NdotL) * distFactor;
+    float baseBias = 0.0001 + dist * 0.0005;
     
-    float baseBias = 0.00012 + dist * 0.0006;
-    float bias = baseBias + slopeBias;
-    
-    return clamp(1.0 - max(SampleCoords.z - bias - shadowDepth, 0.0) * 40963.0, 0.0, 1.0);
+    return baseBias + slopeBias;
 }
 
-float random(vec3 seed, int i) {
-    return fract(sin(dot(seed + vec3(i), vec3(12.9898, 78.233, 45.164))) * 43758.5453);
+vec3 TransparentShadowHardware(vec3 SampleCoords, float transparencyFactor) {
+    float bias = getShadowBias(SampleCoords);
+    vec3 biasedCoords = vec3(SampleCoords.xy, SampleCoords.z - bias);
+    
+    // Hardware PCF shadow sampling
+    float shadowTransparent = shadow2D(shadowtex0, biasedCoords).r; // all blockers
+    float shadowOpaque = shadow2D(shadowtex1, biasedCoords).r;      // opaque only
+    
+    if (shadowTransparent > 0.99) {
+        return sunlightCol;
+    }
+    
+    if (shadowOpaque < 0.01) {
+        return vec3(0.0);
+    }
+    
+
+    if (shadowOpaque > shadowTransparent + 0.01) {
+        vec4 shadowCol = texture2D(shadowcolor0, SampleCoords.xy);
+        vec3 transmittedColor = shadowCol.rgb * (1.0 - shadowCol.a);
+        
+        return mix(transmittedColor * transparencyFactor, sunlightCol, shadowTransparent) * shadowOpaque;
+    }
+    
+    return sunlightCol * shadowOpaque;
 }
 
+// Legacy function
 vec3 TransparentShadow(in vec3 SampleCoords, float transparencyFactor) {
-    float ShadowVisibility0 = Visibility(shadowtex0, SampleCoords);
-    float ShadowVisibility1 = Visibility(shadowtex1, SampleCoords);
-
-    vec4 ShadowColor0 = texture2D(shadowcolor0, SampleCoords.xy);
-    vec3 TransmittedColor = ShadowColor0.rgb * (1.0 - ShadowColor0.a);
-    return mix(TransmittedColor * ShadowVisibility1 * transparencyFactor, sunlightCol, ShadowVisibility0);
+    return TransparentShadowHardware(SampleCoords, transparencyFactor);
 }
 
-
-////PCSS////
 float getViewDistance() {
     vec3 ClipSpace = vec3(texcoord, Depth) * 2.0 - 1.0;
     vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0);
@@ -73,6 +83,7 @@ float getViewDistance() {
     return length(View);
 }
 
+#ifdef PCSS_ENABLED
 float PCSSBlockerSearch(vec3 shadowCoord, mat2 Rotation, vec3 Rotationvec3) {
     float blockerSum = 0.0;
     float numBlockers = 0.0;
@@ -82,12 +93,12 @@ float PCSSBlockerSearch(vec3 shadowCoord, mat2 Rotation, vec3 Rotationvec3) {
     
     float ditherOffset = dither64;
     
-    for (int i = 0; i < 4; i++) {
-        int index = int(64.0 * random(floor(vec3(Rotationvec3)*10000), i))%64;
+    for (int i = 0; i < 3; i++) {
+        int index = int(64.0 * fract(sin(dot(floor(Rotationvec3) + vec3(i), vec3(12.9898, 78.233, 45.164))) * 43758.5453)) % 64;
         vec2 offset = poissonDisk64[index] * searchSize * Rotation;
-             offset *= 0.75 + ditherOffset * 0.5;
+        offset *= 0.75 + ditherOffset * 0.5;
         
-        float shadowMapDepth = texture2D(shadowtex0, shadowCoord.xy + offset).x;
+        float shadowMapDepth = texture2D(shadowtex0Raw, shadowCoord.xy + offset).x;
         
         if (shadowMapDepth < shadowCoord.z - 0.001) {
             blockerSum += shadowMapDepth;
@@ -118,16 +129,17 @@ vec3 PCSSFiltering(vec3 shadowCoord, float penumbraSize, float transparencyFacto
     vec3 shadowSum = vec3(0.0);
     float filterSize = penumbraSize * (1.0 + rainStrength * 2.0);
 
-    int sampleCount = lightingQuality;
+    int sampleCount = max(lightingQuality / 2, 2);
     
     for (int i = 0; i < sampleCount; i++) {
-        int index = int(64.0 * random(floor(vec3(Rotationvec3)*10000), i))%64;
+        int index = int(64.0 * fract(sin(dot(floor(Rotationvec3) + vec3(i), vec3(12.9898, 78.233, 45.164))) * 43758.5453)) % 64;
         vec2 offset = poissonDisk64[index] * filterSize * Rotation;
-        shadowSum += TransparentShadow(vec3(shadowCoord.xy + offset, shadowCoord.z), transparencyFactor);
+        shadowSum += TransparentShadowHardware(vec3(shadowCoord.xy + offset, shadowCoord.z), transparencyFactor);
     }
     
     return shadowSum / float(sampleCount);
 }
+#endif
 
 
 
@@ -147,7 +159,7 @@ float fakeCloudShadow(vec3 worldPos) {
         sunlightCol *= 2.0;
         float upVector = -dot(upVec, viewNormal);
         
-        vec3 backLight = (sunlightCol + bounceColor) * (upVector + 7.0); // Adds the sunlight colour to backfaces emulating bounce light
+        vec3 backLight = (sunlightCol + bounceColor) * (upVector + 7.0);
         return (backLight + sunlightCol);
     }
 #else
@@ -215,7 +227,6 @@ vec3 SSS(float material, float Diffuse, vec3 color, vec3 sunlightCol,
     float sssStrength = 30.0 * backlight * pow(sunAngleCosine, 0.3) * strength;
     
     vec3 SSS = sssColor * sssStrength * ShadowAccum * lightStrength * clamp(lightMapT, 0.3, 1.0);
-    //SSS *= (1.0 - rainStrength * 0.7); 
     
     return SSS;
 }
