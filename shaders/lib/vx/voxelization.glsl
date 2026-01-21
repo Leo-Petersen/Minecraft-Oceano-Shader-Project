@@ -1,11 +1,7 @@
-<<<<<<< HEAD
-// VOXELIZATION UTILITIES //
-=======
 // ============================================================================
 // VOXELIZATION UTILITIES
 // Coordinate conversion and voxel map updating
 // ============================================================================
->>>>>>> 1d8a6ee98624056ed81aa409845eb185adb6a105
 
 #include "/lib/voxel_settings.glsl"
 

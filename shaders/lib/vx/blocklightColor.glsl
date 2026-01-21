@@ -1,10 +1,8 @@
-<<<<<<< HEAD
-// Block Light Colours //
-=======
-// Block Light Color //
-// Maps voxel IDs to their emissive light colors //
+// ============================================================================
+// BLOCK LIGHT COLORS
+// Maps voxel IDs to their emissive light colors
+// ============================================================================
 
->>>>>>> 1d8a6ee98624056ed81aa409845eb185adb6a105
 vec3 getBlocklightColor(int id) {
     vec3 color = vec3(0.0);
     

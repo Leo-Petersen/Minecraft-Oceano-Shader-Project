@@ -1,10 +1,6 @@
 #version 130
 
 #include "/lib/voxel_settings.glsl"
-<<<<<<< HEAD
-=======
-#include "/lib/voxel_settings.glsl"
->>>>>>> 1d8a6ee98624056ed81aa409845eb185adb6a105
 #include "/lib/settings.glsl"
 #include "/lib/encode.glsl"
 
@@ -20,6 +16,8 @@ uniform sampler2D shadowcolor1;
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 
+// Hardware-filtered shadow maps - GPU does depth comparison automatically
+// This gives ~3x performance boost over manual sampling
 uniform sampler2DShadow shadowtex0;
 uniform sampler2DShadow shadowtex1;
 
@@ -29,12 +27,6 @@ uniform sampler2D specular;
 uniform sampler3D floodfillSampler;
 uniform sampler3D floodfillSamplerCopy;
 
-<<<<<<< HEAD
-=======
-uniform sampler3D floodfillSampler;
-uniform sampler3D floodfillSamplerCopy;
-
->>>>>>> 1d8a6ee98624056ed81aa409845eb185adb6a105
 uniform mat4 gbufferProjection;
 uniform mat4 gbufferProjectionInverse;
 uniform mat4 gbufferModelView, gbufferModelViewInverse;
@@ -56,10 +48,6 @@ uniform float viewHeight, viewWidth;
 uniform float aspectRatio;
 uniform float wetness;
 uniform float blindness;
-<<<<<<< HEAD
-=======
-uniform float blindness;
->>>>>>> 1d8a6ee98624056ed81aa409845eb185adb6a105
 
 uniform vec3 shadowLightPosition;
 uniform vec3 cameraPosition;
@@ -97,25 +85,6 @@ vec3 getWorldPos(float depth) {
     return World.xyz;
 }
 
-<<<<<<< HEAD
-=======
-const vec3 voxelVolumeSize = vec3(VOXEL_VOLUME_SIZE, VOXEL_VOLUME_SIZE * 0.5, VOXEL_VOLUME_SIZE);
-
-// Convert world position to voxel UV coordinates
-vec3 worldToVoxelUV(vec3 worldPos) {
-    vec3 voxelPos = worldPos + fract(cameraPosition) + voxelVolumeSize * 0.5;
-    return voxelPos / voxelVolumeSize;
-}
-
-vec3 getWorldPos(float depth) {
-    vec3 ClipSpace = vec3(texcoord, depth) * 2.0f - 1.0f;
-    vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0f);
-    vec3 View = ViewW.xyz / ViewW.w;
-    vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
-    return World.xyz;
-}
-
->>>>>>> 1d8a6ee98624056ed81aa409845eb185adb6a105
 vec3 nvec3(vec4 pos) {
     return pos.xyz / pos.w;
 }
@@ -156,17 +125,6 @@ void main() {
         gl_FragData[1] = vec4(0.0);
         return;
     }
-<<<<<<< HEAD
-=======
-    // Early-out for sky pixels
-    if (Depth >= 1.0) {
-        vec3 color = texture2D(colortex0, texcoord).rgb;
-        /* DRAWBUFFERS:04 */
-        gl_FragData[0] = vec4(color, 1.0);
-        gl_FragData[1] = vec4(0.0);
-        return;
-    }
->>>>>>> 1d8a6ee98624056ed81aa409845eb185adb6a105
 
     vec3 color = texture2D(colortex0, texcoord).rgb;
     vec3 albedo = color;
@@ -181,7 +139,6 @@ void main() {
 
     //// Setup LightMap ////
     vec2 lightMap = texture2D(colortex2, texcoord).st;
-         lightMap.t = pow(lightMap.t, 1.5);
     float rawSkyLight = lightMap.t;
          lightMap.t = clamp(lightMap.t, ((1.0 - nightVision) * min_skyLightMap) + (0.5 * nightVision), 1.0);
          lightMap.t = pow(lightMap.t * (1.0 - darknessLightFactor), 0.5);
@@ -229,16 +186,12 @@ void main() {
     float torchTimeBlend = mix(1.0, torchFactor, rawSkyLight);
     float torchmapLight = max(lightMap.s, handlight) * lightMap.t * torchTimeBlend;
     float torchmapCovered = max(lightMap.s, handlight) * (1.0 - lightMap.t);
-    lightMap.s = (torchmapLight * pow(ao, 0.42) * 0.5) + torchmapCovered;
+    lightMap.s = (torchmapLight * pow(ao, 0.24) * 0.5) + torchmapCovered;
     
     // Torch intensity
     float torchIntensity = lightMap.s * lightMap.s * 3.2;
     
     // Default torch color
-<<<<<<< HEAD
-=======
-    // Default torch color
->>>>>>> 1d8a6ee98624056ed81aa409845eb185adb6a105
     vec3 torchColorBase = vec3(torchR, torchG, torchB) / 255.0;
     vec3 torchColorWarm = torchColorBase * vec3(1.0, 0.7, 0.4);
     vec3 defaultTorchColor = mix(torchColorWarm, torchColorBase, lightMap.s);
@@ -281,49 +234,6 @@ void main() {
     #endif
     vec3 finalBlockLightColor = mix(defaultTorchColor, voxelColor*2, voxelBlend);
     vec3 torchTotal = finalBlockLightColor * torchIntensity * albedo;
-<<<<<<< HEAD
-=======
-    vec3 defaultTorchColor = mix(torchColorWarm, torchColorBase, lightMap.s);
-
-    //// Voxel Lighting ////
-    vec3 voxelColor = vec3(0.0);
-    float voxelStrength = 0.0;
-    float voxelBlend = 0.0;
-    
-    #ifdef VoxelLighting
-    if (Depth < 1.0) {
-        vec3 worldNormal = (gbufferModelViewInverse * vec4(normal, 0.0)).xyz;
-        vec3 samplePos = worldPos + worldNormal * 0.5;
-        vec3 voxelUV = worldToVoxelUV(samplePos);
-        
-        if (all(greaterThan(voxelUV, vec3(0.01))) && all(lessThan(voxelUV, vec3(0.99)))) {
-            vec3 lightVolume;
-            if ((frameCounter & 1) == 0) {
-                lightVolume = texture3D(floodfillSamplerCopy, voxelUV).rgb;
-            } else {
-                lightVolume = texture3D(floodfillSampler, voxelUV).rgb;
-            }
-            
-            // Convert from compressed to linear
-            vec3 voxelLight = pow(lightVolume, vec3(1.0 / FLOODFILL_RADIUS));
-            voxelStrength = length(voxelLight);
-            
-            // Normalize to get just the color
-            if (voxelStrength > 0.001) {
-                voxelColor = voxelLight / voxelStrength;
-            }
-            
-            // Edge fade
-            vec3 edgeDist = min(voxelUV, 1.0 - voxelUV);
-            float edgeFade = smoothstep(0.0, 0.1, min(min(edgeDist.x, edgeDist.y), edgeDist.z));
-            
-            voxelBlend = clamp(voxelStrength * FLOODFILL_BRIGHTNESS, 0.0, 1.0) * edgeFade;
-        }
-    }
-    #endif
-    vec3 finalBlockLightColor = mix(defaultTorchColor, voxelColor*2, voxelBlend);
-    vec3 torchTotal = finalBlockLightColor * torchIntensity * albedo;
->>>>>>> 1d8a6ee98624056ed81aa409845eb185adb6a105
 
     //// Setup Shadow Filter ////
     vec4 shadowCoord = ShadowSpace();
@@ -369,7 +279,6 @@ void main() {
             cosTheta * cosAngle - sinTheta * sinAngle,
             sinTheta * cosAngle + cosTheta * sinAngle
         ) * radius;
-<<<<<<< HEAD
         
         // shadow sampling, switched to hardware PCF
         vec2 shadowOffset = dir * filterSize;
@@ -378,34 +287,6 @@ void main() {
         // flux sampling, only sample half as often
         #ifdef BounceColoredLight
         if ((i & 1) == 0) {  // Every other sample
-=======
-    
-    float sinAngle = sin(angle);
-    float cosAngle = cos(angle);
-    
-    for (int i = 0; i < lightingQuality; i++) {
-        // Golden angle spiral
-        float theta = float(i) * 2.39996323;
-        float radius = sqrt((float(i) + 0.5) / float(lightingQuality));
-        
-        // Rotate by the noise angle
-        float cosTheta = cos(theta);
-        float sinTheta = sin(theta);
-        vec2 dir = vec2(
-            cosTheta * cosAngle - sinTheta * sinAngle,
-            sinTheta * cosAngle + cosTheta * sinAngle
-        ) * radius;
-        
-        // shadow sampling, switched to hardware PCF
-        // shadow sampling, switched to hardware PCF
-        vec2 shadowOffset = dir * filterSize;
-        ShadowAccum += TransparentShadow(vec3(SampleCoords.xy + shadowOffset, SampleCoords.z), transparencyFactor);
-        
-        // only sample half as often for flux to save performance
-        #ifdef BounceColoredLight
-        if ((i & 1) == 0) {  // Every other sample
-        if ((i & 1) == 0) {  // Every other sample
->>>>>>> 1d8a6ee98624056ed81aa409845eb185adb6a105
             vec2 fluxCoord = SampleCoords.xy + dir * fluxRadius;
             
             if (fluxCoord.x >= 0.0 && fluxCoord.x <= 1.0 && 
@@ -415,19 +296,10 @@ void main() {
                 validSamples += 1.0;
             }
         }
-<<<<<<< HEAD
-=======
-            }
-        }
->>>>>>> 1d8a6ee98624056ed81aa409845eb185adb6a105
         #endif
     }
 
     ShadowAccum /= float(lightingQuality);
-<<<<<<< HEAD
-=======
-    ShadowAccum /= float(lightingQuality);
->>>>>>> 1d8a6ee98624056ed81aa409845eb185adb6a105
     ShadowAccum *= parallaxShadow;
     ShadowAccum = mix(ShadowAccum, vec3(1.0), emission * 0.8);
     vec3 invShadowAccum = clamp(-ShadowAccum*Diffuse + vec3(0.4), vec3(0.0), vec3(1.0));
@@ -501,7 +373,7 @@ void main() {
             vec3 shadowAmbient = shadowCol * 3.0 * invShadowAccum * (1.0 - rainStrength * 0.7) * undergroundBlend;
             vec3 baseAmbient = mix(flatAmbient, shadowAmbient, transitionFade);
             vec3 bounceAmbient = ambientStrength * ambientCol * ambientShadowFactorFixed * (1.0 - rainStrength * 0.14) * bounceMask;
-            vec3 finalAmbient = (baseAmbient + bounceAmbient) * 0.25 * pow(ao, 0.3) * textureAO;
+            vec3 finalAmbient = (baseAmbient + bounceAmbient) * 0.25 * pow(ao, 0.2) * textureAO;
                 
             // Underground ambient
             vec3 undergroundBaseAmbient = vec3(0.025, 0.028, 0.035) * (1.0 - undergroundBlend) * pow(ao, 0.42) * textureAO * 5;
@@ -514,10 +386,6 @@ void main() {
             }
             
             // Apply sun/shadow/ambient lighting
-<<<<<<< HEAD
-=======
-            // Apply sun/shadow/ambient lighting
->>>>>>> 1d8a6ee98624056ed81aa409845eb185adb6a105
             color *= (finalShadow + finalAmbient);
 
             float nightAmount = time[5] + time[0] * 0.6 + time[4] * 0.6;
@@ -542,49 +410,23 @@ void main() {
 	#endif
 
 	////Apply Block Light////
-<<<<<<< HEAD
 	#ifdef torchLightMap
 	color += torchTotal * textureAO;
-=======
-	////Apply Block Light////
-	#ifdef torchLightMap
-	color += torchTotal * textureAO;
-	color += torchTotal * textureAO;
->>>>>>> 1d8a6ee98624056ed81aa409845eb185adb6a105
 	#endif
 
 
 	//// Eye-in-water ////
-<<<<<<< HEAD
-=======
-	//// Eye-in-water ////
->>>>>>> 1d8a6ee98624056ed81aa409845eb185adb6a105
 	if (isEyeInWater == 1.0){
 		float fogDepth = length(worldPos.xz) / 100;
 		fogDepth = pow(fogDepth, 1.0);
 		fogDepth = 1.0 - exp(-11.3 * fogDepth);
 		color.rgb = mix(color.rgb, vec3(0.0, 0.36, 0.51) * 0.05 * (1 - time[5] * 0.64) * (1 - rainStrength), fogDepth);
-<<<<<<< HEAD
 	}
 
 	//// Lava + Powdered Snow Fog ////
 	float blockFog = clamp(pow(length(worldPos.xz) / 5, 0.5), 0.0, 1.0);
 	if (isEyeInWater == 2) color.rgb = mix(color.rgb, vec3(1.0, 0.15, 0.0), blockFog);
 	if (isEyeInWater == 3) color.rgb = mix(color.rgb, vec3(0.5, 0.6, 0.8), blockFog * 2);
-=======
-		float fogDepth = length(worldPos.xz) / 100;
-		fogDepth = pow(fogDepth, 1.0);
-		fogDepth = 1.0 - exp(-11.3 * fogDepth);
-		color.rgb = mix(color.rgb, vec3(0.0, 0.36, 0.51) * 0.05 * (1 - time[5] * 0.64) * (1 - rainStrength), fogDepth);
-	}
-
-	//// Lava + Powdered Snow Fog ////
-	//// Lava + Powdered Snow Fog ////
-	float blockFog = clamp(pow(length(worldPos.xz) / 5, 0.5), 0.0, 1.0);
-	if (isEyeInWater == 2) color.rgb = mix(color.rgb, vec3(1.0, 0.15, 0.0), blockFog);
-	if (isEyeInWater == 3) color.rgb = mix(color.rgb, vec3(0.5, 0.6, 0.8), blockFog * 2);
-	if (isEyeInWater == 3) color.rgb = mix(color.rgb, vec3(0.5, 0.6, 0.8), blockFog * 2);
->>>>>>> 1d8a6ee98624056ed81aa409845eb185adb6a105
 
 /* DRAWBUFFERS:04 */
 	gl_FragData[0] = vec4(color, 1);
