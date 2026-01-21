@@ -1,4 +1,4 @@
-// BLOCK LIGHT COLOR //
+// Block Light Color //
 // Maps voxel IDs to their emissive light colors //
 
 vec3 getBlocklightColor(int id) {
