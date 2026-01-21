@@ -32,10 +32,8 @@ uniform sampler2D depthtex0;
 		vec3 blur3 = GetBloomTile(3.0, coord, vec2(0.51, 0.26));
 		vec3 blur4 = GetBloomTile(4.0, coord, vec2(0.645, 0.26));
 		vec3 blur5 = GetBloomTile(5.0, coord, vec2(0.7175, 0.26));
-		vec3 blur6 = GetBloomTile(6.0, coord, vec2(0.645, 0.3325));
-		vec3 blur7 = GetBloomTile(7.0, coord, vec2(0.670625, 0.3325));
 
-		vec3 blur = (blur1 * 5.51 + blur2 * 5.30 + blur3 * 4.71 + blur4 * 3.85 + blur5 * 2.85 + blur6 * 1.86 + blur7) / 25.08;
+		vec3 blur = (blur1 * 5.51 + blur2 * 5.30 + blur3 * 4.71 + blur4 * 3.85 + blur5 * 2.85) / 22.22;
 		color += blur;
 	}
 #endif

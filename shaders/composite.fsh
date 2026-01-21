@@ -275,18 +275,28 @@ void main() {
 		color.rgb = getWaterDepthFog(color.rgb, viewPos.xyz, fragpos2, iswater, lightMap.t);
 	}
 
-	float atmoDepth = 0.0;
-	if (Depth < 1.0 && isglass > 0.9 && isEyeInWater < 0.9) {
-		  atmoDepth = pow(length(worldPos.xz) / (140 - (40*rainStrength)), 2.2);
-		  atmoDepth = 1.0 - exp(-0.4 * atmoDepth);
-		  color.rgb = mix(color.rgb, (atmoColor*(1-rainStrength))+(vec3(0.48, 0.48, 0.56)*3.5*rainStrength*(1-time[5])), atmoDepth*0.5);
-	}
+    #ifdef atmosphereFog
+    if (Depth < 1.0 && isEyeInWater < 0.9) {
+        float normalFogDist = pow(length(worldPos.xz) / 140.0, 2.2);
+        float normalFogDepth = clamp(1.0 - exp(-0.1 * normalFogDist), 0.0, 0.35);
+        
+        vec3 normalFog = mix(color.rgb, atmoColor, normalFogDepth * pow(sunAngleCosine, 0.2));
+        
+        float rainFogDist = pow(length(worldPos.xz) / 100.0, 1.5);
+        float rainFogDepth = clamp(1.0 - exp(-0.15 * rainFogDist), 0.0, 0.5);
+        
+        vec3 rainFogColor = vec3(2.5, 2.5, 2.8) * (1.0 - time[5] * 0.7);
+        vec3 rainFog = mix(color.rgb, rainFogColor, rainFogDepth);
+        
+        color.rgb = mix(normalFog, rainFog, rainStrength);
+    }
+    #endif
 	
-	if(rainStrength > 0 && iswater == 1) {
-		  atmoDepth = pow(length(worldPos.xz) / 140, 2.2);
-		  atmoDepth = 1.0 - exp(-0.4 * atmoDepth);
-		  color.rgb = mix(color.rgb, (vec3(0.96, 0.96, 1)*0.8*rainStrength*(1-time[5])), atmoDepth*0.8);
-	}
+	// if(rainStrength > 0 && iswater == 1) {
+	// 	  atmoDepth = pow(length(worldPos.xz) / (140 - (40*rainStrength)), 2.2);
+	// 	  atmoDepth = 1.0 - exp(-0.4 * atmoDepth);
+	// 	  color.rgb = mix(color.rgb, (atmoColor*(1-rainStrength))+(vec3(0.48, 0.48, 0.56)*3.5*rainStrength*(1-time[5])), atmoDepth*0.5);
+	// }
 
 	//fogColor = pow(fogColor, vec3(0.7))*1.5;
 
