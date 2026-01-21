@@ -1,7 +1,4 @@
-// ============================================================================
-// VOXELIZATION UTILITIES
-// Coordinate conversion and voxel map updating
-// ============================================================================
+// VOXELIZATION UTILITIES //
 
 #include "/lib/voxel_settings.glsl"
 

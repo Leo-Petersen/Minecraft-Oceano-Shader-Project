@@ -16,8 +16,6 @@ uniform sampler2D shadowcolor1;
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 
-// Hardware-filtered shadow maps - GPU does depth comparison automatically
-// This gives ~3x performance boost over manual sampling
 uniform sampler2DShadow shadowtex0;
 uniform sampler2DShadow shadowtex1;
 
@@ -71,7 +69,6 @@ varying vec3 Normal;
 
 const vec3 voxelVolumeSize = vec3(VOXEL_VOLUME_SIZE, VOXEL_VOLUME_SIZE * 0.5, VOXEL_VOLUME_SIZE);
 
-// Convert world position to voxel UV coordinates
 vec3 worldToVoxelUV(vec3 worldPos) {
     vec3 voxelPos = worldPos + fract(cameraPosition) + voxelVolumeSize * 0.5;
     return voxelPos / voxelVolumeSize;

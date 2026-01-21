@@ -20,7 +20,6 @@ uniform mat4 gbufferModelView, gbufferModelViewInverse;
 uniform mat4 shadowProjection, shadowProjectionInverse;
 uniform mat4 shadowModelView, shadowModelViewInverse;
 
-// Voxel 3D texture for storing block IDs
 writeonly uniform uimage3D voxel_img;
 
 #include "/lib/vertexDisplacement.glsl"
