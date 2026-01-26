@@ -131,8 +131,11 @@ void main() {
     float isglass = float(material > 0.10 && material < 0.12);
     float parallaxShadow = texture2D(colortex2, texcoord).a;
     float iswater = float(material > 0.08 && material < 0.10);
-    float emission = texture2D(colortex13, texcoord).r;
-    float textureAO = texture2D(colortex13, texcoord).b;
+    
+    vec4 extraData = texture2D(colortex13, texcoord);
+    float emission = extraData.r;
+    float textureAO = extraData.b;
+    float sssAmount = extraData.a;
 
     //// Setup LightMap ////
     vec2 lightMap = texture2D(colortex2, texcoord).st;
@@ -158,17 +161,12 @@ void main() {
     vec3 normal = normalize(decodeNormal(texture2D(colortex1, texcoord).xy));
 
     float Diffuse = calculateDiffuse(normalize(shadowLightPosition), normalize(-viewPos.xyz), normal, roughness, material);
-          //Diffuse = mix(Diffuse, 0.15 + Diffuse * 0.85, distFactor);
 
-
-    //// SSS ////
-    float sunAngleCosine = 1.0 - clamp(dot(normalize(viewPos.rgb), normalize(shadowLightPosition)), 0.0, 1.0);
-    sunAngleCosine = pow(sunAngleCosine, 2.0) * (3.0 - 2.0 * sunAngleCosine);
-    sunAngleCosine = 1.0 / sunAngleCosine - 1.0;
-    sunAngleCosine = 1.0 - exp(-sunAngleCosine / 12.0);
-    sunAngleCosine *= undergroundFix;
-    sunAngleCosine = clamp(sunAngleCosine, 0.01, 2.0) * (1.0 - rainStrength * 0.999);
-
+    // View/Light directions for SSS
+    vec3 viewDir = normalize(-viewPos.xyz);
+    vec3 lightDir = normalize(shadowLightPosition);
+    float VdotL = dot(viewDir, lightDir);
+    float NdotL = dot(normal, lightDir);
 
     //// Calculate LightMap Colour and Values ////
     float ao = 1.0;
@@ -351,9 +349,7 @@ void main() {
 	////Apply Lighting and ShadowMap////
 	#ifdef shadowMap 
         vec3 ambientCol = bounceLight * (1 - rainStrength * rainShadowStr);
-		float lightStrength = lightStr * 6 * (1-darknessFactor*0.9) * fakeCloudShadow * transitionFade * pow(ao, 0.06);
-		//color *= mix(1.0, 1.2, distFactor);
-		//lightStrength *= mix(1.0, 1.2, distFactor);
+		float lightStrength = lightStr * 6 * (1-darknessFactor*0.9) * fakeCloudShadow * transitionFade * pow(ao, 0.21);
 
         if(Depth < 1.0f){
             vec3 finalShadow = sunlightCol * Diffuse * ShadowAccum * lightMap.t * lightStrength * (1 - rainStrength * 0.65);
@@ -376,10 +372,37 @@ void main() {
             vec3 undergroundBaseAmbient = vec3(0.025, 0.028, 0.035) * (1.0 - undergroundBlend) * pow(ao, 0.42) * textureAO * 5;
             finalAmbient += undergroundBaseAmbient;
 
-            //SSS//
-            if (material > 0.00 && material < 0.02 || material > 0.02 && material < 0.04) {
-                float SSSstrength = mix(1, .5, distFactor); //Fixes shadow offset being obvious at distance
-                finalShadow += SSS(material, Diffuse, color.rgb, sunlightCol, sunAngleCosine, ShadowAccum, lightStrength, lightMap.t, rainStrength, SSSstrength);
+            // SSS
+            if (sssAmount > 0.01) {
+                float sssScale = 1.0;
+                float uniformity = 0.0;
+                
+                // Foliage (leaves)
+                if (material > 0.00 && material < 0.02) {
+                    sssScale = 1.5;
+                    uniformity = 0.5;
+                }
+                // Grass and plants
+                else if (material > 0.02 && material < 0.04) {
+                    sssScale = 1.0;
+                    uniformity = 1.5; // Fixes no SSS at angles
+                }
+                
+                vec3 sssContribution = calculateSSS(
+                    SampleCoords,
+                    albedo,
+                    sunlightCol,
+                    sssAmount * sssScale,
+                    VdotL,
+                    NdotL,
+                    lightMap.t,
+                    distFactor,
+                    IGN,
+                    uniformity
+                );
+                
+                sssContribution *= lightStrength * undergroundFix;
+                finalShadow += sssContribution;
             }
             
             // Apply sun/shadow/ambient lighting

@@ -49,7 +49,6 @@ varying mat3 tbnMatrix;
 
 vec3 luminance(vec3 color, float strength) {
 	float luma = dot(color, vec3(0.3086, 0.6094, 0.0820));
-	//color = color + (color-luma)*strength*0.1;
   	color = mix(color, vec3(luma), vec3(1.0 - strength));
 	return color;
 }
@@ -66,6 +65,20 @@ void main() {
     vec4 specularData = texture2D(specular, parallaxedUV);
     vec2 specularMap = specularData.rg;
     float emission = specularData.a < 0.99 ? specularData.a : 0.0;
+
+    // LabPBR SSS extraction
+    // Blue channel 0-64 = SSS, 65-255 = porosity
+    float labSSS = 0.0;
+    float specularBlue = specularData.b * 255.0;
+    if (specularBlue <= 64.0) {
+        labSSS = specularBlue / 64.0;
+    }
+    
+    // Default SSS for foliage materials without LabPBR data
+    float isFoliage = float(material > 0.00 && material < 0.04);
+    if (isFoliage > 0.5 && labSSS < 0.01) {
+        labSSS = 0.75;
+    }
 
     vec4 normalRaw = texture2D(normals, parallaxedUV);
     
@@ -115,5 +128,5 @@ void main() {
 	#ifdef Reflections
 	gl_FragData[3] = vec4(skybox, 1.0);
 	#endif
-	gl_FragData[4] = vec4(emission, surfaceHeight, textureAO, 1.0);
+	gl_FragData[4] = vec4(emission, surfaceHeight, textureAO, labSSS);
 }

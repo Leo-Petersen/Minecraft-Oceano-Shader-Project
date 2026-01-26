@@ -216,17 +216,54 @@ float ambientOcclusion(sampler2D depthTexture) {
 }
 
 ////SSS////
-vec3 SSS(float material, float Diffuse, vec3 color, vec3 sunlightCol, 
-                                  float sunAngleCosine, vec3 ShadowAccum, float lightStrength, 
-                                  float lightMapT, float rainStrength, float strength) {
-        
-    float backlight = max(0.0, -Diffuse * 0.6 + 0.4);
-          backlight = pow(backlight, 4.0);
+vec3 calculateSSS(
+    vec3 shadowCoord,
+    vec3 albedo,
+    vec3 lightColor,
+    float sssAmount,
+    float VdotL,
+    float NdotL,
+    float skyLight,
+    float distFactor,
+    float IGN,
+    float uniformity
+) {
+    if (sssAmount < 0.01) return vec3(0.0);
     
-    vec3 sssColor = sqrt(color) * sunlightCol; 
-    float sssStrength = 30.0 * backlight * pow(sunAngleCosine, 0.3) * strength;
+    // Backlit detection - facing away from sun
+    float backlit = max(0.0, -NdotL);
+    backlit = mix(backlit, 0.5, uniformity);
     
-    vec3 SSS = sssColor * sssStrength * ShadowAccum * lightStrength * clamp(lightMapT, 0.3, 1.0);
+    // Sample shadow for occlusion
+    const float sssRadius = 0.002;
+    float screenNoise = fract(IGN + (texcoord.x + texcoord.y) * 64.0);
+    vec2 offset = vec2(cos(screenNoise * 6.28318), sin(screenNoise * 6.28318)) * sssRadius;
     
-    return SSS;
+    float sssShadow = shadow2D(shadowtex1, vec3(shadowCoord.xy, shadowCoord.z - 0.00007)).r;
+    sssShadow += shadow2D(shadowtex1, vec3(shadowCoord.xy + offset, shadowCoord.z)).r;
+    sssShadow *= 0.5;
+
+    vec3 sssColor = texture2D(shadowcolor0, shadowCoord.xy).rgb;
+    sssColor = mix(vec3(1.0), sssColor, 0.5);
+
+    // SSS needs light to transmit through, backfacing AND in light path
+    float transmission = sssShadow * backlit;
+    
+    // Kill SSS on front lit surfaces
+    float frontlit = max(0.0, NdotL);
+    transmission *= 1.0 - frontlit * 0.9;
+    
+    if (transmission < 0.01) return vec3(0.0);
+    
+    // Forward scattering phase
+    float phase = pow(max(0.0, -VdotL) * 0.5 + 0.5, 2.0);
+    
+    vec3 sssContribution = lightColor * sqrt(albedo) * sssColor;
+    
+    sssContribution *= phase * sssAmount * transmission * skyLight;
+    sssContribution *= (1.0 - rainStrength * 0.8);
+    sssContribution *= mix(1.0, 0.5, distFactor);
+    //sssContribution *= 2.0;
+    
+    return sssContribution;
 }
