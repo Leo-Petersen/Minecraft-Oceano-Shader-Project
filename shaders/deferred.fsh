@@ -315,7 +315,7 @@ void main() {
 
 	vec3 bounceLight = backLight(flux);
 		 bounceLight = mix(shadowCol, bounceLight, dot(vec3(0.0721, 0.7154, 0.2125), flux) + 0.5);
-		 bounceLight = mix(bounceLight, bounceLight*0.1+ambientShadowColor*18, distFactor);
+		 bounceLight = mix(bounceLight, bounceLight*0.1+ambientShadowColor*48, distFactor);
          bounceLight *= 0.55;
 		 
 		 float undergroundBlend = smoothstep(0.0, 0.3, rawSkyLight);

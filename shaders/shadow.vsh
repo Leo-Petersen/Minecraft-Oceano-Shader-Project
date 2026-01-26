@@ -32,6 +32,7 @@ vec4 calcShadowDistortion(in vec4 pos) {
 }
 
 uint getVoxelId(int entityId) {
+    if (entityId == 12070) return 7u;   // Redstone torch (lit)
     // Torch (ID 50)
     if (entityId == 50) return 2u;
     // Lantern (ID 10050)
@@ -90,6 +91,36 @@ uint getVoxelId(int entityId) {
     return 0u; // Not an emissive block
 }
 
+// Check if this block is transparent/non-solid (light can pass through)
+bool isTransparent(int entityId) {
+    // Water
+    if (entityId == 13000) return true;
+    // Foliage (grass, plants, etc.)
+    if (entityId >= 11000 && entityId <= 11080) return true;
+    // Glass and ice (handled separately as tinted)
+    if (entityId == 13010) return true;
+    // Air/unassigned
+    if (entityId == 0) return true;
+    // Fire
+    if (entityId == 51) return true;
+    // Torches (small, shouldn't block)
+    if (entityId == 50 || entityId == 76 || entityId == 10052) return true;
+    // Redstone wire
+    if (entityId == 55) return true;
+    // End rod
+    if (entityId == 198) return true;
+    // Candles
+    if (entityId == 10232) return true;
+    // Glow lichen
+    if (entityId == 10234) return true;
+    // Nether portal
+    if (entityId == 10240) return true;
+    // Beacon (beam should pass through)
+    if (entityId == 138) return true;
+    
+    return false;
+}
+
 void main() {
 
     vec4 position = shadowModelViewInverse * shadowProjectionInverse * ftransform();
@@ -116,7 +147,12 @@ void main() {
     uint voxelId = getVoxelId(entityId);
     
     if (voxelId > 0u) {
+        // Emissive block - write its light ID
         updateVoxelMap(voxelId);
+    } else if (!isTransparent(entityId)) {
+        // Solid non-emissive block - write ID 1 to block light
+        updateVoxelMap(1u);
     }
+    // Transparent blocks (air, glass, foliage) don't write anything (stay as 0)
     #endif
 }

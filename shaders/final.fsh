@@ -86,8 +86,8 @@ void main() {
 	
 	#elif ToneMap == 4 //AgX//
 		//color *= 2;  // Exposure adjustment
-		color = agxCdl(color, vec3(1.0), vec3(0.0), vec3(1.6), 1.2);
-		color = vec3(1.0) - exp(-color * 4.0);
+		color = agxCdl(color, vec3(1.0), vec3(0.0), vec3(2), 1.2);
+		color = vec3(1.0) - exp(-color * 7.0);
 		//color = luminance(color, saturation);
 	#endif
 

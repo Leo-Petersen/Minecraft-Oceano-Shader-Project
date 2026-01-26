@@ -92,10 +92,11 @@ void main() {
 	float material = texture2D(colortex2, texcoord).p;
 	float iswater = float(material > 0.08 && material < 0.10);
 	float isglass = float(material > 0.10 && material < 0.12);
+	float isslime = float(material > 0.12 && material < 0.14);
 
 	////WaterShadow////
 	float ShadowVisibility = 1.0;
-	if (iswater == 1.0 || isglass == 1.0){
+	if (iswater == 1.0 || isglass == 1.0 || isslime == 1.0){
 		  ShadowVisibility = GetShadow().r*transitionFade;
 	}
 
@@ -264,10 +265,8 @@ void main() {
 		 //torchTotal = vec3(1.0) - exp(-torchTotal * 1.0);
 
 	////GlassLighting////
-	if (isglass == 1.0) {
+	if (isglass == 1.0 || isslime == 1.0) {
 		color.rgb *= clamp(1 + ShadowVisibility, 1.0, 1.2);
-		color.rgb *= lightMap.t;
-		color.rgb += torchTotal;
 	}
 
 	////Fog////
@@ -277,7 +276,7 @@ void main() {
 
     #ifdef atmosphereFog
     if (Depth < 1.0 && isEyeInWater < 0.9) {
-        float normalFogDist = pow(length(worldPos.xz) / 140.0, 2.2);
+        float normalFogDist = pow(length(worldPos.xz) / 100.0, 2.2);
         float normalFogDepth = clamp(1.0 - exp(-0.1 * normalFogDist), 0.0, 0.35);
         
         vec3 normalFog = mix(color.rgb, atmoColor, normalFogDepth * pow(sunAngleCosine, 0.2));

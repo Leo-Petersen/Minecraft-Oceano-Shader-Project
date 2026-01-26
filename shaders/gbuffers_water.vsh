@@ -95,7 +95,9 @@ void main() {
 	//material = 0.0;
 	if (mc_Entity.x == 13000) material = 0.09;
     if (mc_Entity.x == 13010) material = 0.11;
-		
+	if (mc_Entity.x == 13030) material = 0.13;
+	if (mc_Entity.x == 13031) material = 0.13;
+
 	//if (material != 0.09 && material != 0.11) material = 0.0;
 
 }
