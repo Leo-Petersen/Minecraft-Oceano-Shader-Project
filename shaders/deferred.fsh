@@ -373,20 +373,12 @@ void main() {
             finalAmbient += undergroundBaseAmbient;
 
             // SSS
-            if (sssAmount > 0.01) {
-                float sssScale = 1.0;
-                float uniformity = 0.0;
-                
-                // Foliage (leaves)
-                if (material > 0.00 && material < 0.02) {
-                    sssScale = 1.5;
-                    uniformity = 0.5;
-                }
-                // Grass and plants
-                else if (material > 0.02 && material < 0.04) {
-                    sssScale = 1.0;
-                    uniformity = 1.5; // Fixes no SSS at angles
-                }
+            bool isFoliage = (material > 0.005 && material < 0.02);
+            bool isGrass = (material > 0.025 && material < 0.04);
+
+            if ((isFoliage || isGrass) && sssAmount > 0.01) {
+                float sssScale = isFoliage ? 1.5 : 1.0;
+                float uniformity = isFoliage ? 0.5 : 1.5;
                 
                 vec3 sssContribution = calculateSSS(
                     SampleCoords,
