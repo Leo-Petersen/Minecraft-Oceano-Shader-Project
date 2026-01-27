@@ -394,7 +394,7 @@ void main() {
                 );
                 
                 sssContribution *= lightStrength * undergroundFix;
-                finalShadow += sssContribution;
+                finalShadow += sssContribution * (1 - time[5]*0.42);
             }
             
             // Apply sun/shadow/ambient lighting
