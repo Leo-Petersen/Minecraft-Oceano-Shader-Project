@@ -16,9 +16,9 @@ mat2 time2 = mat2(vec2(
 );	//time2[0].x.xy = sunrise and noon. time[1].xy = sunset and mindight.
 
 ////Sun Colour////
-vec3 sunCol = (vec3(255, 100, 32)/255 * (time2[0].x) + 
+vec3 sunCol = (vec3(255, 140, 50)/255 * (time2[0].x) + 
 			   vec3(255, 251, 225)/255 * (time2[0].y) 	+ 
-			   vec3(255, 100, 32)/255 * (time2[1].x)  + 
+			   vec3(255, 140, 50)/255 * (time2[1].x)  + 
 			   vec3(3, 3, 4)/255 * (time2[1].y))*2;
 
 ////Light Colour////
@@ -30,11 +30,11 @@ vec3 sunCol = (vec3(255, 100, 32)/255 * (time2[0].x) +
 // 					((time2[1].y)*(vec3(0.1+skyColor) * (rainStrength * 0.9)));
 
 vec3 sunlightCol = (
-				vec3(255, 155, 85)/255  * 0.5 * time[0] +   
-				vec3(255, 240, 235)/255 * 0.55  * time[1] +   
-				vec3(255, 240, 235)/255 * 0.55  * time[2] +   
-				vec3(255, 240, 235)/255 * 0.55  * time[3] +   
-				vec3(255, 155, 85)/255  * 0.5  * time[4] +   
+				vec3(255, 175, 100)/255  * 0.5 * time[0] +   
+				vec3(255, 250, 248)/255 * 0.55  * time[1] +   
+				vec3(255, 250, 248)/255 * 0.55  * time[2] +   
+				vec3(255, 250, 248)/255 * 0.55  * time[3] +   
+				vec3(255, 175, 100)/255  * 0.5 * time[4] +   
 				vec3(55, 65, 85)/255    * 1  * time[5]    
 				) + ((1.0 - time[5]) * (vec3(skyColor) * (rainStrength * 0.2))) 
 				+ ((time[5]) * (vec3(0.1 + skyColor) * (rainStrength * 2.5)));

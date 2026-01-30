@@ -1,3 +1,44 @@
+
+// Scotopic luminance (night vision) - shifted toward blue
+float getLuminanceScotopic(vec3 color) {
+    return dot(color, vec3(0.062, 0.608, 0.330));
+}
+
+// Apply Purkinje shift
+vec3 applyPurkinjeShift(vec3 color, float adaptationLuminance) {
+    
+    // ~0.01 cd/m² to ~3 cd/m² is the mesopic (transitional) range
+    float scotopicThreshold = 0.008;  // Below this = full scotopic
+    float photopicThreshold = 0.15;   // Above this = full photopic
+    
+    float scotopicBlend = 1.0 - smoothstep(scotopicThreshold, photopicThreshold, adaptationLuminance);
+    
+    if (scotopicBlend < 0.001) {
+        return color; // Bright enough, no shift needed
+    }
+    
+    // Get luminance value
+    float lumScotopic = getLuminanceScotopic(color);
+    
+    // Desaturation toward scotopic luminance
+    vec3 desaturated = vec3(lumScotopic);
+    
+    // Slight blue tint to represent the shifted sensitivity
+    vec3 scotopicTint = vec3(0.7, 0.85, 1.0);
+    vec3 scotopicColor = desaturated * scotopicTint;
+        // Apply wavelength-dependent dimming
+    vec3 wavelengthDim = vec3(0.5, 0.85, 1.1); // R loses most, B gains slightly
+    vec3 dimmedColor = color * mix(vec3(1.0), wavelengthDim, scotopicBlend * 0.7);
+    
+    float desatAmount = scotopicBlend * scotopicBlend; // Squared for more gradual color loss
+    vec3 result = mix(dimmedColor, scotopicColor, desatAmount * 0.55);
+    
+    float brightnessBoost = 1.0 + scotopicBlend * 0.3;
+    result *= brightnessBoost;
+    
+    return result;
+}
+
 vec3 ACES(vec3 color) {
   const float a = 2.51;
   const float b = 0.03;

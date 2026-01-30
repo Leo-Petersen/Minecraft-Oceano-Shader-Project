@@ -117,6 +117,7 @@
         #define Focal 0.08 //[0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.50 2.00 2.50 3.00 3.50 4.00 4.50 5.00 6.00 7.00 8.00 9.00 10.00 20.00 30.00 40.00 50.00 60.00 70.00 80.00 90.00 100.00]
     #define BLOOM
     //#define screenSunGlare
+    #define PURKINJE_SHIFT
 
 //Waving Foliage//
 #define wavingFoliage
