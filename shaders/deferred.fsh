@@ -349,7 +349,7 @@ void main() {
 	////Apply Lighting and ShadowMap////
 	#ifdef shadowMap 
         vec3 ambientCol = bounceLight * (1 - rainStrength * rainShadowStr);
-		float lightStrength = lightStr * 6 * (1-darknessFactor*0.9) * fakeCloudShadow * transitionFade * pow(ao, 0.21);
+		float lightStrength = lightStr * 5.6 * (1-darknessFactor*0.9) * fakeCloudShadow * transitionFade * pow(ao, 0.21);
 
         if(Depth < 1.0f){
             vec3 finalShadow = sunlightCol * Diffuse * ShadowAccum * lightMap.t * lightStrength * (1 - rainStrength * 0.65);
