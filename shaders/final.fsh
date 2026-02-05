@@ -33,16 +33,14 @@ varying vec2 lmcoord;
 
 float Depth = texture2D(depthtex0, texcoord).r;
 
-#ifdef Saturation
-vec3 luminance(vec3 color, float strength) {
-	float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
-	//color = color + (color-luma)*strength*0.1;
-  	color = mix(color, vec3(luma), vec3(1.0 - strength));
-	return color;
+#ifdef enable_saturation
+vec3 luminance(vec3 color, float str) {
+    const vec3 lw = vec3(0.2126, 0.7152, 0.0722);
+    float luma = dot(color, lw);
+    return luma + str * (color - luma);
 }
 #else
-
-vec3 luminance(vec3 color, float strength) {
+vec3 luminance(vec3 color, float str) {
 	return color;
 }
 #endif
@@ -86,8 +84,8 @@ void main() {
 	
 	#elif ToneMap == 4 //AgX//
 		//color *= 2;  // Exposure adjustment
-		color = agxCdl(color, vec3(1.0), vec3(0.0), vec3(2), 1.14);
-		color = vec3(1.0) - exp(-color * 6.0);
+		color = agxCdl(color, vec3(1.0), vec3(0.0), vec3(1.75), 1.2);
+		color = vec3(1.0) - exp(-color * 4.0);
 		//color = luminance(color, saturation);
 	#endif
 
