@@ -47,12 +47,12 @@ vec3 sunlightCol = (
 
 vec3 ambientShadowColor = vec3(20, 30, 55)/255;;
 
-vec3 shadowDistColor = (vec3(20, 30, 80)/255 * 0.4 * (time[0]) +   
+vec3 shadowDistColor = (vec3(20, 30, 80)/255 * 0.2 * (time[0]) +   
                   vec3(20, 30, 55)/255  * 0.8  * (time[1]) +   
                   vec3(20, 30, 55)/255 * 0.8  * (time[2]) +   
                   vec3(20, 30, 55)/255  * 0.8 * (time[3]) +   
-                  vec3(20, 30, 80)/255 * 0.4  * (time[4]) +   
-                  vec3(20, 30, 80)/255    * 0.3 * (time[5])     
+                  vec3(20, 30, 80)/255 * 0.2  * (time[4]) +   
+                  vec3(20, 30, 80)/255    * 0.2 * (time[5])     
                  ) * clamp(transitionFade, 0.55, 1.0);
 
 // vec3 shadowCol = (vec3(60, 50, 180)/255 * (time2[0].x) +  

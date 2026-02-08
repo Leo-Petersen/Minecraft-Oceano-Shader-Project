@@ -175,7 +175,7 @@ void main() {
     #endif
 
     float heldLightValue = max(float(heldBlockLightValue), float(heldBlockLightValue2));
-    float handlight = clamp((heldLightValue - 1.5 * length(viewPos.xyz)) / 18.0, 0.0, 0.9333);
+    float handlight = clamp(((heldLightValue*1.2) - 1.0 * length(viewPos.xyz)) / 18.0, 0.0, 0.9333);
 
     lightMap.s *= (1.0 - darknessLightFactor * 0.5);
     float torchTimeBlend = mix(1.0, torchFactor, rawSkyLight);
