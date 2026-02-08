@@ -42,6 +42,8 @@ uniform float wetness;
 uniform float frameCounter;
 
 uniform int isEyeInWater;
+uniform int heldBlockLightValue;
+uniform int heldBlockLightValue2;
 
 uniform vec3 cameraPosition;
 uniform vec3 skyColor;
@@ -73,6 +75,7 @@ float undergroundFix = clamp(mix(max(lmcoord.t-2.0/16.0,0.0)*1.14285714286,1.0,c
 #include "/lib/puddles.glsl"
 #include "/lib/brdf.glsl"
 #include "/lib/cloudFog.glsl"
+#include "/lib/caveFog.glsl"
 
 float getDepth(float depth) {
     return 2.0 * near * far / (far + near - (2.0 * depth - 1.0) * (far - near));
@@ -325,6 +328,14 @@ void main() {
 		
 		// Blend between normal and rain fog
 		color.rgb = mix(normalFog, rainFog, rainStrength);
+	}
+	#endif
+
+	//// Cave Fog ////
+	#ifdef caveFog
+	if (Depth < 1.0 && isEyeInWater < 0.9) {
+		float heldLight = max(float(heldBlockLightValue), float(heldBlockLightValue2));
+		color.rgb = applyCaveFog(color.rgb, worldPos, colortex2Data.t, heldLight, 0.025*(1 - undergroundFix));
 	}
 	#endif
 
