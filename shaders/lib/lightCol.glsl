@@ -24,9 +24,9 @@ vec3 sunCol = (vec3(255, 140, 50)/255 * (time2[0].x) +
 ////Sunlight Colour////
 vec3 sunlightCol = (
 				vec3(255, 175, 100)/255  * 0.45 * time[0] +   
-				vec3(255, 250, 248)/255 * 0.6  * time[1] +   
-				vec3(255, 250, 248)/255 * 0.6  * time[2] +   
-				vec3(255, 250, 248)/255 * 0.6  * time[3] +   
+				vec3(255, 250, 248)/255 * 0.55  * time[1] +   
+				vec3(255, 250, 248)/255 * 0.55  * time[2] +   
+				vec3(255, 250, 248)/255 * 0.55  * time[3] +   
 				vec3(255, 175, 100)/255  * 0.45 * time[4] +   
 				vec3(55, 65, 85)/255    * 1  * time[5]    
 				) + ((1.0 - time[5]) * (vec3(skyColor) * (rainStrength * 0.2))) 
@@ -45,12 +45,12 @@ vec3 shadowDistColor = (vec3(20, 30, 80)/255 * 0.2 * (time[0]) +
                  ) * clamp(transitionFade, 0.55, 1.0);
 
 ////Shadow Colour////
-vec3 shadowCol = pow((vec3(70,80,200)/255 *(time[0]) + 
+vec3 shadowCol = pow((vec3(33,50,200)/255 *(time[0]) + 
 			      vec3(85, 120, 200)/255 * (time[1]) + 
 			      vec3(85, 120, 200)/255 * (time[2]) + 
 			      vec3(85, 120, 200)/255 * (time[3]) + 
-			      vec3(70,80,200)/255 * (time[4]) +
-			      vec3(33,50,127)/255 * 1.4 * (time[5])), vec3(2.2)) *     
+			      vec3(33,50,200)/255 * (time[4]) +
+			      vec3(33,50,127)/255 * 1.5 * (time[5])), vec3(2.2)) *     
 				(1.0 + rainStrength * 0.5);
 
 ////Fog Color////
