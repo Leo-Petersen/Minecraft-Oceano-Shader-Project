@@ -62,6 +62,8 @@ vec4 raytrace(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnelView) {
     return color;
 }
 
+
+// VERY WIP AND NOT GOOD //
 #ifdef PBRReflection
 
 float hash12(vec2 p) {
@@ -118,7 +120,6 @@ vec3 marchRay(vec3 viewPos, vec3 reflectDir, out float confidence) {
     return vec3(-1.0);
 }
 
-// Main PBR raytrace function //
 vec4 raytracePBR(vec3 fallbackColor, vec3 viewPos, vec3 normal, float roughness, vec2 screenUV) {
     vec3 viewDir = normalize(viewPos);
     vec3 reflectDir = reflect(viewDir, normal);
@@ -193,6 +194,8 @@ vec4 raytracePBR(vec3 fallbackColor, vec3 viewPos, vec3 normal) {
 
 #endif
 
+
+//// Puddle Reflections ////
 vec4 raytracePuddles(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnelView) {
     vec4 color = vec4(skyColor, 1.0);
     

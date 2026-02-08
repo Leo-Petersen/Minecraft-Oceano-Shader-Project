@@ -1,5 +1,4 @@
-// BLOCK LIGHT COLORS //
-
+//// BLOCK LIGHT COLORS ////
 vec3 getBlocklightColor(int id) {
     vec3 color = vec3(0.0);
     
@@ -44,24 +43,3 @@ vec3 getBlocklightColor(int id) {
     
     return color;
 }
-
-// Tint array for colored glass filtering light (IDs 200-216)
-const vec3[] blocklightTintArray = vec3[](
-    vec3(1.0, 0.1, 0.1),   // 200: Red
-    vec3(1.0, 0.5, 0.1),   // 201: Orange
-    vec3(1.0, 1.0, 0.1),   // 202: Yellow
-    vec3(0.7, 0.7, 0.0),   // 203: Brown
-    vec3(0.1, 1.0, 0.1),   // 204: Green
-    vec3(0.1, 1.0, 0.5),   // 205: Lime
-    vec3(0.1, 0.1, 1.0),   // 206: Blue
-    vec3(0.5, 0.5, 1.0),   // 207: Light blue
-    vec3(0.1, 1.0, 1.0),   // 208: Cyan
-    vec3(0.7, 0.1, 1.0),   // 209: Purple
-    vec3(1.0, 0.1, 1.0),   // 210: Magenta
-    vec3(1.0, 0.5, 1.0),   // 211: Pink
-    vec3(0.1, 0.1, 0.1),   // 212: Black
-    vec3(0.9, 0.9, 0.9),   // 213: White
-    vec3(0.3, 0.3, 0.3),   // 214: Gray
-    vec3(0.7, 0.7, 0.7),   // 215: Light gray
-    vec3(1.0, 1.0, 1.0)    // 216: Clear/Buffer
-);

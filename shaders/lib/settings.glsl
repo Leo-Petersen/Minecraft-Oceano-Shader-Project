@@ -3,7 +3,7 @@
     const int shadowMapResolution = 2048; //[512 768 1024 1256 1536 2048 3072 4096 6144 8192] Resolution of shadows
     const int noiseTextureResolution = 2048; //64
     const float sunPathRotation = -30.0f; //[-50.0f -40.0f -30.0f -20.0f -10.0f 0.0f 10.0f 20.0f 30.0f 40.0f 50.0f]
-    #define shadowMap //Must also disable bounce light
+    #define shadowMap
     //#define disableRainShadows
     const float shadowDistance = 384;  //[128 160 192 224 256 320 384 448 512]
     const float shadowDistortion = 0.85; //[0.70 0.75 0.80 0.85 0.90 0.95] Distortion of shadow map
@@ -25,8 +25,7 @@
     #define AO
         #define aoQuality 1   //[1 2 3 4 5 6 7 8] 
         #define aoRadius 2.0 //[0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0 3.1 3.2 3.3 3.4 3.5 3.6 3.7 3.8 3.9 4.0]
-    //#define PCSS
-    #define EMISSIVE_BLOOM_STRENGTH 4.0 // [1.0 2.0 3.0 4.0 5.0 6.0 8.0 10.0]
+    //#define PCSS // WIP
 
 //Water//
     #define Reflections
@@ -67,7 +66,7 @@
     #define CookTorranceGGXBRDF
         #define pshininess 1.00 //[0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.25 1.50 1.75 2.00 2.25 2.40 2.75 3.00 3.25 3.50 3.75 4.00 4.25 4.50 4.75 5.00 5.50 6.00 6.50 7.00 7.50 8.00 8.50 9.00 9.50 10.00]
         #define pstrength 1.00 //[0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.25 1.50 1.75 2.00 2.25 2.40 2.75 3.00 3.25 3.50 3.75 4.00 4.25 4.50 4.75 5.00 5.50 6.00 6.50 7.00 7.50 8.00 8.50 9.00 9.50 10.00]
-    //#define PBRReflection
+    //#define PBRReflection // VERY VERY WIP
         #define PBR_REFLECTION_BLUR
         #define PBR_REFLECTION_HQ
         #define PBRReflectionStr 1.0 //[0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0 3.1 3.2 3.3 3.4 3.5 3.6 3.7 3.8 3.9 4.0]

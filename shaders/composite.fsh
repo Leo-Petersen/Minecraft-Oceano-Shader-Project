@@ -142,21 +142,16 @@ void main() {
     vec3 atmoGlare = pow(sunDist*2.2, 0.1) * sunCol;
 		 atmoGlare = 1.0 - exp( -atmoGlare );
 		 atmoGlare *= (1-rainStrength);
-		 //atmoGlare *= 5.0*(1.0-time[5]*0.8);
 
 	//Reflected sun//
-    //vec3 reflectSun = pow(sunDistReflected*0.12, 5.2) * sunCol;
-		 //reflectSun = 1.0 - exp( -reflectSun );
-		 //reflectSun *= 4.0*ShadowVisibility*(1-(time[5]*0.9))*(1-rainStrength*0.94)*transitionFade;
 		vec3 lightDir = normalize(shadowLightPosition);
 		vec3 viewDir = normalize(-viewPos.xyz);
 		vec3 halfVec = normalize(lightDir + viewDir);
 		
 		float NdotH = max(dot(waterNormal, halfVec), 0.0);
 		
-		// Very sharp specular for sparkle effect
 		float sparkle = pow(NdotH, 256.0) * 3.0;
-		sparkle *= lightMap.t; // Only in sunlight
+		//sparkle *= lightMap.t; // Covered by water shadow, not needed
 		sparkle *= (1.0 - rainStrength*0.94) * 2 * transitionFade * ShadowVisibility; // Reduce in rain
 		vec3 reflectSun = sunCol * sparkle;
 
@@ -222,8 +217,6 @@ void main() {
 		  sunAngleCosine = pow(sunAngleCosine, 2.0)*(3.0 - 2.0 * sunAngleCosine);
 		  sunAngleCosine = 1.0 / sunAngleCosine - 1.0;
 		  sunAngleCosine = 1.0 - exp( -sunAngleCosine);
-		  //sunAngleCosine = sunAngleCosine+(1*altitudeAtmoStr);
-		  //sunAngleCosine /= sunAngleCosine * 0.02 + 1.0;
 
 
 	///Caustics///
@@ -244,12 +237,6 @@ void main() {
 	///Lightmap///
 	float heldLightValue = max(float(heldBlockLightValue), float(heldBlockLightValue2));
 	float handlight = clamp((heldLightValue - 1.5 * length(viewPos.xyz)) / 15.0, 0.0, 0.9333);
-	// float torchtimeFactor = 1.0 * (time[0]) +  
-	// 				   	    0.8*(1+rainStrength*0.15) * (time[1]) +
-	// 				   		0.8*(1+rainStrength*0.15) * (time[2]) + 
-	// 				   		0.8*(1+rainStrength*0.15) * (time[3]) + 
-	// 				   		1.0 * (time[4]) + 
-	// 				   		1.0 * (time[5]);
 
 	lightMap.t = clamp(lightMap.t, ((1-nightVision)*min_skyLightMap)+(0.5*nightVision), 1.0);
 	lightMap.t = pow(lightMap.t*(1-darknessLightFactor), 0.65);
@@ -262,7 +249,6 @@ void main() {
 	vec3 torchColor = vec3(255, 140, 80)/255 * adjustedTorchMap;
 	float torchmap = clamp(adjustedTorchMap - 1.0 / 32.0, 0.0, 1.0);
 	vec3 torchTotal = mix(vec3(0.0), pow(torchColor, vec3(1.5)), color.rgb)*0.3;
-		 //torchTotal = vec3(1.0) - exp(-torchTotal * 1.0);
 
 	////GlassLighting////
 	if (isglass == 1.0 || isslime == 1.0) {
@@ -273,14 +259,6 @@ void main() {
 	if (iswater == 1.0){
 		color.rgb = getWaterDepthFog(color.rgb, viewPos.xyz, fragpos2, iswater, lightMap.t);
 	}
-	
-	// if(rainStrength > 0 && iswater == 1) {
-	// 	  atmoDepth = pow(length(worldPos.xz) / (140 - (40*rainStrength)), 2.2);
-	// 	  atmoDepth = 1.0 - exp(-0.4 * atmoDepth);
-	// 	  color.rgb = mix(color.rgb, (atmoColor*(1-rainStrength))+(vec3(0.48, 0.48, 0.56)*3.5*rainStrength*(1-time[5])), atmoDepth*0.5);
-	// }
-
-	//fogColor = pow(fogColor, vec3(0.7))*1.5;
 
 	#ifdef Fog
 	if (Depth < 1.0){

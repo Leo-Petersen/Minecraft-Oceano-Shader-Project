@@ -1,4 +1,4 @@
-// VOXELIZATION UTILITIES //
+//// VOXELIZATION UTILITIES ////
 
 #include "/lib/voxel_settings.glsl"
 

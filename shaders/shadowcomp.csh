@@ -38,7 +38,7 @@ bool isValidPos(ivec3 pos) {
 // ID 0 = air (propagates)
 // ID 1 = solid block (blocks light)
 // ID 2-199 = emissive (emits, doesn't propagate through)
-// ID 200-216 = colored glass (propagates with tint)
+// ID 200-216 = colored glass 
 bool canLightPropagate(uint voxelId) {
     return (voxelId == 0u) || (voxelId >= 200u && voxelId <= 216u);
 }
@@ -86,13 +86,6 @@ void main() {
             light = getFloodfill(floodfillSampler, previousPos, validPreviousPos);
         } else {
             light = getFloodfill(floodfillSamplerCopy, previousPos, validPreviousPos);
-        }
-        
-        // Apply colored glass tinting
-        if (voxel >= 200u && voxel <= 216u) {
-            uint tintIndex = min(voxel - 200u, 16u);
-            vec3 tint = blocklightTintArray[tintIndex];
-            light *= pow(tint, vec3(FLOODFILL_RADIUS));
         }
     }
     // else: solid block (ID 1) or emissive - light stays at 0 (no propagation)

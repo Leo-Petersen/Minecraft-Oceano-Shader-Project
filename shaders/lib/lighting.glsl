@@ -83,6 +83,8 @@ float getViewDistance() {
     return length(View);
 }
 
+
+/// Unused, this is a bad implimentation, but left in for potential future use or reference
 #ifdef PCSS_ENABLED
 float PCSSBlockerSearch(vec3 shadowCoord, mat2 Rotation, vec3 Rotationvec3) {
     float blockerSum = 0.0;
@@ -142,7 +144,7 @@ vec3 PCSSFiltering(vec3 shadowCoord, float penumbraSize, float transparencyFacto
 #endif
 
 
-
+////Fake Cloud Shadow////
 float cloudNoise(float noise, vec3 worldPos) {
     return texture2D(noisetex, 0.000017 * (vec2(noise) + frameTimeCounter * 3.0 + (worldPos.xz + cameraPosition.xz))).r;
 }
@@ -229,7 +231,7 @@ vec3 calculateSSS(
 ) {
     if (sssAmount < 0.01) return vec3(0.0);
     
-    // Backlit detection - facing away from sun
+    // Backlit detection
     float backlit = max(0.0, -NdotL);
     backlit = mix(backlit, 0.5, uniformity);
     

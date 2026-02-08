@@ -1,5 +1,5 @@
 
-// Scotopic luminance (night vision) - shifted toward blue
+// Scotopic luminance (night vision), shifted toward blue
 float getLuminanceScotopic(vec3 color) {
     return dot(color, vec3(0.062, 0.608, 0.330));
 }
@@ -7,9 +7,8 @@ float getLuminanceScotopic(vec3 color) {
 // Apply Purkinje shift
 vec3 applyPurkinjeShift(vec3 color, float adaptationLuminance) {
     
-    // ~0.01 cd/m² to ~3 cd/m² is the mesopic (transitional) range
-    float scotopicThreshold = 0.008;  // Below this = full scotopic
-    float photopicThreshold = 0.15;   // Above this = full photopic
+    float scotopicThreshold = 0.008;  
+    float photopicThreshold = 0.15;  
     
     float scotopicBlend = 1.0 - smoothstep(scotopicThreshold, photopicThreshold, adaptationLuminance);
     
@@ -82,9 +81,7 @@ vec3 BOTWTonemap(vec3 color){
 	return mix(vec3(maxc), color * 1.0, weight);
 }
 
-////////////////////////////////////////
-//// AgX Tonemapping Implementation ////
-////////////////////////////////////////
+//// AgX Tonemapping Implementation (see git link for reference) ////
 // https://github.com/dmnsgn/glsl-tone-map/blob/main/agx.glsl
 // Missing Deadlines (Benjamin Wrensch): https://iolite-engine.com/blog_posts/minimal_agx_implementation
 // Filament: https://github.com/google/filament/blob/main/filament/src/ToneMapper.cpp#L263
@@ -174,7 +171,7 @@ vec3 agxCdl(vec3 color, vec3 slope, vec3 offset, vec3 power, float Saturation) {
   return color;
 }
 
-// Valid from 1000 to 40000 K (and additionally 0 for pure full white)
+// Valid from 1000 to 40000 K (and additionally 0 for pure full white) - unused, but cool
 // https://www.shadertoy.com/view/4sc3D7
 vec3 colorTemperatureToRGB(const in float temperature){
   // Values from: http://blenderartists.org/forum/showthread.php?270332-OSL-Goodness&p=2268693&viewfull=1#post2268693   

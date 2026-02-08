@@ -62,7 +62,6 @@ varying vec3 Normal;
 
 #include "/lib/time.glsl"
 #include "/lib/lightCol.glsl"
-#include "/lib/poissonDisk.glsl"
 #include "/lib/lighting.glsl"
 #include "/lib/brdf.glsl"
 #include "/lib/raytrace.glsl"
@@ -364,7 +363,6 @@ void main() {
             vec3 finalAmbient = (baseAmbient + bounceAmbient) * 0.25 * pow(ao, 0.2) * textureAO;
 
             // Distance shadow transition (fade out of fake bouncelighting)
-            // grass ignores Diffuse to avoid false shadowing
             float distShadowDiffuse = mix(Diffuse, 1.0, isGrass);
             float shadowMask = 1.0 - smoothstep(0.0, 0.5, shadowLum * distShadowDiffuse);
             finalAmbient = mix(finalAmbient, shadowDistColor * 2.5, shadowMask * distFactor * undergroundBlend);

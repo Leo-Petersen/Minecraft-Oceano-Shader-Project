@@ -11,7 +11,7 @@ vec4 ShadowSpaceWater(vec3 worldPos) {
 // Absorption coefficients (per meter)
 const vec3 waterAbsorptionCoeff = vec3(AbsorptionCoeffR, AbsorptionCoeffG, AbsorptionCoeffB); // R, G, B
 
-// Scattering coefficient (per meter) - Rayleigh + Mie for water
+// Scattering coefficient (per meter): Rayleigh + Mie for water
 const vec3 waterScatteringCoeff = vec3(0.0045, 0.0060, 0.0080);
 
 #define waterExtinctionCoeff (waterAbsorptionCoeff + waterScatteringCoeff)

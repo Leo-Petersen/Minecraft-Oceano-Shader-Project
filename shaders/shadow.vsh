@@ -97,7 +97,7 @@ bool isTransparent(int entityId) {
     if (entityId == 13000) return true;
     // Foliage (grass, plants, etc.)
     if (entityId >= 11000 && entityId <= 11080) return true;
-    // Glass and ice (handled separately as tinted)
+    // Glass and ice 
     if (entityId == 13010) return true;
     // Air/unassigned
     if (entityId == 0) return true;

@@ -216,7 +216,7 @@ void main() {
 		float fresnel = 0.04 + (1.0 - 0.04) * pow(1.0 - NdotV, 5.0);
 		fresnel *= (1.0 - roughness * 0.5); 
 		
-		// Simple sky reflection, no raytracing
+		// Simple sky reflection, NEED TO FIX - needs proper reflections
 		vec3 reflectionCol = reflectedskyBoxCol * lightMap.t;
 		
 		color.rgb = mix(color.rgb, reflectionCol, fresnel * 0.7);
@@ -225,17 +225,6 @@ void main() {
 		color.rgb += reflectedSun;
 	}
 
-	////Fog////
-	//Underground fog, needs to be rewritten to work more cosistently with other fog systems
-	/*
-	float fogDepth = pow(length(worldPos.xz) / 50, 1.0);
-		  fogDepth = 1.0 - exp(-1.2 * fogDepth);
-		  fogDepth *= (1.0-lightMap.t)*(0)*(1-isEyeInWater);
-
-	if (Depth < 1.0) {
-		color.rgb = mix(color.rgb, pow(vec3(0.45, 0.5, 0.5) * 0.42, vec3(1.7)), fogDepth);
-	}
-	*/
 
 	#ifdef PBRReflection
 	if (iswater < 0.5 && isglass < 0.5 && Depth < 1.0 && isEyeInWater < 0.5) {
@@ -298,12 +287,14 @@ void main() {
 		}
 	#endif
 
+
 	////cookTorranceGGXBRDF////
 	vec3 blinnBRDFReflection = vec3(0.0);
 		     blinnBRDFReflection = cookTorranceGGXBRDF(color.rgb, specularMap, lightMap.t, pow(sunCol, vec3(1/2.2))) * 
 			 //lightMap.t * (fakeCloudShadow) * ShadowAccum * (1+(time[5])) * transitionFade;
 			 lightMap.t * ShadowAccum * (1+(time[5])) * transitionFade;
 			 color.rgb += blinnBRDFReflection;
+
 
 	//// Atmosphere Fog ////
 	#ifdef atmosphereFog
@@ -331,6 +322,7 @@ void main() {
 	}
 	#endif
 
+
 	//// Cave Fog ////
 	#ifdef caveFog
 	if (Depth < 1.0 && isEyeInWater < 0.9) {
@@ -339,6 +331,7 @@ void main() {
 	}
 	#endif
 
+	//// Border Fog ////
 	#ifdef BorderFog
 	float effects = blindness + darknessFactor;
 	float borderFog = clamp(pow(length(worldPos.xz) / far, 14.0) * 0.7, 0.0, 1.0);
@@ -347,6 +340,7 @@ void main() {
 	}
 	#endif
 
+	//// Volumetric Cloud Fog ////
 	#ifdef volumetricCloudFog
 	if (isEyeInWater < 0.5){
 		vec4 cloudFog = getVolumetricCloudFog(cameraPosition, fogCol2);
