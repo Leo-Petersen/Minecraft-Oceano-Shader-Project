@@ -315,7 +315,7 @@ void main() {
 		// Normal atmospheric fog
 		float normalFogDist = pow(length(worldPos.xz) / 140.0, 2.2);
 		float normalFogDepth = clamp(1.0 - exp(-0.1 * normalFogDist), 0.0, 0.35);
-		vec3 normalFog = mix(color.rgb, atmoColor, normalFogDepth * pow(sunAngleCosine, 0.2));
+		vec3 normalFog = mix(color.rgb, atmoColor*2, normalFogDepth * pow(sunAngleCosine, 0.2));
 		
 		// Rain fog 
 		float rainFogDist = pow(length(worldPos.xz) / 100.0, 1.5);

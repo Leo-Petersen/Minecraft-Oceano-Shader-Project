@@ -313,7 +313,7 @@ void main() {
     float undergroundBlend = smoothstep(0.0, 0.3, rawSkyLight);
 
     #ifdef skyLightMap
-        bounceLight = mix(ambientShadowColor, bounceLight, lightMap.t);
+        bounceLight = mix(ambientShadowColor, bounceLight, undergroundBlend);
     #endif
 
     //// Rain Shadow Strength ////
@@ -339,7 +339,7 @@ void main() {
     //// Apply Lighting ////
     #ifdef shadowMap 
         vec3 ambientCol = bounceLight * (1.0 - rainStrength * rainShadowStr);
-        float lightStrength = lightStr * 5.6 * (1.0 - darknessFactor * 0.9) * fakeCloudShadow * transitionFade * pow(ao, 0.21);
+        float lightStrength = lightStr * 11.2 * (1.0 - darknessFactor * 0.9) * fakeCloudShadow * transitionFade * pow(ao, 0.21);
 
         if (Depth < 1.0) {
             // Material flags
@@ -367,7 +367,7 @@ void main() {
             // grass ignores Diffuse to avoid false shadowing
             float distShadowDiffuse = mix(Diffuse, 1.0, isGrass);
             float shadowMask = 1.0 - smoothstep(0.0, 0.5, shadowLum * distShadowDiffuse);
-            finalAmbient = mix(finalAmbient, shadowDistColor * 2.5, shadowMask * distFactor);
+            finalAmbient = mix(finalAmbient, shadowDistColor * 2.5, shadowMask * distFactor * undergroundBlend);
 
             // Underground ambient
             finalAmbient += vec3(0.025, 0.028, 0.035) * (1.0 - undergroundBlend) * pow(ao, 0.42) * textureAO * 5.0;

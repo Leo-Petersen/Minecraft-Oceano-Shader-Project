@@ -49,13 +49,13 @@ void main(){
 	if (darknessFactor > 0.0) color = mix(color, color*0.04, darknessFog);
 
 	float effects = blindness+darknessFactor;
-	float borderFog = clamp(pow(length(worldPos.xz) / far, 14.0)*0.7, 0.0, 1.0);
+	// float borderFog = clamp(pow(length(worldPos.xz) / far, 14.0)*0.7, 0.0, 1.0);
 	if (Depth < 1.0) {
-		#ifdef BorderFog
-		if (iswater < 1.0) {
-			if (isEyeInWater < 0.9) color.rgb = mix(color.rgb, skyBoxCol*(1-effects*0.95), borderFog);
-		}
-		#endif
+		// #ifdef BorderFog
+		// if (iswater < 1.0) {
+		// 	if (isEyeInWater < 0.9) color.rgb = mix(color.rgb, skyBoxCol*(1-effects*0.95), borderFog);
+		// }
+		// #endif
 	} else {
 		if (isEyeInWater < 0.9) color.rgb = skyBoxCol*(1-effects*0.95);
 	}

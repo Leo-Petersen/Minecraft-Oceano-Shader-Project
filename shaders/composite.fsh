@@ -273,23 +273,6 @@ void main() {
 	if (iswater == 1.0){
 		color.rgb = getWaterDepthFog(color.rgb, viewPos.xyz, fragpos2, iswater, lightMap.t);
 	}
-
-    #ifdef atmosphereFog
-    if (Depth < 1.0 && isEyeInWater < 0.9) {
-        float normalFogDist = pow(length(worldPos.xz) / 100.0, 2.2);
-        float normalFogDepth = clamp(1.0 - exp(-0.1 * normalFogDist), 0.0, 0.35);
-        
-        vec3 normalFog = mix(color.rgb, atmoColor, normalFogDepth * pow(sunAngleCosine, 0.2));
-        
-        float rainFogDist = pow(length(worldPos.xz) / 100.0, 1.5);
-        float rainFogDepth = clamp(1.0 - exp(-0.15 * rainFogDist), 0.0, 0.5);
-        
-        vec3 rainFogColor = vec3(2.5, 2.5, 2.8) * (1.0 - time[5] * 0.7);
-        vec3 rainFog = mix(color.rgb, rainFogColor, rainFogDepth);
-        
-        color.rgb = mix(normalFog, rainFog, rainStrength);
-    }
-    #endif
 	
 	// if(rainStrength > 0 && iswater == 1) {
 	// 	  atmoDepth = pow(length(worldPos.xz) / (140 - (40*rainStrength)), 2.2);

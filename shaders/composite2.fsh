@@ -67,7 +67,7 @@ void main() {
 				}
 			}
 		// Output to screen
-		color /= Quality * Directions;
+		color /= Quality * Directions + 1.0;
 	}
 
 	//Rain Blur
@@ -86,7 +86,7 @@ void main() {
 					}
 				}
 			// Output to screen
-			color /= Quality * Directions;
+			color /= Quality * Directions + 1.0;
 		}
 	}
 
@@ -127,7 +127,7 @@ void main() {
 			}
 		// Output to screen
 	
-		color /= Quality * Directions;
+		color /= Quality * Directions + 1.0;
 	}
 
 	#endif

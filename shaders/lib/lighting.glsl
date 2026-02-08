@@ -155,12 +155,11 @@ float fakeCloudShadow(vec3 worldPos) {
 ////Bounce Light////
 #ifdef BounceLight
     vec3 backLight(vec3 bounceColor) {
-        bounceColor *= 2.0;
-        sunlightCol *= 2.0;
+        vec3 scaledBounce = bounceColor * 2.0;
+        vec3 scaledSunlight = sunlightCol * 2.0;
         float upVector = -dot(upVec, viewNormal);
-        
-        vec3 backLight = (sunlightCol + bounceColor) * (upVector + 7.0);
-        return (backLight + sunlightCol);
+        vec3 backLight = (scaledSunlight + scaledBounce) * (upVector + 7.0);
+        return (backLight + scaledSunlight);
     }
 #else
     vec3 backLight(vec3 bounceColor) {
