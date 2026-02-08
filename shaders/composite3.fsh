@@ -216,8 +216,9 @@ void main() {
 		float fresnel = 0.04 + (1.0 - 0.04) * pow(1.0 - NdotV, 5.0);
 		fresnel *= (1.0 - roughness * 0.5); 
 		
-		// Simple sky reflection, NEED TO FIX - needs proper reflections
-		vec3 reflectionCol = reflectedskyBoxCol * lightMap.t;
+		// Calculate reflection 
+		vec4 glassreflection = raytrace(reflectedskyBoxCol*lightMap.t, viewPos.xyz, viewNormal, 4);
+		vec3 reflectionCol = mix(reflectedskyBoxCol*lightMap.t, glassreflection.rgb, glassreflection.a);
 		
 		color.rgb = mix(color.rgb, reflectionCol, fresnel * 0.7);
 		
