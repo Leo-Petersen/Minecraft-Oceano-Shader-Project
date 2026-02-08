@@ -71,17 +71,17 @@ void main() {
 		color = ACES(color);
 		color = luminance(color, saturation);
 
-	#elif ToneMap == 3 //Oceano (wip)//
- 		color = pow(color, vec3(1/1.45));
-		color = ACES(color);
-		color = luminance(color, saturation);
-
 	#elif ToneMap == 2 //Filmic_Hejl2015//
 		//color = vec3(1.0) - exp(-color * 1.4);
  		//color = pow(color, vec3(1.1));
 		color = ToneMapFilmic_Hejl2015(color, 10.0); //(color.rgb input, float whitepoint)
 		color = luminance(color, saturation);
-	
+
+	#elif ToneMap == 3 //Oceano (wip)//
+ 		color = pow(color, vec3(1/1.45));
+		color = ACES(color);
+		color = luminance(color, saturation);
+
 	#elif ToneMap == 4 //AgX//
 		//color *= 2;  // Exposure adjustment
 		color = agxCdl(color, vec3(1.0), vec3(0.0), vec3(1.75), 1.2);

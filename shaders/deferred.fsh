@@ -247,7 +247,7 @@ void main() {
 
     float angle = IGN * 6.28318530718; // full rotation
 
-    //// Apply Shadow Filter ////
+    //// Shadow Sampling ////
     vec3 ShadowAccum = vec3(0.0);
     float filterSize = 0.0025 * filterStr * (1.0 + rainStrength * 2.0);
 
@@ -263,11 +263,9 @@ void main() {
     float cosAngle = cos(angle);
     
     for (int i = 0; i < lightingQuality; i++) {
-        // Golden angle spiral
-        float theta = float(i) * 2.39996323;
+        float theta = float(i) * 2.39996323; // Golden angle spiral
         float radius = sqrt((float(i) + 0.5) / float(lightingQuality));
         
-        // Rotate by the noise angle
         float cosTheta = cos(theta);
         float sinTheta = sin(theta);
         vec2 dir = vec2(
@@ -275,15 +273,11 @@ void main() {
             sinTheta * cosAngle + cosTheta * sinAngle
         ) * radius;
         
-        // shadow sampling, switched to hardware PCF
-        vec2 shadowOffset = dir * filterSize;
-        ShadowAccum += TransparentShadow(vec3(SampleCoords.xy + shadowOffset, SampleCoords.z), transparencyFactor);
+        ShadowAccum += TransparentShadow(vec3(SampleCoords.xy + dir * filterSize, SampleCoords.z), transparencyFactor);
         
-        // flux sampling, only sample half as often
         #ifdef BounceColoredLight
-        if ((i & 1) == 0) {  // Every other sample
+        if ((i & 1) == 0) {
             vec2 fluxCoord = SampleCoords.xy + dir * fluxRadius;
-            
             if (fluxCoord.x >= 0.0 && fluxCoord.x <= 1.0 && 
                 fluxCoord.y >= 0.0 && fluxCoord.y <= 1.0) {
                 vec4 fluxSample = texture2D(shadowcolor0, fluxCoord);
@@ -294,153 +288,142 @@ void main() {
         #endif
     }
 
+    //// Process Shadow Results ////
     ShadowAccum /= float(lightingQuality);
     ShadowAccum *= parallaxShadow;
     ShadowAccum = mix(ShadowAccum, vec3(1.0), emission * 0.8);
-    vec3 invShadowAccum = clamp(-ShadowAccum*Diffuse + vec3(0.4), vec3(0.0), vec3(1.0));
+
+    float shadowLum = dot(ShadowAccum, vec3(0.2126, 0.7152, 0.0722));
+    vec3 invShadowAccum = clamp(-ShadowAccum * Diffuse + vec3(0.4), vec3(0.0), vec3(1.0));
+
+    //// Process Flux / Bounce Light ////
     #ifdef BounceColoredLight
-        if (validSamples > 0.0) {
-            flux /= validSamples;
-        } else {
-            flux = vec3(0.4);
-        }
+        flux = (validSamples > 0.0) ? flux / validSamples : vec3(0.4);
     #endif
     
     flux = max(flux, vec3(0.0001));
-	flux *= (1 - rainStrength*0.88);
-	flux /= dot(vec3(0.0721, 0.7154, 0.2125), flux); // Fixes grain and bright spots
-	if (Depth < 0.56) flux /= dot(vec3(0.0721, 0.7154, 0.2125), flux) + rainStrength*0.5; // improves noise on hands
+    flux *= (1.0 - rainStrength * 0.88);
+    flux /= dot(vec3(0.0721, 0.7154, 0.2125), flux);
+    if (Depth < 0.56) flux /= dot(vec3(0.0721, 0.7154, 0.2125), flux) + rainStrength * 0.5;
 
-	vec3 bounceLight = backLight(flux);
-		 bounceLight = mix(shadowCol, bounceLight, dot(vec3(0.0721, 0.7154, 0.2125), flux) + 0.5);
-		 bounceLight = mix(bounceLight, bounceLight*0.1+ambientShadowColor*48, distFactor);
-         bounceLight *= 0.55;
-		 
-		 float undergroundBlend = smoothstep(0.0, 0.3, rawSkyLight);
-		 
-		 #ifdef skyLightMap
-		 bounceLight = mix(ambientShadowColor, bounceLight, lightMap.t);
-		 #endif
-		 float bounceAvg = (bounceLight.r+bounceLight.g+bounceLight.b)*0.33;
-		
-	#ifdef disableRainShadows
-	float rainShadowStr = 24.0;
-	#else
-	float rainShadowStr = 0.3;
-	#endif
+    vec3 bounceLight = backLight(flux);
+    bounceLight = mix(shadowCol, bounceLight, dot(vec3(0.0721, 0.7154, 0.2125), flux) + 0.5);
+    bounceLight *= 0.55;
 
+    float undergroundBlend = smoothstep(0.0, 0.3, rawSkyLight);
 
-	////Setup ambient////
-	#ifdef shadowMap
+    #ifdef skyLightMap
+        bounceLight = mix(ambientShadowColor, bounceLight, lightMap.t);
+    #endif
 
-			#ifdef fakecloudshadow
-				float fakeCloudShadow = mix(1.0, fakeCloudShadow(worldPos), distFactor*(1-rainStrength));
-			#else
-				float fakeCloudShadow = 1.0;
-			#endif
+    //// Rain Shadow Strength ////
+    #ifdef disableRainShadows
+        float rainShadowStr = 24.0;
+    #else
+        float rainShadowStr = 0.3;
+    #endif
 
-			float ambientStrength = ambientStr*0.1;
-			
-		#else
-			float ambientStrength = 0.2;
-			ShadowAccum = vec3(0.5f);
-	#endif
-	
-	////Apply Lighting and ShadowMap////
-	#ifdef shadowMap 
-        vec3 ambientCol = bounceLight * (1 - rainStrength * rainShadowStr);
-		float lightStrength = lightStr * 5.6 * (1-darknessFactor*0.9) * fakeCloudShadow * transitionFade * pow(ao, 0.21);
+    //// Setup Ambient ////
+    #ifdef shadowMap
+        #ifdef fakecloudshadow
+            float fakeCloudShadow = mix(1.0, fakeCloudShadow(worldPos), distFactor * (1.0 - rainStrength));
+        #else
+            float fakeCloudShadow = 1.0;
+        #endif
+        float ambientStrength = ambientStr * 0.1;
+    #else
+        float ambientStrength = 0.2;
+        ShadowAccum = vec3(0.5);
+    #endif
+    
+    //// Apply Lighting ////
+    #ifdef shadowMap 
+        vec3 ambientCol = bounceLight * (1.0 - rainStrength * rainShadowStr);
+        float lightStrength = lightStr * 5.6 * (1.0 - darknessFactor * 0.9) * fakeCloudShadow * transitionFade * pow(ao, 0.21);
 
-        if(Depth < 1.0f){
-            vec3 finalShadow = sunlightCol * Diffuse * ShadowAccum * lightMap.t * lightStrength * (1 - rainStrength * 0.65);
-                
+        if (Depth < 1.0) {
+            // Material flags
+            float isGrass = float(material > 0.025 && material < 0.04);
+            bool isFoliage = (material > 0.005 && material < 0.02);
+
+            // Direct sunlight
+            vec3 finalShadow = sunlightCol * Diffuse * ShadowAccum * lightMap.t * lightStrength * (1.0 - rainStrength * 0.65);
+            finalShadow *= mix(1.0, 0.7, distFactor);
+
+            // Bounce mask, restrict bounce light to shadowed areas
+            float bounceMask = 1.0 - smoothstep(0.0, 0.25, shadowLum * max(Diffuse, 0.0));
+            bounceMask *= bounceMask * transitionFade;
+
+            // Ambient components
             float ambientShadowFactorFixed = mix(0.5, shadowFactor, undergroundBlend);
-            
-            // Shadow mask for bounce light
-            float shadowLum = dot(ShadowAccum, vec3(0.2126, 0.7152, 0.0722));
-            float litAmount = shadowLum * max(Diffuse, 0.0);
-            float bounceMask = 1.0 - smoothstep(0.0, 0.25, litAmount);
-            bounceMask *= bounceMask*transitionFade;
-            
-            vec3 flatAmbient = pow(shadowCol, vec3(0.3)) * 1 * (1.0 - rainStrength * 0.2) * undergroundBlend;
+            vec3 flatAmbient = pow(shadowCol, vec3(0.3)) * (1.0 - rainStrength * 0.2) * undergroundBlend;
             vec3 shadowAmbient = shadowCol * 3.0 * invShadowAccum * (1.0 - rainStrength * 0.7) * undergroundBlend;
             vec3 baseAmbient = mix(flatAmbient, shadowAmbient, transitionFade);
             vec3 bounceAmbient = ambientStrength * ambientCol * ambientShadowFactorFixed * (1.0 - rainStrength * 0.14) * bounceMask;
+
             vec3 finalAmbient = (baseAmbient + bounceAmbient) * 0.25 * pow(ao, 0.2) * textureAO;
-                
+
+            // Distance shadow transition (fade out of fake bouncelighting)
+            // grass ignores Diffuse to avoid false shadowing
+            float distShadowDiffuse = mix(Diffuse, 1.0, isGrass);
+            float shadowMask = 1.0 - smoothstep(0.0, 0.5, shadowLum * distShadowDiffuse);
+            finalAmbient = mix(finalAmbient, shadowDistColor * 2.5, shadowMask * distFactor);
+
             // Underground ambient
-            vec3 undergroundBaseAmbient = vec3(0.025, 0.028, 0.035) * (1.0 - undergroundBlend) * pow(ao, 0.42) * textureAO * 5;
-            finalAmbient += undergroundBaseAmbient;
+            finalAmbient += vec3(0.025, 0.028, 0.035) * (1.0 - undergroundBlend) * pow(ao, 0.42) * textureAO * 5.0;
 
-            // SSS
-            bool isFoliage = (material > 0.005 && material < 0.02);
-            bool isGrass = (material > 0.025 && material < 0.04);
-
-            if ((isFoliage || isGrass) && sssAmount > 0.01) {
+            // Subsurface scattering
+            if ((isFoliage || isGrass > 0.0) && sssAmount > 0.01) {
                 float sssScale = isFoliage ? 1.5 : 1.0;
                 float uniformity = isFoliage ? 0.5 : 1.5;
                 
                 vec3 sssContribution = calculateSSS(
-                    SampleCoords,
-                    albedo,
-                    sunlightCol,
+                    SampleCoords, albedo, sunlightCol,
                     sssAmount * sssScale,
-                    VdotL,
-                    NdotL,
-                    lightMap.t,
-                    distFactor,
-                    IGN,
-                    uniformity
+                    VdotL, NdotL, lightMap.t,
+                    distFactor, IGN, uniformity
                 );
-                
-                sssContribution *= lightStrength * undergroundFix;
-                finalShadow += sssContribution * (1 - time[5]*0.42);
+                finalShadow += sssContribution * lightStrength * undergroundFix * (1.0 - time[5] * 0.42);
             }
             
-            // Apply sun/shadow/ambient lighting
+            // Combine lighting
             color *= (finalShadow + finalAmbient);
 
+            // Emission
             float nightAmount = time[5] + time[0] * 0.6 + time[4] * 0.6;
-            float darkness = 1.0 - lightMap.t * lightMap.t; 
-            float emissionStrength = mix(darkness, 1.0, nightAmount);
-            emissionStrength = max(emissionStrength, 0.15);
-            
+            float emissionStrength = max(mix(1.0 - lightMap.t * lightMap.t, 1.0, nightAmount), 0.15);
             float effectiveEmission = emission * emissionStrength;
-            vec3 emissiveColor = albedo * effectiveEmission * 2.5;
-            color = mix(color, emissiveColor, effectiveEmission);
-		}
-	#else
-	float lightStrength = lightStr;
-	vec3 ambientCol = bounceLight * (1 - rainStrength * rainShadowStr);
-		 if(Depth < 1.0f){
-		 	color *= Diffuse * ShadowAccum * clamp(pow(lightMap.t, 4.0), 0.24, 1.0) * lightStrength * (1 - rainStrength * 0.2) + ambientStrength * ambientCol;
-		 }
-	#endif
+            color = mix(color, albedo * effectiveEmission * 2.5, effectiveEmission);
+        }
+    #else
+        float lightStrength = lightStr;
+        vec3 ambientCol = bounceLight * (1.0 - rainStrength * rainShadowStr);
+        if (Depth < 1.0) {
+            color *= Diffuse * ShadowAccum * clamp(pow(lightMap.t, 4.0), 0.24, 1.0) * lightStrength * (1.0 - rainStrength * 0.2) + ambientStrength * ambientCol;
+        }
+    #endif
 
-	#ifdef skyLightMap
-	color *= lightMap.t;
-	#endif
+    #ifdef skyLightMap
+        color *= lightMap.t;
+    #endif
 
-	////Apply Block Light////
-	#ifdef torchLightMap
-	color += torchTotal * textureAO;
-	#endif
+    //// Block Light ////
+    #ifdef torchLightMap
+        color += torchTotal * textureAO;
+    #endif
 
+    //// Eye-in-water Fog ////
+    if (isEyeInWater == 1.0) {
+        float fogDepth = 1.0 - exp(-11.3 * length(worldPos.xz) / 100.0);
+        color.rgb = mix(color.rgb, vec3(0.0, 0.36, 0.51) * 0.05 * (1.0 - time[5] * 0.64) * (1.0 - rainStrength), fogDepth);
+    }
 
-	//// Eye-in-water ////
-	if (isEyeInWater == 1.0){
-		float fogDepth = length(worldPos.xz) / 100;
-		fogDepth = pow(fogDepth, 1.0);
-		fogDepth = 1.0 - exp(-11.3 * fogDepth);
-		color.rgb = mix(color.rgb, vec3(0.0, 0.36, 0.51) * 0.05 * (1 - time[5] * 0.64) * (1 - rainStrength), fogDepth);
-	}
-
-	//// Lava + Powdered Snow Fog ////
-	float blockFog = clamp(pow(length(worldPos.xz) / 5, 0.5), 0.0, 1.0);
-	if (isEyeInWater == 2) color.rgb = mix(color.rgb, vec3(1.0, 0.15, 0.0), blockFog);
-	if (isEyeInWater == 3) color.rgb = mix(color.rgb, vec3(0.5, 0.6, 0.8), blockFog * 2);
+    //// Lava + Powdered Snow Fog ////
+    float blockFog = clamp(pow(length(worldPos.xz) / 5.0, 0.5), 0.0, 1.0);
+    if (isEyeInWater == 2) color.rgb = mix(color.rgb, vec3(1.0, 0.15, 0.0), blockFog);
+    if (isEyeInWater == 3) color.rgb = mix(color.rgb, vec3(0.5, 0.6, 0.8), blockFog * 2.0);
 
 /* DRAWBUFFERS:04 */
-	gl_FragData[0] = vec4(color, 1);
-	gl_FragData[1] = vec4(vec3(0.0), Diffuse * ShadowAccum);
+    gl_FragData[0] = vec4(color, 1.0);
+    gl_FragData[1] = vec4(vec3(0.0), Diffuse * ShadowAccum);
 }

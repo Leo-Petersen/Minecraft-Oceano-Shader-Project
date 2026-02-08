@@ -328,18 +328,18 @@ void main() {
 	}
 	#endif
 
-	#ifdef volumetricCloudFog
-	if (isEyeInWater < 0.5){
-		vec4 cloudFog = getVolumetricCloudFog(cameraPosition, fogCol2);
-			 color.rgb = color.rgb * cloudFog.a + cloudFog.rgb;
-	}
-	#endif
-
 	#ifdef BorderFog
 	float effects = blindness + darknessFactor;
 	float borderFog = clamp(pow(length(worldPos.xz) / far, 14.0) * 0.7, 0.0, 1.0);
 	if (Depth < 1.0 && isEyeInWater < 0.9) {
 		color.rgb = mix(color.rgb, skyBoxCol * (1.0 - effects * 0.95), borderFog);
+	}
+	#endif
+
+	#ifdef volumetricCloudFog
+	if (isEyeInWater < 0.5){
+		vec4 cloudFog = getVolumetricCloudFog(cameraPosition, fogCol2);
+			 color.rgb = color.rgb * cloudFog.a + cloudFog.rgb;
 	}
 	#endif
 
