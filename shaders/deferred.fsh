@@ -123,7 +123,6 @@ void main() {
     }
 
     vec3 color = texture2D(colortex0, texcoord).rgb;
-    vec3 albedo = color;
 
     //// Materials ////
     vec4 colortex2Map = texture2D(colortex2, texcoord); // .s = torchLightMap, .t = skyLightMap, .p = material
@@ -221,7 +220,7 @@ void main() {
         }
     #endif
     vec3 finalBlockLightColor = mix(defaultTorchColor, voxelColor*2, voxelBlend);
-    vec3 torchTotal = finalBlockLightColor * torchIntensity * albedo;
+    vec3 torchTotal = finalBlockLightColor * torchIntensity * color;
 
     //// Setup Shadow Filter ////
     vec4 shadowCoord = ShadowSpace();
@@ -376,7 +375,7 @@ void main() {
             float uniformity = isFoliage ? 0.5 : 1.5;
             
             vec3 sssContribution = calculateSSS(
-                SampleCoords, albedo, sunlightCol,
+                SampleCoords, color, sunlightCol,
                 sssAmount * sssScale,
                 VdotL, NdotL, lightMap.t,
                 distFactor, IGN, uniformity
@@ -391,7 +390,7 @@ void main() {
         float nightAmount = time[5] + time[0] * 0.6 + time[4] * 0.6;
         float emissionStrength = max(mix(1.0 - lightMap.t * lightMap.t, 1.0, nightAmount), 0.15);
         float effectiveEmission = emission * emissionStrength;
-        color = mix(color, albedo * effectiveEmission * 2.5, effectiveEmission);
+        color = mix(color, color * effectiveEmission * 2.5, effectiveEmission);
     #else
         float lightStrength = lightStr;
         vec3 ambientCol = bounceLight * (1.0 - rainStrength * rainShadowStr);
