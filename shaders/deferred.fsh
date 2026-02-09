@@ -160,7 +160,7 @@ void main() {
     
     vec3 normal = normalize(decodeNormal(colortex1Map.xy));
 
-    float Diffuse = calculateDiffuse(shadowLightPosition * 0.01, normalize(-viewPos.xyz), normal, roughness, material);
+    float Diffuse = calculateDiffuse(shadowLightPosition * 0.01, normalize(-viewPos.xyz), normal, roughness);
 
     //// Calculate LightMap Colour and Values ////
     float ao = 1.0;

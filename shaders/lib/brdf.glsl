@@ -189,7 +189,7 @@ vec3 applyPBRReflection(vec3 baseColor, vec3 reflectionColor, vec2 specularMap, 
 #endif
 
 ////Diffuse////
-float calculateDiffuse(vec3 lightDir, vec3 viewDir, vec3 normal, float roughness, float material) {
+float calculateDiffuse(vec3 lightDir, vec3 viewDir, vec3 normal, float roughness) {
     float NdotL = max(dot(normal, lightDir), 0.0);
     
     // if (roughness <= 0.01) { 
