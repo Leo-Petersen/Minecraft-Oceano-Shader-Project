@@ -37,7 +37,7 @@ float getShadowBias(vec3 SampleCoords) {
     float dist = length(SampleCoords.xy - 0.5);
     float distFactor = smoothstep(0.0, 0.5, dist);
     
-    float NdotL = max(dot(viewNormal, normalize(shadowLightPosition)), 0.0);
+    float NdotL = max(dot(viewNormal, shadowLightPosition*0.01), 0.0);
     float slopeBias = 0.0004 * (1.0 - NdotL) * distFactor;
     float baseBias = 0.0001 + dist * 0.0005;
     
@@ -197,10 +197,19 @@ float ambientOcclusion(sampler2D depthTexture) {
     float sampleRadius = initialRadius * (0.5 + ditherValue * 0.5);
     vec2 scale = vec2(1.0 / aspectRatio, 1.0) * gbufferProjection[1][1] / (2.74747742 * max(far * depth, 6.0));
 
+    // Compute the rotation step angle
+    float stepAngle = 3.14159265 / float(aoSamples);
+    float cosStep = cos(stepAngle);
+    float sinStep = sin(stepAngle);
+    mat2 rotStep = mat2(cosStep, sinStep, -sinStep, cosStep);
+
+    // Compute initial direction
+    float startAngle = rotation * piAngle;
+    vec2 dir = vec2(cos(startAngle), sin(startAngle)) * sampleRadius * scale;
+
     for (int j = 0; j < aoSamples; j++) {
-        vec2 offset = vec2(cos(rotation * piAngle), sin(rotation * piAngle)) * sampleRadius * scale;
-        float sampleDepth1 = ld(texture2D(depthTexture, texcoord.xy + offset).r);
-        float sampleDepth2 = ld(texture2D(depthTexture, texcoord.xy - offset).r);
+        float sampleDepth1 = ld(texture2D(depthTexture, texcoord.xy + dir).r);
+        float sampleDepth2 = ld(texture2D(depthTexture, texcoord.xy - dir).r);
 
         float sampleOffset1 = far * (depth - sampleDepth1) / sampleRadius;
         float sampleOffset2 = far * (depth - sampleDepth2) / sampleRadius;
@@ -209,7 +218,7 @@ float ambientOcclusion(sampler2D depthTexture) {
         float distance = clamp(0.0625 * sampleOffset1, 0.0, 1.0) + clamp(0.0625 * sampleOffset2, 0.0, 1.0);
 
         ambientOcclusion += clamp(angle + distance, 0.0, 1.0);
-        rotation += 180.0 / aoSamples;
+        dir = rotStep * dir;
     }
 
     ambientOcclusion /= float(aoSamples);
