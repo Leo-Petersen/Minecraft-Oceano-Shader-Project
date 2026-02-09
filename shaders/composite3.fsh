@@ -301,7 +301,7 @@ void main() {
 	#ifdef atmosphereFog
 	if (Depth < 1.0 && isEyeInWater < 0.9) {
 		vec3 viewDir = normalize(viewPos.xyz);
-		float sunAngleCosine = 1.0 - clamp(dot(viewDir, normalize(shadowLightPosition)), 0.0, 1.0);
+		float sunAngleCosine = 1.0 - clamp(dot(viewDir, shadowLightPosition * 0.01), 0.0, 1.0);
 		sunAngleCosine = pow(sunAngleCosine, 2.0) * (3.0 - 2.0 * sunAngleCosine);
 		sunAngleCosine = 1.0 / sunAngleCosine - 1.0;
 		sunAngleCosine = 1.0 - exp(-sunAngleCosine / 12.0);

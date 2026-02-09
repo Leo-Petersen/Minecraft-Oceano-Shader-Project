@@ -70,7 +70,7 @@ vec3 luma(vec3 color, float strength) {
 float undergroundFix = clamp(mix(max(lmcoord.t-2.0/16.0,0.0)*1.14285714286,1.0,clamp((eyeBrightnessSmooth.y/255.0-2.0/16.)*4.0,0.0,1.0)), 0.0, 1.0);
 vec3 viewNormal = normalize(decodeNormal(texture2D(colortex1, texcoord).st));
 vec3 waterNormal = normalize(texture2D(colortex5, texcoord).rgb * 2.0f - 1.0f);
-float Diffuse = max(0.0, dot(viewNormal, normalize(shadowLightPosition))); 
+float Diffuse = max(0.0, dot(viewNormal, shadowLightPosition * 0.01)); 
 
 ////#includes////
 #include "/lib/time.glsl"
@@ -103,8 +103,8 @@ void main() {
 	////Calculate sun////
     vec3 reflectedVector = reflect(normalize(viewPos.xyz), waterNormal) * 300.0;
 
-    float sunDist = 1.0/distance(normalize(viewPos.xyz), normalize(shadowLightPosition));
-    float sunDistReflected = 1.0/distance(normalize(reflectedVector.xyz), normalize(shadowLightPosition));
+    float sunDist = 1.0/distance(normalize(viewPos.xyz), shadowLightPosition * 0.01);
+    float sunDistReflected = 1.0/distance(normalize(reflectedVector.xyz), shadowLightPosition * 0.01);
 
 	float normalDotEye = dot(waterNormal, -normalize(viewPos.xyz));
 	float fresnel = pow(1.0 - normalDotEye, 3.0);
@@ -144,7 +144,7 @@ void main() {
 		 atmoGlare *= (1-rainStrength);
 
 	//Reflected sun//
-		vec3 lightDir = normalize(shadowLightPosition);
+		vec3 lightDir = shadowLightPosition * 0.01;
 		vec3 viewDir = normalize(-viewPos.xyz);
 		vec3 halfVec = normalize(lightDir + viewDir);
 		
@@ -213,7 +213,7 @@ void main() {
 		  glare *= 150.0 * (1.0 - time2[1].y);
 		  glare = clamp(glare, 0.0, 2.0);
 
-	float sunAngleCosine = 1.0 - clamp(dot(normalize(viewPos.rgb), normalize(shadowLightPosition)), 0.0, 1.0);
+	float sunAngleCosine = 1.0 - clamp(dot(normalize(viewPos.rgb), shadowLightPosition * 0.01), 0.0, 1.0);
 		  sunAngleCosine = pow(sunAngleCosine, 2.0)*(3.0 - 2.0 * sunAngleCosine);
 		  sunAngleCosine = 1.0 / sunAngleCosine - 1.0;
 		  sunAngleCosine = 1.0 - exp( -sunAngleCosine);

@@ -1,7 +1,6 @@
 #version 120
 
 uniform int worldTime;
-uniform vec3 sunPosition;
 uniform vec3 upPosition;
 
 attribute vec4 mc_Entity;
@@ -11,11 +10,11 @@ varying vec2 lmcoord;
 varying vec3 upVec;
 varying vec3 Normal;
 varying vec4 glcolor;
+varying vec3 shadowLightDir;
 
 void main() {
 
 	upVec = upPosition * 0.01;
-
 	glcolor = gl_Color;
 
 	gl_Position = ftransform();
