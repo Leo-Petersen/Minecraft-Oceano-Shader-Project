@@ -169,7 +169,7 @@ void main() {
     #endif
 
     float heldLightValue = max(float(heldBlockLightValue), float(heldBlockLightValue2));
-    float handlight = clamp(((heldLightValue*1.2) - 1.0 * length(viewPos.xyz)) / 18.0, 0.0, 0.9333);
+    float handlight = clamp(((heldLightValue*1.2) - 1.5 * length(viewPos.xyz)) / 18.0, 0.0, 0.9333);
 
     lightMap.s *= (1.0 - darknessLightFactor * 0.5);
     float torchTimeBlend = mix(1.0, torchFactor, rawSkyLight);
@@ -300,7 +300,7 @@ void main() {
 
     vec3 bounceLight = backLight(flux);
     bounceLight = mix(shadowCol, bounceLight, dot(vec3(0.0721, 0.7154, 0.2125), flux) + 0.5);
-    bounceLight *= 0.5;
+    bounceLight *= 0.55;
 
     float undergroundBlend = smoothstep(0.0, 0.3, rawSkyLight);
 

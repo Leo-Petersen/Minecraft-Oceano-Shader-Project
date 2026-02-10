@@ -147,10 +147,10 @@ void main() {
     uint voxelId = getVoxelId(entityId);
     
     if (voxelId > 0u) {
-        // Emissive block - write its light ID
+        // Emissive block: write its light ID
         updateVoxelMap(voxelId);
     } else if (!isTransparent(entityId)) {
-        // Solid non-emissive block - write ID 1 to block light
+        // Solid non-emissive block : write ID 1 to block light
         updateVoxelMap(1u);
     }
     // Transparent blocks (air, glass, foliage) don't write anything (stay as 0)
