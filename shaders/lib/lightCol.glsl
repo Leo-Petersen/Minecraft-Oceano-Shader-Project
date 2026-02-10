@@ -36,11 +36,11 @@ vec3 sunlightCol = (
 vec3 ambientShadowColor = vec3(20, 30, 55)/255;;
 
 ////Shadow Distance Colour//// (what fake bounce light fades into with distance)
-vec3 shadowDistColor = (vec3(20, 30, 80)/255 * 0.2 * (time[0]) +   
-                  vec3(20, 30, 55)/255  * 0.8  * (time[1]) +   
-                  vec3(20, 30, 55)/255 * 0.8  * (time[2]) +   
-                  vec3(20, 30, 55)/255  * 0.8 * (time[3]) +   
-                  vec3(20, 30, 80)/255 * 0.2  * (time[4]) +   
+vec3 shadowDistColor = (vec3(20, 30, 80)/255 * 0.3 * (time[0]) +   
+                  vec3(20, 30, 55)/255  * 1  * (time[1]) +   
+                  vec3(20, 30, 55)/255 * 1  * (time[2]) +   
+                  vec3(20, 30, 55)/255  * 1 * (time[3]) +   
+                  vec3(20, 30, 80)/255 * 0.3  * (time[4]) +   
                   vec3(20, 30, 80)/255    * 0.2 * (time[5])     
                  ) * clamp(transitionFade, 0.55, 1.0);
 

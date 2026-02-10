@@ -356,8 +356,8 @@ void main() {
 
         // Distance shadow transition (fade out of fake bouncelighting)
         float distShadowDiffuse = mix(Diffuse, 1.0, isGrass); //Remove diffuse on grass with distance, not 'correct' but looks like artifacting otherwise
-        float shadowMask = 1.0 - smoothstep(0.0, 0.5, shadowLum * distShadowDiffuse); //Using the full diffuse at distance makes distain terrain look too harsh, this achieves a good middle ground
-        finalAmbient = mix(finalAmbient, shadowDistColor * 2.5, shadowMask * distFactor * undergroundBlend);
+        float distShadowMask = 1.0 - smoothstep(0.0, 0.1, shadowLum * distShadowDiffuse * transitionFade); //Using the full diffuse at distance makes distain terrain look too harsh, this achieves a good middle ground
+        finalAmbient = mix(finalAmbient, mix(finalAmbient, shadowDistColor * 2.5, distShadowMask), distFactor * undergroundBlend);
 
         // Underground ambient
         finalAmbient += vec3(0.025, 0.028, 0.035) * (1.0 - undergroundBlend) * pow(ao, 0.42) * textureAO * 5.0;
