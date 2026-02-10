@@ -5,6 +5,7 @@ uniform sampler2D colortex0;
 uniform sampler2D colortex2;
 uniform sampler2D colortex10;
 uniform sampler2D colortex11;
+uniform sampler2D normals;
 uniform sampler2D noisetex;
 
 uniform float frameTimeCounter;
@@ -129,6 +130,14 @@ void main() {
 	}
 
 	// Reflections and normal map for water and glass //
+	vec3 glassNormal = viewNormal;
+	if (isglass > 0.5) {
+		vec4 normalRaw = texture2D(normals, texcoord);
+		vec2 normalXY = normalRaw.rg * 2.0 - 1.0;
+		vec3 normalData = vec3(normalXY, sqrt(1.0 - dot(normalXY, normalXY)));
+		glassNormal = normalize(normalData * tbnMatrix);
+	}
+
 	#ifdef Reflections
 	#ifdef ParallaxWater
 		vec3 posxz = wpos.xyz;
@@ -145,7 +154,7 @@ void main() {
 
 	vec4 normalTangentSpace;
 	if (isglass > 0.5) {
-		normalTangentSpace = vec4(viewNormal * 0.5 + 0.5, 1.0);
+		normalTangentSpace = vec4(glassNormal * 0.5 + 0.5, 1.0);
 	} else {
 		normalTangentSpace = vec4(normalize(bump * tbnMatrix) * 0.5 + 0.5, 1.0);
 	}
@@ -153,7 +162,7 @@ void main() {
 	// Reflected skybox
 	vec3 reflectedVector = reflect(fragpos, normalize(bump * tbnMatrix).xyz) * 300.0;
 	if (isglass > 0.5) {
-		reflectedVector = reflect(fragpos, viewNormal) * 300.0;
+		reflectedVector = reflect(fragpos, glassNormal) * 300.0;
 	}
 	vec3 skybox = getSkyTextureFromSequence(position.xyz + reflectedVector);
 		 skybox += vec3(skyColor * 0.5) * (rainStrength * 0.5);
@@ -192,7 +201,7 @@ void main() {
 	
 /* DRAWBUFFERS:012583 */
 	gl_FragData[0] = color;
-	gl_FragData[1] = vec4(encodeNormal(viewNormal), 1, 1);
+	gl_FragData[1] = vec4(encodeNormal(isglass > 0.5 ? glassNormal : viewNormal), 1, 1);
 	gl_FragData[2] = vec4(lmcoord, material, 1.0f);
 	gl_FragData[3] = normalTangentSpace;
 	gl_FragData[4] = vec4(skybox, 1.0);
