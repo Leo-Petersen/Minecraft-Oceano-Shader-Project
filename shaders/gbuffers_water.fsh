@@ -185,7 +185,10 @@ void main() {
 	float viewFactor = pow(max(dot(viewDir, sunDir), 0.0), 1.5) * 0.5 + 0.5;
 	
 	float transparencyFactorTime = getTransparencyFactor();
-	float sssIntensity = sssMask * viewFactor * 0.7 * transparencyFactorTime;
+	float sssTime = 0.6 * time[0] + 1.0 * time[1] + 1.0 * time[2] + 
+                   1.0 * time[3] + 0.6 * time[4] + 0.5 * time[5];
+
+	float sssIntensity = sssMask * viewFactor * 0.7 * transparencyFactorTime * sssTime;
 	sssIntensity *= processedSkyLight;
 	sssIntensity *= (1.0 - rainStrength * 0.7);
 
