@@ -15,11 +15,11 @@ vec3 applyCaveFog(
     // Torch only lights nearby fog, falls off with distance // WIP
     float torchInfluence = clamp(heldLight / 15.0, 0.0, 1.0);
     float torchFalloff = exp(-dist * 0.15);
-    vec3 torchFogTint = vec3(0.08, 0.05, 0.025);
-    caveFogColor = mix(caveFogColor, torchFogTint*8, torchInfluence * torchFalloff);
+    vec3 torchFogTint = vec3(torchR, torchG, torchB)/255;
+    caveFogColor = mix(caveFogColor, torchFogTint*0.6, torchInfluence * torchFalloff);
 
     float fogAmount = 1.0 - exp(-density * dist);
-    fogAmount = clamp(fogAmount, 0.0, 0.55);
+    fogAmount = clamp(fogAmount*1.5, 0.0, 0.55);
 
     return mix(color, caveFogColor, fogAmount * caveFactor);
 }
