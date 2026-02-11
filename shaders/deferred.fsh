@@ -302,7 +302,7 @@ void main() {
     bounceLight = mix(shadowCol, bounceLight, dot(vec3(0.0721, 0.7154, 0.2125), flux) + 0.5);
     bounceLight *= 0.55;
 
-    float undergroundBlend = smoothstep(0.0, 0.3, rawSkyLight);
+    float undergroundBlend = smoothstep(0.0, 1.0, pow(rawSkyLight, 0.5));
 
     #ifdef skyLightMap
         bounceLight = mix(ambientShadowColor, bounceLight, undergroundBlend);
