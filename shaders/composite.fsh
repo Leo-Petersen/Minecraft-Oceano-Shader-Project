@@ -91,7 +91,7 @@ void main() {
 	////Materials////
 	float material = texture2D(colortex2, texcoord).p;
 	float iswater = float(material > 0.08 && material < 0.10);
-	float isglass = float(material > 0.10 && material < 0.12);
+	float isglass = float(material > 0.10 && material < 0.12 || material > 0.14 && material < 0.16);
 	float isslime = float(material > 0.12 && material < 0.14);
 
 	////WaterShadow////

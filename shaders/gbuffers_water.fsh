@@ -54,6 +54,7 @@ varying mat3 tbnMatrix;
 void main() {
 	float iswater = float(material > 0.08 && material < 0.10);
     float isglass = float(material > 0.10 && material < 0.12);
+	float isice = float(material > 0.14 && material < 0.16);
 	float isTransparent = 1.0 - iswater; // Everything except water
 	
 	vec3 fragpos = toNDC(vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z));
@@ -131,7 +132,7 @@ void main() {
 
 	// Reflections and normal map for water and glass //
 	vec3 glassNormal = viewNormal;
-	if (isglass > 0.5) {
+	if (isglass > 0.5 || isice > 0.5) {
 		vec4 normalRaw = texture2D(normals, texcoord);
 		vec2 normalXY = normalRaw.rg * 2.0 - 1.0;
 		vec3 normalData = vec3(normalXY, sqrt(1.0 - dot(normalXY, normalXY)));
@@ -153,7 +154,7 @@ void main() {
 	bump = normalize(clamp(bump, vec3(-1.0), vec3(1.0)));
 
 	vec4 normalTangentSpace;
-	if (isglass > 0.5) {
+	if (isglass > 0.5 || isice > 0.5) {
 		normalTangentSpace = vec4(glassNormal * 0.5 + 0.5, 1.0);
 	} else {
 		normalTangentSpace = vec4(normalize(bump * tbnMatrix) * 0.5 + 0.5, 1.0);
@@ -161,7 +162,7 @@ void main() {
 	
 	// Reflected skybox
 	vec3 reflectedVector = reflect(fragpos, normalize(bump * tbnMatrix).xyz) * 300.0;
-	if (isglass > 0.5) {
+	if (isglass > 0.5 || isice > 0.5) {
 		reflectedVector = reflect(fragpos, glassNormal) * 300.0;
 	}
 	vec3 skybox = getSkyTextureFromSequence(position.xyz + reflectedVector);
@@ -201,10 +202,14 @@ void main() {
 
 	float packedWaveLight = 0.5 + (frontGlow * 0.5) - (sssIntensity * 0.5);
 	packedWaveLight = clamp(packedWaveLight, 0.0, 1.0);
-	
+
+	if (isice > 0.5) {
+		color.a = 0.96; // temp fix to stop ice looking weird
+	}
+
 /* DRAWBUFFERS:012583 */
 	gl_FragData[0] = color;
-	gl_FragData[1] = vec4(encodeNormal(isglass > 0.5 ? glassNormal : viewNormal), 1, 1);
+	gl_FragData[1] = vec4(encodeNormal((isglass > 0.5 || isice > 0.5) ? glassNormal : viewNormal), 1, 1);
 	gl_FragData[2] = vec4(lmcoord, material, 1.0f);
 	gl_FragData[3] = normalTangentSpace;
 	gl_FragData[4] = vec4(skybox, 1.0);
