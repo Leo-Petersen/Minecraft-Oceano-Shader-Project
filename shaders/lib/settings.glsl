@@ -83,7 +83,7 @@
     #define BorderFog
     #define caveFog
     
-    #define volumetricCloudFog
+    //#define volumetricCloudFog // WIP
         // Shape controls
         #define CLOUD_FOG_DENSITY 1.0        // [0.5 0.8 1.0 1.5 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0] Overall density multiplier
         #define CLOUD_FOG_HEIGHT 80.0        // [40.0 55.0 70.0 80.0 100.0] Center Y height
