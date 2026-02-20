@@ -43,7 +43,9 @@ float getWaterBump(vec2 posxz, float waveM, float waveZ, float iswater) {
     float ripples = textureNoise(rippleCoord) * 0.3;
     
     float wave = largeWave + mediumWave * 0.5 + ripples;
-    wave *= mix(0.3, 1.0, iswater) * 0.06; 
+    float distanceFade = smoothstep(30.0, 120.0, dist);
+    wave *= (1.0 - distanceFade * 0.6);
+    wave *= mix(0.3, 1.0, iswater) * 0.05; 
     
     return wave;
 }
