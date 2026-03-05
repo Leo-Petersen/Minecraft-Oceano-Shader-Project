@@ -107,6 +107,14 @@ void main() {
 	vec3 reflectedskyBoxCol = texture2D(colortex8, texcoord).rgb;
 	vec3 skyBoxCol = texture2D(colortex9, texcoord).rgb;
 
+	//// Compute cloud fog ////
+	#ifdef volumetricCloudFog
+	vec4 cloudFog = vec4(0.0, 0.0, 0.0, 1.0);
+	if (isEyeInWater < 0.5){
+		cloudFog = getVolumetricCloudFog(cameraPosition, cloudFogCol);
+	}
+	#endif
+
 	// Water Refraction and Reflection //
 	if (iswater == 1.0){
 		vec3 viewDir = normalize(viewPos.xyz);
@@ -184,8 +192,10 @@ void main() {
 		float fresnel = pow(1.0 - normalDotEye, 5.0);
 		fresnel = mix(0.02, 1.0, fresnel); // F0 for water ~0.02
 		
+		// SSR hits get fogged pixels from colortex0 (baked in composite2)
+		// SSR misses fall back to reflectedskyBoxCol which we fogged above
 		vec3 reflectionCol = mix(reflectedskyBoxCol*lightMap.t, waterreflection.rgb, waterreflection.a);
-		
+
 		if (isEyeInWater < 0.5){
 			color.rgb = mix(refractedColor, reflectionCol, fresnel);
 			color.rgb += reflectedSun;
@@ -219,7 +229,7 @@ void main() {
 		// Calculate reflection 
 		vec4 glassreflection = raytrace(reflectedskyBoxCol*lightMap.t, viewPos.xyz, viewNormal, 4);
 		vec3 reflectionCol = mix(reflectedskyBoxCol*lightMap.t, glassreflection.rgb, glassreflection.a);
-		
+
 		color.rgb = mix(color.rgb, reflectionCol, fresnel * 0.7);
 		
 		// Sun specular
@@ -341,11 +351,10 @@ void main() {
 	}
 	#endif
 
-	//// Volumetric Cloud Fog ////
+	//// Volumetric Cloud Fog (applied over everything including reflections) ////
 	#ifdef volumetricCloudFog
 	if (isEyeInWater < 0.5){
-		vec4 cloudFog = getVolumetricCloudFog(cameraPosition, cloudFogCol);
-			 color.rgb = color.rgb * cloudFog.a + cloudFog.rgb;
+		color.rgb = color.rgb * cloudFog.a + cloudFog.rgb;
 	}
 	#endif
 

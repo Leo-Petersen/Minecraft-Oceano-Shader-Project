@@ -4,16 +4,24 @@ uniform sampler2D colortex0;
 uniform sampler2D colortex2;
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
+uniform sampler2D shadowtex1;
 
 uniform ivec2 eyeBrightnessSmooth;
 
 uniform mat4 gbufferProjection, gbufferProjectionInverse;
 uniform mat4 gbufferModelViewInverse;
+uniform mat4 shadowModelView;
+uniform mat4 shadowProjection;
 
 uniform float viewWidth;
 uniform float viewHeight;
 uniform float rainStrength;
+uniform float far;
+uniform float near;
+uniform float frameTimeCounter;
 uniform vec3 shadowLightPosition;
+uniform vec3 cameraPosition;
+uniform vec3 skyColor;
 uniform int isEyeInWater;
 
 varying vec2 texcoord;
@@ -33,6 +41,8 @@ vec4 nvec4(vec3 pos){
 
 #include "/lib/settings.glsl"
 #include "/lib/time.glsl"
+#include "/lib/lightCol.glsl"
+#include "/lib/cloudFog.glsl"
 
 void main() {
 	vec4 color = texture2D(colortex0, texcoord);
@@ -71,39 +81,21 @@ void main() {
 	}
 
 	//Rain Blur
-	// if (Depth < 0.99) {
-	// 	if (rainStrength > 0.0){
-	// 		float fogDepth = clamp(length(viewPos.xyz) / 40.0, 0.0, 1.0);
-	// 			fogDepth = fogDepth * fogDepth * 0.8;
+	if (Depth < 1.0) {
+		if (rainStrength > 0.0){
+			float fogDepth = clamp(length(viewPos.xyz) / 40.0, 0.0, 1.0);
+				fogDepth = fogDepth * fogDepth * 0.8;
 
-	// 		for( float d=0.0; d<Pi2; d+=Pi2/Directions)
-	// 			{
-	// 				for(float i=1.0/Quality; i<=1.0; i+=1.0/Quality)
-	// 				{
-	// 					color += texture2D(colortex0, texcoord+vec2(cos(d),sin(d))*Radius*i*fogDepth*3.0*rainStrength*undergroundFix);		
-	// 				}
-	// 			}
-	// 		color /= Quality * Directions + 1.0;
-	// 	}
-	// }
-
-	//Cave Blur
-	// if (undergroundFix == 0.0){
-	// 	float fogDepth = length(worldPos.xz) / 100;
-	// 		  fogDepth = pow(fogDepth, 8.0);
-	// 		  fogDepth = 1.0 - exp(-0.1 * fogDepth);
-	// 		  fogDepth = clamp(fogDepth, 0.0, 0.2);
-
-	// 	for( float d=0.0; d<Pi2; d+=Pi2/Directions)
-	// 		{
-	// 			for(float i=1.0/Quality; i<=1.0; i+=1.0/Quality)
-	// 			{
-	// 				color += texture2D(colortex0, texcoord+vec2(cos(d),sin(d))*Radius*i*fogDepth*1.5);		
-	// 			}
-	// 		}
-	// 	// Output to screen
-	// 	color /= Quality * Directions;
-	// }
+			for( float d=0.0; d<Pi2; d+=Pi2/Directions)
+				{
+					for(float i=1.0/Quality; i<=1.0; i+=1.0/Quality)
+					{
+						color += texture2D(colortex0, texcoord+vec2(cos(d),sin(d))*Radius*i*fogDepth*3.0*rainStrength);		
+					}
+				}
+			color /= Quality * Directions + 1.0;
+		}
+	}
 
 	//Underwater//
 	if (isEyeInWater == 1.0){
@@ -127,6 +119,14 @@ void main() {
 		color /= Quality * Directions + 1.0;
 	}
 
+	#endif
+
+	//// Volumetric Cloud Fog (bake into scene so reflections pick it up) ////
+	#ifdef volumetricCloudFog
+	if (isEyeInWater < 1) {
+		vec4 cloudFog = getVolumetricCloudFog(cameraPosition, cloudFogCol);
+		color.rgb = color.rgb * cloudFog.a + cloudFog.rgb;
+	}
 	#endif
 
 /* DRAWBUFFERS:0 */

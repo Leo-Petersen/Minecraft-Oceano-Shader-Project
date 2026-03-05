@@ -1,10 +1,6 @@
 
 #ifdef volumetricCloudFog
 
-// ============================================================
-// Shadow-space helpers (cf-prefixed to avoid collision with fog.glsl)
-// ============================================================
-
 float cfDistort(vec2 pos) {
     return 1.0 / ((1.0 - shadowDistortion) + length(pos) * shadowDistortion);
 }
@@ -41,12 +37,6 @@ vec4 cfShadowSpace(vec2 coord, float depth0) {
     return ShadowSpace;
 }
 
-// ============================================================
-// Horizontal shape: layered sine waves for cloud patches.
-// Creates smooth, defined shapes that drift with wind.
-// Much cheaper than FBM and gives solid clean edges.
-// ============================================================
-
 float cfShape(vec2 xz) {
     vec2 p = xz * 0.012 + vec2(frameTimeCounter * CLOUD_FOG_SPEED * 0.1, 0.0);
 
@@ -62,9 +52,7 @@ float cfShape(vec2 xz) {
     float edgeSoftness = mix(0.15, 0.4, rainStrength);
     return smoothstep(threshold - edgeSoftness, threshold + edgeSoftness, shape);
 }
-// ============================================================
-// Density: shaped slab — no noise, pure analytical
-// ============================================================
+
 
 float cfGetDensity(vec3 wpos) {
     float h     = wpos.y;
@@ -80,7 +68,7 @@ float cfGetDensity(vec3 wpos) {
 
     float hNorm = (h - hLow) / (hHigh - hLow);
 
-    // Softer profile in rain — less defined edges, more uniform
+    // Softer profile in rain; less defined edges, more uniform
     float bottomEdge = mix(0.12, 0.25, rainStrength);
     float topEdge    = mix(0.45, 0.6, rainStrength);
     float profile = smoothstep(0.0, bottomEdge, hNorm) * smoothstep(1.0, topEdge, hNorm);
@@ -93,9 +81,6 @@ float cfGetDensity(vec3 wpos) {
     return profile * shape * CLOUD_FOG_DENSITY * rainDensity * mix(0.3, 1.0, transitionFade);
 }
 
-// ============================================================
-// Light march: optical depth toward the sun for self-shadowing
-// ============================================================
 #define CF_LIGHT_STEPS 6
 
 float cfLightMarch(vec3 pos, vec3 lightDir) {
@@ -119,10 +104,6 @@ float cfLightMarch(vec3 pos, vec3 lightDir) {
     return od;
 }
 
-// ============================================================
-// Dual-lobe Henyey-Greenstein phase function
-// ============================================================
-
 float cfHG(float cosTheta, float g) {
     float g2 = g * g;
     return (1.0 - g2) / (12.566370 * pow(1.0 + g2 - 2.0 * g * cosTheta, 1.5));
@@ -132,17 +113,39 @@ float cfPhase(float cosTheta) {
     return mix(cfHG(cosTheta, -0.25), cfHG(cosTheta, 0.6), 0.7);
 }
 
-// ============================================================
-// Powder effect
-// ============================================================
-
 float cfPowder(float od) {
     return 1.0 - exp(-od * 2.0);
 }
 
-// ============================================================
-// Temporal dithering
-// ============================================================
+// Estimate fog amount for a reflected ray looking up at the cloud slab
+float cfReflectedFog(vec3 worldPos, vec3 reflectDir, vec3 camPos) {
+    float hLow  = CLOUD_FOG_HEIGHT - CLOUD_FOG_THICKNESS;
+    float hHigh = CLOUD_FOG_HEIGHT + CLOUD_FOG_THICKNESS;
+    float camY  = camPos.y;
+
+    // If reflected ray points downward, no fog
+    if (reflectDir.y < 0.01) return 0.0;
+
+    // Distance to enter and exit the slab along reflected ray
+    float tLow  = (hLow - camY) / reflectDir.y;
+    float tHigh = (hHigh - camY) / reflectDir.y;
+
+    if (tLow < 0.0 && tHigh < 0.0) return 0.0;
+
+    float tEnter = max(min(tLow, tHigh), 0.0);
+    float tExit  = max(tLow, tHigh);
+    float pathLength = tExit - tEnter;
+
+    // Sample shape at the midpoint of the path
+    vec3 midPoint = camPos + reflectDir * (tEnter + pathLength * 0.5);
+    float shape = cfShape(midPoint.xz);
+
+    // Optical depth through the slab
+    float coverage = mix(CLOUD_FOG_COVERAGE, 1.0, rainStrength);
+    float od = shape * coverage * CLOUD_FOG_DENSITY * pathLength * 0.04;
+
+    return 1.0 - exp(-od);
+}
 
 float cfTemporalDither(vec2 coord, float time) {
     vec3 magic = vec3(0.06711056, 0.00583715, 52.9829189);
@@ -150,9 +153,6 @@ float cfTemporalDither(vec2 coord, float time) {
     return fract(magic.z * fract(dot(coord + t * 100.0, magic.xy)));
 }
 
-// ============================================================
-// Main volumetric cloud fog
-// ============================================================
 float cfStart = mix(CLOUD_FOG_START, 0.0, rainStrength);
 
 vec4 getVolumetricCloudFog(vec3 camPos, vec3 fogCol) {
@@ -214,19 +214,17 @@ vec4 getVolumetricCloudFog(vec3 camPos, vec3 fogCol) {
         nearFade *= nearFade;
         density  *= nearFade;
 
-        float farFade    = smoothstep(renderDist, renderDist * 0.7, dist3D);
-        float renderFade = smoothstep(renderDist, renderDist * 0.7, distXZ);
+        float farFade    = smoothstep(renderDist, renderDist * 0.75, dist3D);
+        float renderFade = smoothstep(renderDist, renderDist * 0.75, distXZ);
         density *= farFade * renderFade;
 
         if (density < 0.001) continue;
 
-        // --- Height-based shading ---
         float hLow  = CLOUD_FOG_HEIGHT - CLOUD_FOG_THICKNESS;
         float hHigh = CLOUD_FOG_HEIGHT + CLOUD_FOG_THICKNESS;
         float hNorm = clamp((wpos.y - hLow) / (hHigh - hLow), 0.0, 1.0);
         float heightShade = mix(0.4, 1.0, hNorm);
 
-        // --- Per-sample shadow with range check ---
         vec4 sc    = cfShadowSpace(texcoord, expD);
         sc.xy     *= cfDistort(sc.xy);
         vec3 sCoord= vec3(sc.xy, sc.z / 6.0) * 0.5 + 0.5;
@@ -236,20 +234,17 @@ vec4 getVolumetricCloudFog(vec3 camPos, vec3 fogCol) {
         float inRange  = smoothstep(0.0, 0.05, edgeDist);
         float shadow   = mix(0.0, cfShadowStep(shadowtex1, sCoord), inRange);
 
-        // --- Light march (self-shadowing) ---
         float lightOD       = cfLightMarch(wpos, lightDir);
         float lightTransmit = exp(-sigmaLight * lightOD);
 
         float powder    = cfPowder(lightOD);
         float powderMix = mix(1.0, powder, smoothstep(-0.1, 0.5, cosTheta));
 
-        // --- Combine lighting ---
         float ambient = CLOUD_FOG_MIN_BRIGHTNESS + 0.3;
         float rainDim = 1.0 - rainStrength * 0.8;
         float direct  = shadow * lightTransmit * powderMix * phase * heightShade * 5.0 * rainDim;
         float light   = ambient + direct;
 
-        // --- Beer-Lambert transmittance integration ---
         float tau       = density * sigmaE * stepSize;
         float stepTrans = exp(-tau);
 
