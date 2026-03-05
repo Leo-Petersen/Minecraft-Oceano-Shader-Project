@@ -189,7 +189,7 @@ void main() {
 		if (isEyeInWater < 0.5){
 			color.rgb = mix(refractedColor, reflectionCol, fresnel);
 			color.rgb += reflectedSun;
-			color.rgb += (vec3(shallowwaterR, shallowwaterG, shallowwaterB)/255) * waterSSS * 0.75; 
+			color.rgb += (vec3(shallowwaterR, shallowwaterG, shallowwaterB)/255) * waterSSS * 0.6; 
 			color.rgb += (vec3(deepwaterR, deepwaterG, deepwaterB)/255) * frontGlow * 0.4;           
 		} else {
 			//color.rgb = mix(refractedColor, reflectionCol, fresnel * 0.3);

@@ -157,10 +157,10 @@ vec3 getWaterDepthFog(vec3 color, vec3 fragpos, vec3 fragpos2, float iswater, fl
         volumetricScatter *= (1.0 - rainStrength * 0.7);
         
         float avgDepth = endRay * 0.5;
-        vec3 shallowShaftColor = sunCol * vec3(0.6, 0.75, 0.85);
-        vec3 deepShaftColor = sunCol * vec3(0.3, 0.55, 0.9);
+        vec3 shallowShaftColor = sunCol * vec3(shallowwaterR, shallowwaterG, shallowwaterB)/255;
+        vec3 deepShaftColor = sunCol * vec3(deepwaterR, deepwaterG, deepwaterB)/255;
         vec3 underwaterSunColor = mix(shallowShaftColor, deepShaftColor, clamp(avgDepth / 10.0, 0.0, 1.0));
-        volumetricScatter *= underwaterSunColor;
+        volumetricScatter *= underwaterSunColor * 5;
     }
     
     baseWaterColor += volumetricScatter;

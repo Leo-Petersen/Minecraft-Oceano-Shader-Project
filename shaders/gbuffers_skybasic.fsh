@@ -43,7 +43,7 @@ void main() {
 	   skybox += vec3(skyColor*0.5) * (rainStrength * 0.5);
 	   //Adjust exposure and gamma//
 	   skybox = pow(skybox, vec3(3.2))*2;
-	   //skybox = luminance(skybox, 1.0);
+	   skybox = luminance(skybox, 1.14);
 	   skybox = clamp(skybox*(1-rainStrength*0.3), vec3(0.0), vec3(1.0));
 
 	   //Draw default stars//
