@@ -28,7 +28,7 @@ vec3 sunlightCol = (
 				vec3(255, 250, 248)/255 * 0.55  * time[2] +   
 				vec3(255, 250, 248)/255 * 0.55  * time[3] +   
 				vec3(255, 175, 100)/255  * 0.45 * time[4] +   
-				vec3(55, 65, 85)/255    * 1  * time[5]    
+				vec3(55, 65, 85)/255    * 0.85  * time[5]    
 				) + ((1.0 - time[5]) * (vec3(skyColor) * (rainStrength * 0.2))) 
 				+ ((time[5]) * (vec3(0.1 + skyColor) * (rainStrength * 2.5)));
 
@@ -50,27 +50,33 @@ vec3 shadowCol = pow((vec3(33,50,200)/255 *(time[0]) +
 			      vec3(85, 120, 200)/255 * (time[2]) + 
 			      vec3(85, 120, 200)/255 * (time[3]) + 
 			      vec3(33,50,200)/255 * (time[4]) +
-			      vec3(33,50,127)/255 * 1.5 * (time[5])), vec3(2.2)) *     
+			      vec3(33,50,127)/255  * (time[5])), vec3(2.2)) *     
 				(1.0 + rainStrength * 0.5);
 
 ////Fog Color////
-vec3 fogCol = (vec3(255, 100, 50)/255 * (time[0]) + 
-			   vec3(30, 80, 255)/255 * (time[1]) + 
-			   vec3(30, 80, 255)/255 * (time[2]) + 
-			   vec3(30, 80, 255)/255 * (time[3]) + 
-			   vec3(255, 100, 50)/255 * (time[4])  + 
-			   (vec3(40, 90, 255)/255 * (time[5])) * (1.0 - rainStrength)) + 
-					((1 - time[5])*(vec3(skyColor) * (rainStrength * 0.45))) + 
-					((time[5])*(vec3(0.1+skyColor) * (rainStrength * 0.25)));
+vec3 fogCol = (
+				vec3(255, 100, 50)/255 * (time[0]) + 
+				vec3(30, 80, 255)/255 * (time[1]) + 
+				vec3(30, 80, 255)/255 * (time[2]) + 
+				vec3(30, 80, 255)/255 * (time[3]) + 
+				vec3(255, 100, 50)/255 * (time[4])  + 
+				(vec3(40, 90, 255)/255 * (time[5])) * (1.0 - rainStrength)) + 
+						((1 - time[5])*(vec3(skyColor) * (rainStrength * 0.45))) + 
+						((time[5])*(vec3(0.1+skyColor) * (rainStrength * 0.25)));
 
-vec3 fogCol2 = (vec3(190, 140, 90)/255 * 0.3 * (time[0]) +    
-               vec3(220, 210, 230)/255 * (time[1]) +    
-               vec3(240, 240, 245)/255 * (time[2]) +    
-               vec3(220, 210, 230)/255 * (time[3]) +    
-               vec3(190, 140, 90)/255 * 0.3 * (time[4]) +     
-               vec3(25, 35, 60)/255 * 0.7 * (time[5])) *     
-               (1.0 - rainStrength * 0.5) + 
-               skyColor * rainStrength * 0.35;
+vec3 cloudFogCol = mix(
+			(
+				vec3(255, 160, 100)/255  * 0.7 * time[0] +
+				vec3(245, 245, 250)/255  * 0.95 * time[1] +  
+				vec3(250, 250, 255)/255  * 0.95 * time[2] +
+				vec3(245, 240, 235)/255  * 0.95 * time[3] +  
+				vec3(255, 160, 100)/255  * 0.7 * time[4] +
+				vec3(40, 50, 75)/255     * 0.3 * time[5] 
+			) + ((1.0 - time[5]) * (vec3(skyColor) * (rainStrength * 0.2)))
+			+ ((time[5]) * (vec3(0.1 + skyColor) * (rainStrength * 2.5))),
+			vec3(0.55, 0.57, 0.6)*1.6 * (1.0 - time[5] * 0.8),
+			rainStrength * 0.85
+		);
 
 float fogStrength = 0.3;
 

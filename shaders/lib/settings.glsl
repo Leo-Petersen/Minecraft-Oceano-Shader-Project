@@ -85,21 +85,19 @@
     
     #define volumetricCloudFog // WIP
         // Shape controls
-        #define CLOUD_FOG_DENSITY 1.0        // [0.5 0.8 1.0 1.5 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0] Overall density multiplier
-        #define CLOUD_FOG_HEIGHT 80.0        // [40.0 55.0 70.0 80.0 100.0] Center Y height
-        #define CLOUD_FOG_THICKNESS 20.0     // [10.0 20.0 25.0 35.0 45.0 60.0 80.0] Vertical size
-        #define CLOUD_FOG_SPEED 0.3          // [0.1 0.2 0.3 0.4 0.5] Wind speed
-        #define CLOUD_FOG_COVERAGE 0.4       // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9]
+            #define CLOUD_FOG_DENSITY 0.8        // [0.5 0.8 1.0 1.5 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0] Overall density multiplier
+            #define CLOUD_FOG_RAIN_DENSITY 2.5   // [1.5 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0] Density multiplier during rain
+            #define CLOUD_FOG_HEIGHT 80.0        // [40.0 55.0 70.0 80.0 100.0] Center Y height
+            #define CLOUD_FOG_THICKNESS 20.0     // [10.0 20.0 25.0 35.0 45.0 60.0 80.0] Vertical size
+            #define CLOUD_FOG_COVERAGE 0.6       // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9]
+            #define CLOUD_FOG_SPEED 0.3  // [0.1 0.2 0.3 0.4 0.5] Wind drift speed
         // Distance settings  
-        #define CLOUD_FOG_START 30.0          // Where fog sampling begins
-        #define CLOUD_FOG_END 400.0          // Max fog distance
-        #define CLOUD_FOG_FADE_NEAR 30.0     // Fade in over this distance
-        #define CLOUD_FOG_FADE_FAR 80.0      // Fade out over this distance
-
-        #define CLOUD_FOG_MIN_BRIGHTNESS 0.9 // [0.1 0.2 0.3 0.4 0.5 0.6] Minimum fog brightness
-        #define CLOUD_FOG_MIN_TRANSMIT 0.9   // [0.0 0.05 0.1 0.15 0.2 0.3] Minimum see-through
+            #define CLOUD_FOG_START 20.0          // Where fog sampling begins
+            #define CLOUD_FOG_FADE_NEAR 25.0     // Fade in over this distance
+            #define CLOUD_FOG_MIN_BRIGHTNESS 0.5 // [0.1 0.2 0.3 0.4 0.5 0.6] Minimum fog brightness
+            #define CLOUD_FOG_MIN_TRANSMIT 0.0   // [0.0 0.05 0.1 0.15 0.2 0.3] Minimum see-through
         // Quality
-        #define CLOUD_FOG_SAMPLES 4          // [3 4 6 8 10 12] Ray march steps
+            #define CLOUD_FOG_SAMPLES 6          // [3 4 6 8 10 12] Ray march steps
 
 //Post//
     #define TAA

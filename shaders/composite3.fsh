@@ -313,9 +313,9 @@ void main() {
 		vec3 normalFog = mix(color.rgb, atmoColor*2, normalFogDepth * pow(sunAngleCosine, 0.2));
 		
 		// Rain fog 
-		float rainFogDist = pow(length(worldPos.xz) / 100.0, 1.5);
-		float rainFogDepth = clamp(1.0 - exp(-0.15 * rainFogDist), 0.0, 0.35);
-		vec3 rainFogColor = vec3(2.5, 2.5, 2.8) * 0.05 * (1.0 - time[5] * 0.7);
+		float rainFogDist = pow(length(worldPos.xz) / 60.0, 1.2);
+		float rainFogDepth = clamp(1.0 - exp(-0.15 * rainFogDist), 0.0, 0.4);
+		vec3 rainFogColor = cloudFogCol * 0.4;
 		vec3 rainFog = mix(color.rgb, rainFogColor, rainFogDepth);
 		
 		// Blend between normal and rain fog
@@ -344,7 +344,7 @@ void main() {
 	//// Volumetric Cloud Fog ////
 	#ifdef volumetricCloudFog
 	if (isEyeInWater < 0.5){
-		vec4 cloudFog = getVolumetricCloudFog(cameraPosition, fogCol2);
+		vec4 cloudFog = getVolumetricCloudFog(cameraPosition, cloudFogCol);
 			 color.rgb = color.rgb * cloudFog.a + cloudFog.rgb;
 	}
 	#endif

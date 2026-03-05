@@ -1,216 +1,270 @@
 
 #ifdef volumetricCloudFog
 
-float distort(vec2 pos) {
+// ============================================================
+// Shadow-space helpers (cf-prefixed to avoid collision with fog.glsl)
+// ============================================================
+
+float cfDistort(vec2 pos) {
     return 1.0 / ((1.0 - shadowDistortion) + length(pos) * shadowDistortion);
 }
 
-float cloudBayer2(vec2 a){
+float cfBayer2(vec2 a){
     a = floor(a);
-    return fract( dot(a, vec2(.5, a.y * .75)) );
+    return fract(dot(a, vec2(0.5, a.y * 0.75)));
 }
 
-#define cloudBayer4(a)   (cloudBayer2( .5*(a))*.25+cloudBayer2(a))
-#define cloudBayer8(a)   (cloudBayer4( .5*(a))*.25+cloudBayer2(a))
-#define cloudBayer16(a)  (cloudBayer8( .5*(a))*.25+cloudBayer2(a))
-#define cloudBayer32(a)  (cloudBayer16(.5*(a))*.25+cloudBayer2(a))
-#define cloudBayer64(a)  (cloudBayer32(.5*(a))*.25+cloudBayer2(a))
+#define cfBayer4(a)   (cfBayer2( .5*(a))*.25+cfBayer2(a))
+#define cfBayer8(a)   (cfBayer4( .5*(a))*.25+cfBayer2(a))
+#define cfBayer16(a)  (cfBayer8( .5*(a))*.25+cfBayer2(a))
+#define cfBayer32(a)  (cfBayer16(.5*(a))*.25+cfBayer2(a))
+#define cfBayer64(a)  (cfBayer32(.5*(a))*.25+cfBayer2(a))
 
-float cloudExpDepth(float dist){
+float cfExpDepth(float dist){
     return (far * (dist - near)) / (dist * (far - near));
 }
 
-float cloudGetDepth(float depth) {
+float cfGetDepth(float depth) {
     return (near * far) / (near * depth + (far * (1.0 - depth)));
 }
 
-
-float cloudShadowStep(sampler2D shadow, vec3 sPos) {
+float cfShadowStep(sampler2D shadow, vec3 sPos) {
     return clamp(1.0 - max(sPos.z - texture2D(shadow, sPos.xy).y, 0.0) * 4096, 0.0, 1.0);
 }
 
-vec4 cloudShadowSpace(vec2 coord, float depth0) {
-    vec3 ClipSpace = vec3(coord, depth0) * 2.0f - 1.0f;
+vec4 cfShadowSpace(vec2 coord, float depth0) {
+    vec3 ClipSpace = vec3(coord, depth0) * 2.0 - 1.0;
     vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0);
     vec3 View = ViewW.xyz / ViewW.w;
-    vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
+    vec4 World = gbufferModelViewInverse * vec4(View, 1.0);
     vec4 ShadowSpace = shadowProjection * shadowModelView * World;
     return ShadowSpace;
 }
 
-#endif
+// ============================================================
+// Horizontal shape: layered sine waves for cloud patches.
+// Creates smooth, defined shapes that drift with wind.
+// Much cheaper than FBM and gives solid clean edges.
+// ============================================================
 
-// Noise functions for cloud density //
-float cloudHash(vec3 p) {
-    p = fract(p * 0.1031);
-    p += dot(p, p.yzx + 33.33);
-    return fract((p.x + p.y) * p.z);
+float cfShape(vec2 xz) {
+    vec2 p = xz * 0.012 + vec2(frameTimeCounter * CLOUD_FOG_SPEED * 0.1, 0.0);
+
+    float shape = sin(p.x * 1.0 + p.y * 0.7) * 0.45
+                + sin(p.x * 2.7 - p.y * 1.8) * 0.30
+                + sin(p.y * 3.2 + p.x * 0.5) * 0.25;
+
+    shape += rainStrength;
+
+    float coverage = mix(CLOUD_FOG_COVERAGE, 1.0, rainStrength);
+    float threshold = 1.0 - coverage;
+
+    float edgeSoftness = mix(0.15, 0.4, rainStrength);
+    return smoothstep(threshold - edgeSoftness, threshold + edgeSoftness, shape);
+}
+// ============================================================
+// Density: shaped slab — no noise, pure analytical
+// ============================================================
+
+float cfGetDensity(vec3 wpos) {
+    float h     = wpos.y;
+
+    // Rain pulls fog lower and makes it thicker
+    float heightDrop = rainStrength * 20.0;
+    float thicknessGain = rainStrength * 15.0;
+
+    float hLow  = CLOUD_FOG_HEIGHT - CLOUD_FOG_THICKNESS - heightDrop - thicknessGain;
+    float hHigh = CLOUD_FOG_HEIGHT + CLOUD_FOG_THICKNESS - heightDrop + thicknessGain;
+
+    if (h < hLow || h > hHigh) return 0.0;
+
+    float hNorm = (h - hLow) / (hHigh - hLow);
+
+    // Softer profile in rain — less defined edges, more uniform
+    float bottomEdge = mix(0.12, 0.25, rainStrength);
+    float topEdge    = mix(0.45, 0.6, rainStrength);
+    float profile = smoothstep(0.0, bottomEdge, hNorm) * smoothstep(1.0, topEdge, hNorm);
+
+    float shape = cfShape(wpos.xz);
+
+    // Density increases in rain
+    float rainDensity = mix(1.0, CLOUD_FOG_RAIN_DENSITY, rainStrength);
+
+    return profile * shape * CLOUD_FOG_DENSITY * rainDensity * mix(0.3, 1.0, transitionFade);
 }
 
-float valueNoise(vec3 p) {
-    vec3 i = floor(p);
-    vec3 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
-    
-    float c000 = cloudHash(i);
-    float c100 = cloudHash(i + vec3(1.0, 0.0, 0.0));
-    float c010 = cloudHash(i + vec3(0.0, 1.0, 0.0));
-    float c110 = cloudHash(i + vec3(1.0, 1.0, 0.0));
-    float c001 = cloudHash(i + vec3(0.0, 0.0, 1.0));
-    float c101 = cloudHash(i + vec3(1.0, 0.0, 1.0));
-    float c011 = cloudHash(i + vec3(0.0, 1.0, 1.0));
-    float c111 = cloudHash(i + vec3(1.0, 1.0, 1.0));
-    
-    return mix(
-        mix(mix(c000, c100, f.x), mix(c010, c110, f.x), f.y),
-        mix(mix(c001, c101, f.x), mix(c011, c111, f.x), f.y),
-        f.z
-    );
-}
+// ============================================================
+// Light march: optical depth toward the sun for self-shadowing
+// ============================================================
+#define CF_LIGHT_STEPS 6
 
-float cloudFBM(vec3 p, float detailLevel) {
-    float n = valueNoise(p) * 0.65;
-    if (detailLevel > 0.3) {
-        n += valueNoise(p * 2.0 + 0.5) * 0.35;
-    }
-    return n;
-}
-
-// Density calculation //
-float getCloudDensity(vec3 wpos, float detailLevel, out float hNormOut) {
-    float h = wpos.y;
-    float hLow = CLOUD_FOG_HEIGHT - CLOUD_FOG_THICKNESS;
+float cfLightMarch(vec3 pos, vec3 lightDir) {
     float hHigh = CLOUD_FOG_HEIGHT + CLOUD_FOG_THICKNESS;
-    
-    if (h < hLow || h > hHigh) {
-        hNormOut = 0.0;
-        return 0.0;
+
+    float marchDist;
+    if (lightDir.y > 0.01) {
+        marchDist = min((hHigh - pos.y) / lightDir.y, CLOUD_FOG_THICKNESS * 8.0);
+    } else {
+        marchDist = CLOUD_FOG_THICKNESS * 4.0;
     }
-    
-    float hNorm = (h - hLow) / (hHigh - hLow + 0.001);
-    hNormOut = hNorm;
-    
-    float heightGrad = pow(smoothstep(0.0, 0.3, hNorm), 0.7) * smoothstep(1.0, 0.15, hNorm);
-    
-    if (heightGrad < 0.001) return 0.0;
-    
-    float t = frameTimeCounter * CLOUD_FOG_SPEED;
-    vec3 p = wpos * 0.01 + vec3(
-        t * 0.1, 
-        sin(t * 0.02) * 0.05,
-        t * 0.04
-    );
-    
-    float n = cloudFBM(p, detailLevel);
-    float coverage = mix(CLOUD_FOG_COVERAGE, 0.8, rainStrength);
-    float density = max(n - (1.0 - coverage), 0.0);
-    
-    float selfShadow = 1.0 - hNorm * 0.3;
-    
-    return density * heightGrad * selfShadow * CLOUD_FOG_DENSITY * 4.0 * mix(0.3, 1.0, transitionFade);
+
+    float stepLen = marchDist / float(CF_LIGHT_STEPS);
+    float od = 0.0;
+
+    for (int j = 0; j < CF_LIGHT_STEPS; j++) {
+        vec3 sp = pos + lightDir * (float(j) + 0.5) * stepLen;
+        od += cfGetDensity(sp) * stepLen;
+    }
+
+    return od;
 }
 
-float getCloudDensity(vec3 wpos, float detailLevel) {
-    float unused;
-    return getCloudDensity(wpos, detailLevel, unused);
+// ============================================================
+// Dual-lobe Henyey-Greenstein phase function
+// ============================================================
+
+float cfHG(float cosTheta, float g) {
+    float g2 = g * g;
+    return (1.0 - g2) / (12.566370 * pow(1.0 + g2 - 2.0 * g * cosTheta, 1.5));
 }
 
-// Temporal dithering for TAA //
-float cloudTemporalDither(vec2 coord, float time) {
+float cfPhase(float cosTheta) {
+    return mix(cfHG(cosTheta, -0.25), cfHG(cosTheta, 0.6), 0.7);
+}
+
+// ============================================================
+// Powder effect
+// ============================================================
+
+float cfPowder(float od) {
+    return 1.0 - exp(-od * 2.0);
+}
+
+// ============================================================
+// Temporal dithering
+// ============================================================
+
+float cfTemporalDither(vec2 coord, float time) {
     vec3 magic = vec3(0.06711056, 0.00583715, 52.9829189);
     float t = fract(time * 0.618033988749);
     return fract(magic.z * fract(dot(coord + t * 100.0, magic.xy)));
 }
 
-// Main volumetric cloud fog function //
-float cloudStart = mix(CLOUD_FOG_START, 0.0, rainStrength);
+// ============================================================
+// Main volumetric cloud fog
+// ============================================================
+float cfStart = mix(CLOUD_FOG_START, 0.0, rainStrength);
 
 vec4 getVolumetricCloudFog(vec3 camPos, vec3 fogCol) {
-    
+
+    // Dithering
     #ifdef TAA
-    float dith = cloudTemporalDither(gl_FragCoord.xy, frameTimeCounter);
+    float dith = cfTemporalDither(gl_FragCoord.xy, frameTimeCounter);
     #else
-    float dith = cloudBayer64(gl_FragCoord.xy);
+    float dith = cfBayer64(gl_FragCoord.xy);
     #endif
-    
-    float sceneDepth = cloudGetDepth(Depth);
+
+    float sceneDepth = cfGetDepth(Depth);
     float renderDist = far;
-    float maxRay = min(sceneDepth, renderDist);
-    
-    if (maxRay < cloudStart) return vec4(0.0, 0.0, 0.0, 1.0);
-    
-    vec3 clip0 = vec3(texcoord, 0.0) * 2.0 - 1.0;
-    vec4 view0 = gbufferProjectionInverse * vec4(clip0, 1.0);
+    float maxRay     = min(sceneDepth, renderDist);
+
+    if (maxRay < cfStart) return vec4(0.0, 0.0, 0.0, 1.0);
+
+    // View & light direction (world space)
+    vec3 clip0   = vec3(texcoord, 0.0) * 2.0 - 1.0;
+    vec4 view0   = gbufferProjectionInverse * vec4(clip0, 1.0);
     vec3 viewDir = normalize(mat3(gbufferModelViewInverse) * (view0.xyz / view0.w));
-    vec3 lightDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
-    
+    vec3 lightDir= normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+
     float cosTheta = dot(viewDir, lightDir);
-    
-    const float kFront = 0.6;
-    const float kBack = -0.3;
-    float phaseFront = (1.0 - kFront * kFront) / (12.566 * pow(1.0 + kFront * cosTheta, 2.0));
-    float phaseBack = (1.0 - kBack * kBack) / (12.566 * pow(1.0 + kBack * cosTheta, 2.0));
-    float phase = mix(phaseBack, phaseFront, 0.7);
-    
+    float phase    = cfPhase(cosTheta);
+          phase    = max(phase, 0.08);
+
+    // Ray march state
     float transmittance = 1.0;
-    vec3 scattered = vec3(0.0);
-    
-    float stepSize = (maxRay - cloudStart) / float(CLOUD_FOG_SAMPLES);
-    
-    float viewLightDot = abs(dot(viewDir, lightDir));
-    
+    vec3  scattered     = vec3(0.0);
+    float stepSize      = (maxRay - cfStart) / float(CLOUD_FOG_SAMPLES);
+
+    // Extinction coefficients
+    const float sigmaE     = 0.04;  // View ray extinction
+    const float sigmaLight = 0.15;  // Light march extinction (higher for visible self-shadowing)
+
     for (int i = 0; i < CLOUD_FOG_SAMPLES; i++) {
-        if (transmittance < 0.02) break;
-        
-        float ray = cloudStart + (float(i) + dith) * stepSize;
-        
-        float expD = cloudExpDepth(ray);
-        vec3 clip = vec3(texcoord, expD) * 2.0 - 1.0;
-        vec4 vw = gbufferProjectionInverse * vec4(clip, 1.0);
-        vec3 wpos = mat3(gbufferModelViewInverse) * (vw.xyz / vw.w) + gbufferModelViewInverse[3].xyz + camPos;
-        
+        if (transmittance < 0.01) break;
+
+        float ray = cfStart + (float(i) + dith * 0.7) * stepSize;
+
+        // Reconstruct world position
+        float expD = cfExpDepth(ray);
+        vec3  clip = vec3(texcoord, expD) * 2.0 - 1.0;
+        vec4  vw   = gbufferProjectionInverse * vec4(clip, 1.0);
+        vec3  wpos = mat3(gbufferModelViewInverse) * (vw.xyz / vw.w)
+                   + gbufferModelViewInverse[3].xyz + camPos;
+
         float distXZ = length(wpos.xz - camPos.xz);
         if (distXZ > renderDist) break;
-        
-        float detailLevel = transmittance * (1.0 - float(i) / float(CLOUD_FOG_SAMPLES));
-        
-        float density = getCloudDensity(wpos, detailLevel);
+
+        // --- Sample density ---
+        float density = cfGetDensity(wpos);
         if (density < 0.001) continue;
-        
-        float dist3D = length(wpos - camPos);
-        float nearFade = smoothstep(cloudStart, cloudStart + CLOUD_FOG_FADE_NEAR, dist3D);
+
+        // Near/far fading applied to density
+        float dist3D   = length(wpos - camPos);
+        float nearFade = smoothstep(cfStart, cfStart + CLOUD_FOG_FADE_NEAR, dist3D);
         nearFade *= nearFade;
-        
-        density *= nearFade;
+        density  *= nearFade;
+
+        float farFade    = smoothstep(renderDist, renderDist * 0.7, dist3D);
+        float renderFade = smoothstep(renderDist, renderDist * 0.7, distXZ);
+        density *= farFade * renderFade;
+
         if (density < 0.001) continue;
-        
-        float farFade = smoothstep(renderDist, renderDist * 0.95, dist3D);
-        float renderFade = smoothstep(renderDist, renderDist * 0.95, distXZ);
-        
-        vec4 sc = cloudShadowSpace(texcoord, expD);
-        sc.xy *= distort(sc.xy);
-        vec3 sCoord = vec3(sc.xy, sc.z / 6.0) * 0.5 + 0.5;
-        float bias = 0.0005 + 0.001 * (1.0 - viewLightDot);
-        sCoord.z -= bias;
-        float shadow = cloudShadowStep(shadowtex1, sCoord);
-        
+
+        // --- Height-based shading ---
+        float hLow  = CLOUD_FOG_HEIGHT - CLOUD_FOG_THICKNESS;
+        float hHigh = CLOUD_FOG_HEIGHT + CLOUD_FOG_THICKNESS;
+        float hNorm = clamp((wpos.y - hLow) / (hHigh - hLow), 0.0, 1.0);
+        float heightShade = mix(0.4, 1.0, hNorm);
+
+        // --- Per-sample shadow with range check ---
+        vec4 sc    = cfShadowSpace(texcoord, expD);
+        sc.xy     *= cfDistort(sc.xy);
+        vec3 sCoord= vec3(sc.xy, sc.z / 6.0) * 0.5 + 0.5;
+        sCoord.z  -= 0.0005;
+
+        float edgeDist = min(min(sCoord.x, 1.0 - sCoord.x), min(sCoord.y, 1.0 - sCoord.y));
+        float inRange  = smoothstep(0.0, 0.05, edgeDist);
+        float shadow   = mix(0.0, cfShadowStep(shadowtex1, sCoord), inRange);
+
+        // --- Light march (self-shadowing) ---
+        float lightOD       = cfLightMarch(wpos, lightDir);
+        float lightTransmit = exp(-sigmaLight * lightOD);
+
+        float powder    = cfPowder(lightOD);
+        float powderMix = mix(1.0, powder, smoothstep(-0.1, 0.5, cosTheta));
+
+        // --- Combine lighting ---
         float ambient = CLOUD_FOG_MIN_BRIGHTNESS + 0.3;
-        float direct = shadow * phase * 1.2;
-        float totalLight = (ambient + direct) * farFade * renderFade;
-        
-        float tau = density * 0.035 * stepSize;
+        float rainDim = 1.0 - rainStrength * 0.8;
+        float direct  = shadow * lightTransmit * powderMix * phase * heightShade * 5.0 * rainDim;
+        float light   = ambient + direct;
+
+        // --- Beer-Lambert transmittance integration ---
+        float tau       = density * sigmaE * stepSize;
         float stepTrans = exp(-tau);
-        float absorption = tau < 0.001 ? tau : (1.0 - stepTrans);
-                
+
+        // Slight blue tint with depth
         float depthRatio = float(i) / float(CLOUD_FOG_SAMPLES);
-        vec3 tintedFog = fogCol * (1.0 + vec3(-0.05, 0.0, 0.08) * depthRatio) * (1-rainStrength*0.7);
-        
-        scattered += tintedFog * totalLight * (1.0 - stepTrans) * transmittance;
-        transmittance *= stepTrans;
+        vec3 tintedFog   = fogCol * (1.0 + vec3(-0.05, 0.0, 0.08) * depthRatio)
+                         * (1.0 - rainStrength * 0.7);
+
+        // Energy-conserving in-scattering
+        scattered    += tintedFog * light * (1.0 - stepTrans) * transmittance;
+        transmittance*= stepTrans;
     }
-    
+
     transmittance = max(transmittance, CLOUD_FOG_MIN_TRANSMIT);
-    
+
     return vec4(scattered, transmittance);
 }
 
