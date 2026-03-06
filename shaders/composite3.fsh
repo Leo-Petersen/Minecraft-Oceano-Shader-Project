@@ -94,7 +94,7 @@ void main() {
 	float surfaceHeight = texture2D(colortex13, texcoord).g; // Height for puddle masking
 	
 	float iswater = float(material > 0.08 && material < 0.10);
-	float isglass = float(material > 0.10 && material < 0.12 || material > 0.14 && material < 0.16)*undergroundFix;
+	float isglass = float(material > 0.10 && material < 0.14 || material > 0.14 && material < 0.16)*undergroundFix;
 	vec2 lightMap = colortex2Data.st;
 
 	vec3 reflectedSun = texture2D(colortex6, texcoord).rgb;
