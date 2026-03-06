@@ -161,7 +161,7 @@ void main() {
 			vec2 layerUV = tileMin + mod(texcoord - tileMin + offset, tileSize);
 			vec3 layerColor = texture2D(colortex0, layerUV).rgb * glcolor.rgb;
 			
-			// Boost contrast per layer — push darks down, brights up
+			// Boost contrast per layer
 			layerColor = pow(layerColor, vec3(1.4));
 			
 			float fade = 1.0 - depth * 0.85;

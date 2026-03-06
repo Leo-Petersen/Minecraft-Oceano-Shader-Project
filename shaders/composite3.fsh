@@ -192,8 +192,6 @@ void main() {
 		float fresnel = pow(1.0 - normalDotEye, 5.0);
 		fresnel = mix(0.02, 1.0, fresnel); // F0 for water ~0.02
 		
-		// SSR hits get fogged pixels from colortex0 (baked in composite2)
-		// SSR misses fall back to reflectedskyBoxCol which we fogged above
 		vec3 reflectionCol = mix(reflectedskyBoxCol*lightMap.t, waterreflection.rgb, waterreflection.a);
 
 		if (isEyeInWater < 0.5){
