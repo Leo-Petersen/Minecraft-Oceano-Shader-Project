@@ -6,6 +6,8 @@ varying float dist;
 
 varying vec2 lmcoord;
 varying vec2 texcoord;
+varying vec2 tileMin;
+varying vec2 tileMax;
 
 varying vec3 viewNormal;
 varying vec3 viewVector;
@@ -27,6 +29,7 @@ uniform vec3 cameraPosition;
 
 attribute vec4 mc_Entity;
 attribute vec4 at_tangent;
+attribute vec4 mc_midTexCoord;
 
 #define transMAD(mat, v) (mat3(mat) * (v) + (mat)[3].xyz)
 #define diagonal4(mat) vec4((mat)[0].x, (mat)[1].y, (mat)[2].zw)
@@ -91,6 +94,11 @@ void main() {
 	gl_Position.xy = taaJitter(gl_Position.xy,gl_Position.w);
 	#endif
 
+	vec2 midcoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
+	vec2 halfTile = abs(texcoord - midcoord);
+	tileMin = midcoord - halfTile;
+	tileMax = midcoord + halfTile;
+
 	//water//
 	//material = 0.0;
 	if (mc_Entity.x == 13000) material = 0.09;
@@ -98,6 +106,8 @@ void main() {
 	if (mc_Entity.x == 13030) material = 0.13;
 	if (mc_Entity.x == 13031) material = 0.13;
 	if (mc_Entity.x == 13015) material = 0.15;
+	if (mc_Entity.x == 13040) material = 0.17;
+	if (mc_Entity.x == 13050) material = 0.19;
 
 	//if (material != 0.09 && material != 0.11) material = 0.0;
 

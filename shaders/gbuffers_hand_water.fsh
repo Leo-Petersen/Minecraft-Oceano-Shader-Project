@@ -60,13 +60,11 @@ void main() {
 	
 	vec3 fragpos = toNDC(vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z));
 	
-	// ============ SHARED LIGHTMAP PROCESSING (matches deferred.fsh) ============
 	float rawSkyLight = lmcoord.t;
 	float rawTorchLight = lmcoord.s;
 	
 	float processedSkyLight = processSkyLight(rawSkyLight, nightVision, darknessLightFactor);
 	
-	// Handlight (matches deferred.fsh)
 	float heldLightValue = max(float(heldBlockLightValue), float(heldBlockLightValue2));
 	float handlight = clamp((heldLightValue - 1.5 * length(fragpos)) / 18.0, 0.0, 0.9333);
 	
@@ -109,14 +107,14 @@ void main() {
 		float NdotL = max(dot(viewNormal, normalize(shadowLightPosition)), 0.0);
 		float diffuse = NdotL * 0.7 + 0.3; // Softer falloff
 		
-		// Time factors (same as deferred.fsh)
+		// Time factors
 		float transparencyFactor = getTransparencyFactor();
 		float shadowFactor = getShadowFactor();
 		
 		// Underground blend
 		float undergroundBlend = smoothstep(0.0, 0.3, rawSkyLight);
 		
-		// Ambient (simplified version of deferred.fsh ambient)
+		// Ambient 
 		vec3 shadowCol = vec3(0.08, 0.12, 0.18);
 		vec3 flatAmbient = pow(shadowCol, vec3(0.3)) * undergroundBlend * (1.0 - rainStrength * 0.2);
 		vec3 undergroundAmbient = vec3(0.025, 0.028, 0.035) * (1.0 - undergroundBlend) * 5.0;
@@ -126,7 +124,7 @@ void main() {
 		float lightStrength = lightStr * 4.0 * transparencyFactor * transitionFade;
 		vec3 sunLight = sunlightCol * diffuse * processedSkyLight * lightStrength * (1.0 - rainStrength * 0.65);
 		
-		// Torch contribution (matches deferred.fsh)
+		// Torch contribution
 		vec3 torchLight = getTorchLighting(processedTorchLight, albedo);
 		
 		// Combine lighting
@@ -139,7 +137,7 @@ void main() {
 		
 		color.rgb *= transparencyFactor * 3.33;
 	}
-
+	
 	vec3 glassNormal = viewNormal;
 	if (isglass > 0.5 || isice > 0.5 || ishoney > 0.5) {
 		vec4 normalRaw = texture2D(normals, texcoord);

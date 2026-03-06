@@ -19,7 +19,7 @@ vec3 applyCaveFog(
     caveFogColor = mix(caveFogColor, torchFogTint*0.6, torchInfluence * torchFalloff);
 
     float fogAmount = 1.0 - exp(-density * dist);
-    fogAmount = clamp(fogAmount*1.5, 0.0, 0.55);
+    fogAmount = clamp(fogAmount*1.5, 0.0, 0.8);
 
     return mix(color, caveFogColor, fogAmount * caveFactor);
 }

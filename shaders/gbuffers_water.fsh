@@ -32,6 +32,8 @@ varying float dist;
 
 varying vec2 lmcoord;
 varying vec2 texcoord;
+varying vec2 tileMin;
+varying vec2 tileMax;
 
 varying vec3 viewNormal;
 varying vec3 viewVector;
@@ -56,6 +58,7 @@ void main() {
     float isglass = float(material > 0.10 && material < 0.12);
 	float ishoney = float(material > 0.12 && material < 0.14);
 	float isice = float(material > 0.14 && material < 0.16);
+	float isportal = float(material > 0.16 && material < 0.18);
 	float isTransparent = 1.0 - iswater; // Everything except water
 	
 	vec3 fragpos = toNDC(vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z));
@@ -129,6 +132,65 @@ void main() {
 		#endif
 		
 		color.rgb *= transparencyFactor * 3.33;
+	}
+
+	// Nether Portal Effect //
+	if (isportal > 0.5) {
+		float t = frameTimeCounter;
+		vec3 viewDir = normalize(viewVector);
+		
+		vec2 tileSize = tileMax - tileMin;
+		
+		float tunnelDepth = max(abs(dot(normalize(viewVector), vec3(0.0, 0.0, 1.0))), 0.3);
+		
+		vec3 voidColor = vec3(0.05, 0.005, 0.1);
+		
+		vec3 portalColor = vec3(0.0);
+		float totalWeight = 0.0;
+		
+		for (int i = 0; i < 8; i++) {
+			float depth = float(i) / 7.0;
+			
+			vec2 offset = viewDir.xy * depth * 0.18;
+			
+			float angle = depth * 0.4 + t * 0.15;
+			float s = sin(angle);
+			float c = cos(angle);
+			offset = vec2(offset.x * c - offset.y * s, offset.x * s + offset.y * c);
+			
+			vec2 layerUV = tileMin + mod(texcoord - tileMin + offset, tileSize);
+			vec3 layerColor = texture2D(colortex0, layerUV).rgb * glcolor.rgb;
+			
+			// Boost contrast per layer — push darks down, brights up
+			layerColor = pow(layerColor, vec3(1.4));
+			
+			float fade = 1.0 - depth * 0.85;
+			vec3 depthTint = mix(vec3(1.0), vec3(0.35, 0.12, 0.65), depth);
+			layerColor = mix(voidColor, layerColor * depthTint * fade, tunnelDepth);
+			
+			float layerPulse = sin(t * (1.5 + depth * 2.0) + depth * 3.14) * 0.12 + 0.88;
+			layerColor *= layerPulse;
+			
+			float weight = pow(1.0 - depth * 0.6, 1.5);
+			portalColor += layerColor * weight;
+			totalWeight += weight;
+		}
+		
+		portalColor /= totalWeight;
+		
+		// Contrast boost on final result
+		float luma = dot(portalColor, vec3(0.3, 0.1, 0.6));
+		portalColor = mix(portalColor * 0.5, portalColor * 1.42, smoothstep(0.1, 0.4, luma));
+		
+		float pulse = sin(t * 2.0) * 0.1 + 0.9;
+		portalColor *= pulse * 0.85;
+		
+		// Glow only on the brightest spots
+		float brightness = dot(portalColor, vec3(0.3, 0.1, 0.6));
+		portalColor += vec3(0.2, 0.06, 0.35) * smoothstep(0.25, 0.55, brightness) * pulse * 0.4;
+		
+		color.rgb = portalColor;
+		color.a = 0.9;
 	}
 
 	// Reflections and normal map for water and glass //

@@ -2,19 +2,27 @@
 #include "/lib/settings.glsl"
 
 varying float dist;
+varying float isportal;
 
 varying vec2 lmcoord;
 varying vec2 texcoord;
 varying vec2 vtexcoord;
 varying vec3 viewVector;
 varying vec3 viewNormal;
+varying vec3 wpos;
+varying vec3 viewPos;
+varying vec3 worldViewDir;
 varying vec4 glcolor;
 varying vec4 vtexcoordam;
 
 varying mat3 tbnMatrix;
 
+uniform vec3 cameraPosition;
+uniform mat4 gbufferModelViewInverse;
+
 attribute vec4 at_tangent;
 attribute vec4 mc_midTexCoord;
+uniform int blockEntityId;
 
 #ifdef TAA
 #include "/lib/jitter.glsl"
@@ -45,4 +53,14 @@ void main() {
 	texcoord = gl_MultiTexCoord0.st;
 	lmcoord  = (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;
 	glcolor = gl_Color;
+
+	vec3 viewpos = mat3(gbufferModelViewInverse) * (gl_ModelViewMatrix * gl_Vertex).xyz + gbufferModelViewInverse[3].xyz;
+	wpos = viewpos.xyz + cameraPosition;
+	viewPos = (gl_ModelViewMatrix * gl_Vertex).xyz;
+	worldViewDir = normalize(viewpos.xyz);
+
+	isportal = 0.0;
+	if (blockEntityId  == 13050) {
+		isportal = 1.0;
+	}
 }
