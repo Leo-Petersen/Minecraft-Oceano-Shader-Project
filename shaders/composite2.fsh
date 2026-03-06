@@ -81,21 +81,25 @@ void main() {
 	}
 
 	//Rain Blur
-	if (Depth < 1.0) {
-		if (rainStrength > 0.0){
-			float fogDepth = clamp(length(viewPos.xyz) / 40.0, 0.0, 1.0);
-				fogDepth = fogDepth * fogDepth * 0.8;
+	// if (Depth < 0.9) {
+	// 	if (rainStrength > 0.0){
+	// 		float fogDepth = length(worldPos.xz) / 150;
+	// 			fogDepth = pow(fogDepth, 6.0);
+	// 			fogDepth = 1.0 - exp(-0.1 * fogDepth);
+	// 			fogDepth = clamp(fogDepth, 0.0, 0.5);
 
-			for( float d=0.0; d<Pi2; d+=Pi2/Directions)
-				{
-					for(float i=1.0/Quality; i<=1.0; i+=1.0/Quality)
-					{
-						color += texture2D(colortex0, texcoord+vec2(cos(d),sin(d))*Radius*i*fogDepth*3.0*rainStrength);		
-					}
-				}
-			color /= Quality * Directions + 1.0;
-		}
-	}
+	// 		for( float d=0.0; d<Pi2; d+=Pi2/Directions)
+	// 			{
+	// 				for(float i=1.0/Quality; i<=1.0; i+=1.0/Quality)
+	// 				{
+	// 					color += texture2D(colortex0, texcoord+vec2(cos(d),sin(d))*Radius*i*fogDepth*1.5*rainStrength*undergroundFix);		
+	// 				}
+	// 			}
+	// 		// Output to screen
+	// 		color /= Quality * Directions;
+	// 	}
+	// }
+
 
 	//Underwater//
 	if (isEyeInWater == 1.0){

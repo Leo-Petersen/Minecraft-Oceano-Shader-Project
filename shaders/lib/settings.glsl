@@ -86,7 +86,7 @@
     #define volumetricCloudFog // WIP
         // Shape controls
             #define CLOUD_FOG_DENSITY 0.8        // [0.5 0.8 1.0 1.5 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0] Overall density multiplier
-            #define CLOUD_FOG_RAIN_DENSITY 2.5   // [1.5 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0] Density multiplier during rain
+            #define CLOUD_FOG_RAIN_DENSITY 1.5   // [1.5 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0] Density multiplier during rain
             #define CLOUD_FOG_HEIGHT 70.0        // [40.0 55.0 70.0 80.0 100.0] Center Y height
             #define CLOUD_FOG_THICKNESS 20.0     // [5.0 7.5 10.0 15.0 20.0 25.0 35.0 45.0 60.0 80.0] Vertical size
             #define CLOUD_FOG_COVERAGE 0.6       // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9]

@@ -90,7 +90,7 @@ vec3 endPortalStars(vec2 uv, float depth, float t) {
 	
 	// Rare bright stars
 	float isBright = step(0.95, starRand);
-	star = mix(star, star * 2.5, isBright);
+	star = mix(star, star * 12.5, isBright);
 	
 	return starCol * star;
 }
@@ -122,7 +122,7 @@ void main() {
 	#endif
 
 	if (isportal > 0.0) {
-		float t = frameTimeCounter * 0.0016;
+		float t = frameTimeCounter * 0.0026;
 		vec3 viewDir = worldViewDir;
 		
 		vec2 baseUV = wpos.xz * 0.5;

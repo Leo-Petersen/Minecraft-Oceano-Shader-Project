@@ -84,7 +84,7 @@ float getViewDistance() {
 }
 
 
-/// Unused, this is a bad implimentation, but left in for potential future use or reference
+/// Unused, this is a bad implementation, but left in for potential future use or reference
 #ifdef PCSS_ENABLED
 float PCSSBlockerSearch(vec3 shadowCoord, mat2 Rotation, vec3 Rotationvec3) {
     float blockerSum = 0.0;
@@ -271,7 +271,7 @@ vec3 calculateSSS(
     vec3 sssContribution = lightColor * sqrt(albedo) * sssColor;
     
     sssContribution *= phase * sssAmount * transmission * skyLight;
-    sssContribution *= (1.0 - rainStrength * 0.8);
+    sssContribution *= (1.0 - rainStrength * 0.5);
     sssContribution *= mix(1.0, 0.5, distFactor);
     //sssContribution *= 2.0;
     

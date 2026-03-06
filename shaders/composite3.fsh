@@ -236,57 +236,6 @@ void main() {
 		color.rgb += reflectedSun;
 	}
 
-
-	#ifdef PBRReflection
-	if (iswater < 0.5 && isglass < 0.5 && Depth < 1.0 && isEyeInWater < 0.5) {
-		float perceptualSmoothness = specularMap.r;
-		float metalness = specularMap.g;
-		
-		// Check if material has PBR data
-		bool hasPBRData = !(perceptualSmoothness == 0.0 && metalness == 0.0) && 
-		                  !(perceptualSmoothness == 1.0 && metalness == 1.0);
-		
-		if (hasPBRData) {
-			float roughness = 1.0 - perceptualSmoothness;
-			roughness = pow(roughness, 0.7);
-			roughness = clamp(roughness, 0.02, 0.99);
-
-			float roughnessThreshold = mix(0.6, 0.95, metalness);
-			
-				vec3 viewDir = normalize(viewPos.xyz);
-				float NdotV = max(dot(viewNormal, -viewDir), 0.001);
-				
-				vec3 F0 = mix(vec3(0.04), color.rgb, metalness);
-				
-				float fresnelPower = pow(1.0 - NdotV, 5.0);
-				
-				float fresnelDamping = 1.0 - roughness * roughness * 0.9;
-				fresnelPower *= fresnelDamping;
-				
-				vec3 F = F0 + (max(vec3(1.0 - roughness), F0) - F0) * fresnelPower;
-				
-				vec4 pbrReflection = raytracePBR(reflectedskyBoxCol, viewPos.xyz, viewNormal, roughness, texcoord);
-				
-				if (pbrReflection.a > 0.01) {
-					vec3 reflectionColor = pbrReflection.rgb;
-						 reflectionColor = mix(reflectionColor, reflectionColor * color.rgb, metalness * 0.7);
-					
-					float roughnessVisibility = exp(-roughness * roughness * 1.0);
-						  roughnessVisibility = mix(roughnessVisibility, 
-					                            max(roughnessVisibility, 0.3), 
-					                            metalness);
-					
-					float avgFresnel = (F.r + F.g + F.b) / 3.0;
-					float blendFactor = avgFresnel * roughnessVisibility * pbrReflection.a * PBRReflectionStr;
-					
-					blendFactor = clamp(blendFactor, 0.0, 0.9);
-					
-					color.rgb = mix(color.rgb, reflectionColor, blendFactor);
-				}
-		}
-	}
-	#endif
-
 	#ifdef rainReflection
 		float iswet = wetness;
 		float isParticle = float(material == 0);
