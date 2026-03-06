@@ -6,6 +6,7 @@ uniform sampler2D colortex2;
 uniform sampler2D colortex10;
 uniform sampler2D colortex11;
 uniform sampler2D noisetex;
+uniform sampler2D normals;
 
 uniform float frameTimeCounter;
 uniform float rainStrength;
@@ -53,6 +54,8 @@ varying mat3 tbnMatrix;
 void main() {
 	float iswater = float(material > 0.08 && material < 0.10);
     float isglass = float(material > 0.10 && material < 0.12);
+	float ishoney = float(material > 0.12 && material < 0.14);
+	float isice = float(material > 0.14 && material < 0.16);
 	float isTransparent = 1.0 - iswater; // Everything except water
 	
 	vec3 fragpos = toNDC(vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z));
@@ -86,7 +89,6 @@ void main() {
 	vec4 color = texture2D(colortex0, texcoord) * glcolor;
 	vec3 albedo = color.rgb;
 
-	// ============ WATER LIGHTING (original behavior preserved) ============
 	if (iswater > 0.5) {
 		float skylightMap = texture2D(colortex2, texcoord).t;
 		skylightMap = clamp(skylightMap, min_skyLightMap, 1.0);
@@ -102,7 +104,6 @@ void main() {
 			color.rgb *= transparencyFactor;
 		}
 	}
-	// ============ TRANSPARENT BLOCK LIGHTING (glass, etc.) ============
 	else {
 		// Diffuse term
 		float NdotL = max(dot(viewNormal, normalize(shadowLightPosition)), 0.0);
@@ -139,6 +140,14 @@ void main() {
 		color.rgb *= transparencyFactor * 3.33;
 	}
 
+	vec3 glassNormal = viewNormal;
+	if (isglass > 0.5 || isice > 0.5 || ishoney > 0.5) {
+		vec4 normalRaw = texture2D(normals, texcoord);
+		vec2 normalXY = normalRaw.rg * 2.0 - 1.0;
+		vec3 normalData = vec3(normalXY, sqrt(1.0 - dot(normalXY, normalXY)));
+		glassNormal = normalize(normalData * tbnMatrix);
+	}
+
 	// Reflections and normal map for water and glass //
 	#ifdef Reflections
 	#ifdef ParallaxWater
@@ -155,7 +164,7 @@ void main() {
 	bump = normalize(clamp(bump, vec3(-1.0), vec3(1.0)));
 
 	vec4 normalTangentSpace;
-	if (isglass > 0.5) {
+	if (isglass > 0.5 || isice > 0.5 || ishoney > 0.5) {
 		normalTangentSpace = vec4(viewNormal * 0.5 + 0.5, 1.0);
 	} else {
 		normalTangentSpace = vec4(normalize(bump * tbnMatrix) * 0.5 + 0.5, 1.0);
@@ -163,7 +172,7 @@ void main() {
 	
 	// Reflected skybox
 	vec3 reflectedVector = reflect(fragpos, normalize(bump * tbnMatrix).xyz) * 300.0;
-	if (isglass > 0.5) {
+	if (isglass > 0.5 || isice > 0.5 || ishoney > 0.5) {
 		reflectedVector = reflect(fragpos, viewNormal) * 300.0;
 	}
 	vec3 skybox = getSkyTextureFromSequence(position.xyz + reflectedVector);
@@ -200,10 +209,10 @@ void main() {
 
 	float packedWaveLight = 0.5 + (frontGlow * 0.5) - (sssIntensity * 0.5);
 	packedWaveLight = clamp(packedWaveLight, 0.0, 1.0);
-	
+
 /* DRAWBUFFERS:012583 */
 	gl_FragData[0] = color;
-	gl_FragData[1] = vec4(encodeNormal(viewNormal), 1, 1);
+	gl_FragData[1] = vec4(encodeNormal((isglass > 0.5 || isice > 0.5 || ishoney > 0.5) ? glassNormal : viewNormal), 1, 1);
 	gl_FragData[2] = vec4(lmcoord, material, 1.0f);
 	gl_FragData[3] = normalTangentSpace;
 	gl_FragData[4] = vec4(skybox, 1.0);
