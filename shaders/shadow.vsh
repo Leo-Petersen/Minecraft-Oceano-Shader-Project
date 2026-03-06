@@ -86,8 +86,10 @@ uint getVoxelId(int entityId) {
     // Respawn Anchor (ID 10239)
     if (entityId == 10239) return 12u; // Same as crying obsidian
     // Nether Portal (ID 10240)
-    if (entityId == 10240) return 12u;
-    
+    if (entityId == 10240 || entityId == 13040) return 21u;
+    // End Portal Frame (ID 10241)
+    if (entityId == 10241) return 22u;
+
     return 0u; // Not an emissive block
 }
 
@@ -114,7 +116,7 @@ bool isTransparent(int entityId) {
     // Glow lichen
     if (entityId == 10234) return true;
     // Nether portal
-    if (entityId == 10240) return true;
+    if (entityId == 10240 || entityId == 13040) return true;
     // Beacon (beam should pass through)
     if (entityId == 138) return true;
     

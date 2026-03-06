@@ -40,6 +40,10 @@ vec3 getBlocklightColor(int id) {
     else if (id == 19) color = vec3(0.9, 0.6, 0.85);
     // Amethyst (ID 20)
     else if (id == 20) color = vec3(0.7, 0.4, 0.95) * 0.5;
+    // Nether Portal (ID 21)
+    else if (id == 21) color = vec3(0.5, 0.15, 0.9);
+    // End Portal Frame (ID 22)
+    else if (id == 22) color = vec3(0.5, 0.15, 0.9) * 0.3;
     
     return color;
 }
