@@ -58,13 +58,13 @@ uint getVoxelId(int entityId) {
     // Crying Obsidian (ID 10225)
     if (entityId == 10225) return 12u;
     // Redstone Wire (ID 55)
-    if (entityId == 55) return 13u;
+    if (entityId == 55 || entityId == 12000) return 13u;
     // End Rod (ID 198)
     if (entityId == 198) return 14u;
     // Shroomlight (ID 10230)
     if (entityId == 10230) return 15u;
     // Beacon (ID 138)
-    if (entityId == 138) return 16u;
+    if (entityId == 138 || entityId == 12151) return 16u;
     // Redstone Lamp lit (ID 10124)
     if (entityId == 10124) return 3u; // Same as glowstone
     // Campfire (ID 10231)
