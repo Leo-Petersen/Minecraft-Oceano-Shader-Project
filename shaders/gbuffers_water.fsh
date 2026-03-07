@@ -21,6 +21,8 @@ uniform int isEyeInWater;
 uniform int heldBlockLightValue;
 uniform int heldBlockLightValue2;
 
+uniform ivec2 atlasSize;
+
 uniform vec3 shadowLightPosition;
 uniform vec3 skyColor;
 
@@ -151,7 +153,8 @@ void main() {
 		for (int i = 0; i < 8; i++) {
 			float depth = float(i) / 7.0;
 			
-			vec2 offset = viewDir.xy * depth * 0.18;
+			vec2 tilePx = tileSize * vec2(atlasSize);
+			vec2 offset = viewDir.xy * depth * (tilePx.x / 128.0) * 0.1;
 			
 			float angle = depth * 0.4 + t * 0.15;
 			float s = sin(angle);

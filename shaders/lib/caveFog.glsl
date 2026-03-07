@@ -3,7 +3,8 @@ vec3 applyCaveFog(
     vec3 worldPos,
     float rawSkyLight,
     float heldLight,
-    float density
+    float density,
+    float emission
 ) {
     float caveFactor = 1.0 - smoothstep(0.05, 0.5, rawSkyLight);
     if (caveFactor < 0.001) return color;
@@ -20,6 +21,8 @@ vec3 applyCaveFog(
 
     float fogAmount = 1.0 - exp(-density * dist);
     fogAmount = clamp(fogAmount*1.5, 0.0, 0.8);
+
+    fogAmount *= 1.0 - emission;
 
     return mix(color, caveFogColor, fogAmount * caveFactor);
 }

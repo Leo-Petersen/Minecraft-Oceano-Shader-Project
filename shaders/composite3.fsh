@@ -285,7 +285,7 @@ void main() {
 	#ifdef caveFog
 	if (Depth < 1.0 && isEyeInWater < 0.9) {
 		float heldLight = max(float(heldBlockLightValue), float(heldBlockLightValue2));
-		color.rgb = applyCaveFog(color.rgb, worldPos, colortex2Data.t, heldLight, 0.025*(1 - undergroundFix));
+		color.rgb = applyCaveFog(color.rgb, worldPos, colortex2Data.t, heldLight, 0.025*(1 - undergroundFix), colortex2Data.s);
 	}
 	#endif
 
@@ -301,7 +301,8 @@ void main() {
 	//// Volumetric Cloud Fog (applied over everything including reflections) ////
 	#ifdef volumetricCloudFog
 	if (isEyeInWater < 0.5){
-		color.rgb = color.rgb * cloudFog.a + cloudFog.rgb;
+		float fogVisibility = (Depth >= 1.0) ? 1.0 : smoothstep(0.1, 0.5, colortex2Data.t);
+		color.rgb = color.rgb * mix(1.0, cloudFog.a, fogVisibility) + cloudFog.rgb * fogVisibility;
 	}
 	#endif
 

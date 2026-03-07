@@ -111,13 +111,7 @@ float torchFactor =   1.00 * (time[0]) +
                       0.33 * (time[3]) +
                       1.00* (time[4]) +
                       1.00 * (time[5]);
-
-float bounceFactor =  0.75 * (time[0]) +
-                      1.0 * (time[1]) +
-                      1.0 * (time[2]) +
-                      1.0 * (time[3]) +
-                      0.75 * (time[4]) +
-                      1.0 * (time[5]);
+                      
 void main() {
     // Early out for sky pixels
     if (Depth >= 1.0) {
@@ -306,7 +300,7 @@ void main() {
 
     vec3 bounceLight = backLight(flux);
     bounceLight = mix(shadowCol, bounceLight, dot(vec3(0.0721, 0.7154, 0.2125), flux) + 0.5);
-    bounceLight *= 0.55 * bounceFactor;
+    bounceLight *= 0.55;
 
     float undergroundBlend = smoothstep(0.0, 1.0, pow(rawSkyLight, 0.5));
 
