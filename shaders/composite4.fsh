@@ -1,4 +1,4 @@
-#version 130
+#version 120
 #extension GL_ARB_shader_texture_lod : enable
 
 varying vec2 texcoord;

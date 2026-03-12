@@ -28,7 +28,7 @@ vec3 sunlightCol = (
 				vec3(255, 250, 248)/255 * 0.55  * time[2] +   
 				vec3(255, 250, 248)/255 * 0.55  * time[3] +   
 				vec3(255, 175, 100)/255  * 0.45 * time[4] +   
-				vec3(55, 65, 85)/255    * 0.85  * time[5]    
+				vec3(55, 65, 85)/255    * 0.95  * time[5]    
 				) + ((1.0 - time[5]) * (vec3(skyColor) * (rainStrength * 0.2))) 
 				+ ((time[5]) * (vec3(0.1 + skyColor) * (rainStrength * 2.5)));
 

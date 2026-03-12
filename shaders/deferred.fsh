@@ -1,4 +1,4 @@
-#version 130
+#version 120
 
 #include "/lib/voxel_settings.glsl"
 #include "/lib/settings.glsl"
@@ -74,10 +74,10 @@ vec3 worldToVoxelUV(vec3 worldPos) {
 }
 
 vec3 getWorldPos(float depth) {
-    vec3 ClipSpace = vec3(texcoord, depth) * 2.0f - 1.0f;
-    vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0f);
+    vec3 ClipSpace = vec3(texcoord, depth) * 2.0 - 1.0;
+    vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0);
     vec3 View = ViewW.xyz / ViewW.w;
-    vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
+    vec4 World = gbufferModelViewInverse * vec4(View, 1.0);
     return World.xyz;
 }
 

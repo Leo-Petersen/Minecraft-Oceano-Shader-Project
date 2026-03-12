@@ -1,4 +1,4 @@
-#version 120
+#version 400 compatibility
 
 varying vec2 texcoord;
 varying vec2 lmcoord;

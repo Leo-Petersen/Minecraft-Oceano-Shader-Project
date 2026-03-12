@@ -1,4 +1,4 @@
-#version 400 compatibility
+#version 120
 #include "/lib/settings.glsl"
 
 varying vec4 starData; //rgb = star color, a = flag for whether or not this pixel is a star.
