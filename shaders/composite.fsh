@@ -17,8 +17,8 @@ uniform sampler2D colortex9;
 uniform sampler2D texture; 
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
-uniform sampler2D shadowtex0;
-uniform sampler2D shadowtex1;
+uniform sampler2DShadow shadowtex0;
+uniform sampler2DShadow shadowtex1;
 uniform sampler2D noisetex;
 
 uniform mat4 shadowModelView;
@@ -69,7 +69,7 @@ vec3 luma(vec3 color, float strength) {
 
 float undergroundFix = clamp(mix(max(lmcoord.t-2.0/16.0,0.0)*1.14285714286,1.0,clamp((eyeBrightnessSmooth.y/255.0-2.0/16.)*4.0,0.0,1.0)), 0.0, 1.0);
 vec3 viewNormal = normalize(decodeNormal(texture2D(colortex1, texcoord).st));
-vec3 waterNormal = normalize(texture2D(colortex5, texcoord).rgb * 2.0f - 1.0f);
+vec3 waterNormal = normalize(texture2D(colortex5, texcoord).rgb * 2.0 - 1.0);
 float Diffuse = max(0.0, dot(viewNormal, shadowLightPosition * 0.01)); 
 
 ////#includes////

@@ -20,21 +20,21 @@ float getDepthVol(float depth) {
     return (near * far) / (near * depth + (far * (1.0 - depth)));
 }
 
-float shadowStep(sampler2D shadow, vec3 sPos) {
-    return clamp(1.0 - max(sPos.z - texture2D(shadow, sPos.xy).y, 0.0) * 4096, 0.0, 1.0);
+float shadowStep(sampler2DShadow shadow, vec3 sPos) {
+    return shadow2D(shadow, sPos).r;
 }
 
 vec2 DistortPosition(in vec2 position){
     float CenterDistance = length(position);
-    float DistortionFactor = mix(1.0f, CenterDistance, 0.9f);
+    float DistortionFactor = mix(1.0, CenterDistance, 0.9);
     return position / DistortionFactor;
 }
 
 vec4 ShadowSpace(float depth0) {
-    vec3 ClipSpace = vec3(texcoord, depth0) * 2.0f - 1.0f;
+    vec3 ClipSpace = vec3(texcoord, depth0) * 2.0 - 1.0;
     vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0);
     vec3 View = ViewW.xyz / ViewW.w;
-    vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
+    vec4 World = gbufferModelViewInverse * vec4(View, 1.0);
     vec4 ShadowSpace = shadowProjection * shadowModelView * World;
     return ShadowSpace;
 }
@@ -66,16 +66,16 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
             vec4 shadowCoord = ShadowSpace(expDepth(startRay));
             shadowCoord.xy *= distort(shadowCoord.xy);
             shadowCoord.z /= 6.0;
-            vec3 SampleCoords = shadowCoord.xyz * 0.5f + 0.5f;
+            vec3 SampleCoords = shadowCoord.xyz * 0.5 + 0.5;
             SampleCoords.z -= 0.0005;
                 
             float shadowSampleBack = shadowStep(shadowtex1, SampleCoords);
 
             if (isEyeInWater > 0.9) {
-                vec3 ClipSpace = vec3(texcoord, expDepth(startRay)) * 2.0f - 1.0f;
+                vec3 ClipSpace = vec3(texcoord, expDepth(startRay)) * 2.0 - 1.0;
                 vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0);
                 vec3 View = ViewW.xyz / ViewW.w;
-                vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
+                vec4 World = gbufferModelViewInverse * vec4(View, 1.0);
                 vec3 currentWorldPos = World.xyz;
                 
                 vec3 lightRayDir = lightDir; 

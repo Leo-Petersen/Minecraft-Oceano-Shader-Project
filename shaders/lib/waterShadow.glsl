@@ -16,8 +16,8 @@ vec4 ShadowSpaceWater() {
 	return ShadowSpace;
 }
 
-float Visibility(in sampler2D ShadowMap, in vec3 SampleCoords) {
-    return step(SampleCoords.z - 0.001, texture2D(ShadowMap, SampleCoords.xy).r);
+float Visibility(in sampler2DShadow ShadowMap, in vec3 SampleCoords) {
+    return shadow2D(ShadowMap, vec3(SampleCoords.xy, SampleCoords.z - 0.001)).r;
 }
 
 float distort(vec2 pos) {

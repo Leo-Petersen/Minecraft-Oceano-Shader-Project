@@ -88,8 +88,8 @@
             #define CLOUD_FOG_COVERAGE 0.6       // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9]
             #define CLOUD_FOG_SPEED 0.3  // [0.1 0.2 0.3 0.4 0.5] Wind drift speed
         // Distance settings  
-            #define CLOUD_FOG_START 20.0          // Where fog sampling begins
-            #define CLOUD_FOG_FADE_NEAR 25.0     // Fade in over this distance
+            #define CLOUD_FOG_START 30.0          // Where fog sampling begins
+            #define CLOUD_FOG_FADE_NEAR 35.0     // Fade in over this distance
             #define CLOUD_FOG_MIN_BRIGHTNESS 0.5 // [0.1 0.2 0.3 0.4 0.5 0.6] Minimum fog brightness
             #define CLOUD_FOG_MIN_TRANSMIT 0.0   // [0.0 0.05 0.1 0.15 0.2 0.3] Minimum see-through
         // Quality
