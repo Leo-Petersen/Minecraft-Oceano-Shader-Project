@@ -33,7 +33,7 @@ varying vec2 lmcoord;
 
 float Depth = texture2D(depthtex0, texcoord).r;
 
-#ifdef enable_saturation
+#ifdef tonemapSaturation
 vec3 luminance(vec3 color, float str) {
     const vec3 lw = vec3(0.2126, 0.7152, 0.0722);
     float luma = dot(color, lw);
@@ -68,7 +68,7 @@ void main() {
 	    //nothing, its minecraft
 
 	#elif ToneMap == 1 //ACES//
-		color = ACES(color);
+		color = ACES(color * 0.85);
 		color = luminance(color, saturation);
 
 	#elif ToneMap == 2 //Filmic_Hejl2015//
