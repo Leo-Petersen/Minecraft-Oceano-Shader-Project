@@ -55,7 +55,7 @@ vec3 cookTorranceGGXBRDF(vec3 color, vec2 specularMap, float skyMap, vec3 sunCol
           return vec3(0.0);
     }
 
-    roughness = clamp(roughness, 0.01, 0.99); //fixes black dots given by zero values
+    roughness = clamp(roughness, 0.045, 0.99); //fixes black dots given by zero values
     float alpha = roughness * roughness;
 
     vec3  F0    = mix(vec3(0.04), color, metalness);
