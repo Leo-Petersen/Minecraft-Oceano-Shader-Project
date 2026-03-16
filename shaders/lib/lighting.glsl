@@ -165,7 +165,7 @@ float fakeCloudShadow(vec3 worldPos) {
     }
 #else
     vec3 backLight(vec3 bounceColor) {
-        return vec3(8.0);
+        return vec3(20.0);
     }
 #endif
 
