@@ -109,9 +109,17 @@ float torchFactor =   1.00 * (time[0]) +
                       0.33 * (time[1]) +
                       0.33 * (time[2]) +
                       0.33 * (time[3]) +
-                      1.00* (time[4]) +
+                      1.00 * (time[4]) +
                       1.00 * (time[5]);
-                      
+
+// Fixes bounce light being too strong at sunrise/sunset
+float bounceDesaturation = 0.9 * (time[0]) +
+                           0.0 * (time[1]) +
+                           0.0 * (time[2]) +
+                           0.0 * (time[3]) +
+                           0.9 * (time[4]) +
+                           0.7 * (time[5]);
+
 void main() {
     // Early out for sky pixels
     if (Depth >= 1.0) {
@@ -301,6 +309,8 @@ void main() {
     vec3 bounceLight = backLight(flux);
     bounceLight = mix(shadowCol, bounceLight, dot(vec3(0.0721, 0.7154, 0.2125), flux) + 0.5);
     bounceLight *= 0.55;
+    float bounceLum = dot(bounceLight, vec3(0.2126, 0.7152, 0.0722));
+          bounceLight = mix(bounceLight, vec3(bounceLum), bounceDesaturation); // Fixes bounce light being too strong at sunrise / sunset
 
     float undergroundBlend = smoothstep(0.0, 1.0, pow(rawSkyLight, 0.5));
 
