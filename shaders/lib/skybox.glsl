@@ -72,7 +72,7 @@ vec3 getSkyTextureFromSequence(vec3 pos) {
   }
 
   if (rainStrength > 0.0) {
-    if (time[5] > 0.0) rain = texture2D(colortex10, projectSky(pos.xyz, worldTime / 12000.0) * vec2(0.25, 0.5) + vec2(0.0, 0.5)).rgb * time[5] * mix(0.1 * (1.0 + screenBrightness), 1.0, nightVision) * rainStrength * 3.6;
+    if (time[5] > 0.0) rain = texture2D(colortex10, projectSky(pos.xyz, worldTime / 12000.0) * vec2(0.25, 0.5) + vec2(0.0, 0.5)).rgb * time[5] * mix(0.1 * (1.0 + screenBrightness), 1.0, nightVision) * rainStrength * 8;
     rain += texture2D(colortex10, projectSky(pos.xyz, worldTime / 3000.0) * vec2(0.25, 0.5) + vec2(0.5, 0.5)).rgb * rainStrength * mix(1.0, 0.04 + screenBrightness * 0.04, time[5] * (1.0 - nightVision));
   }
 
