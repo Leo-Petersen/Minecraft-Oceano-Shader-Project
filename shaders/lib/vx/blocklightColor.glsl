@@ -25,7 +25,7 @@ vec3 getBlocklightColor(int id) {
     // Crying Obsidian (ID 12)
     else if (id == 12) color = vec3(0.6, 0.2, 0.9);
     // Redstone (ID 13)
-    else if (id == 13) color = vec3(1.0, 0.05, 0.0) * 0.3;
+    else if (id == 13) color = vec3(1.0, 0.05, 0.0) * 0.5;
     // End Rod (ID 14)
     else if (id == 14) color = vec3(0.95, 0.9, 1.0);
     // Shroomlight (ID 15)
