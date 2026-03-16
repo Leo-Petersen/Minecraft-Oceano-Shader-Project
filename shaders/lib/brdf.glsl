@@ -46,7 +46,7 @@ vec3 cookTorranceGGXBRDF(vec3 color, vec2 specularMap, float skyMap, vec3 sunCol
 
     float rainTerm = (1.0 - wetness * 0.9 * clamp(pow(skyMap, 50), 0.0, 1.0)); // decreases 'smoothness' whilst raining, Psuedo values
     float wetSmoothness = clamp(perceptualSmoothness / rainTerm, 0.0, 1.0);
-    float roughness = pow(1.0 - wetSmoothness, 1.8);
+    float roughness = 1.0 - wetSmoothness;
 
     // preset roughness value if no PBR textures are being used
     if (perceptualSmoothness == 0 && metalness == 0) {
@@ -56,7 +56,7 @@ vec3 cookTorranceGGXBRDF(vec3 color, vec2 specularMap, float skyMap, vec3 sunCol
           return vec3(0.0);
     }
 
-    roughness = clamp(roughness, 0.045, 0.99); //fixes black dots given by zero values
+    roughness = clamp(roughness, 0.1, 0.99); //fixes black dots given by zero values
     float alpha = roughness * roughness;
 
     vec3  F0    = mix(vec3(0.04), color, metalness);
