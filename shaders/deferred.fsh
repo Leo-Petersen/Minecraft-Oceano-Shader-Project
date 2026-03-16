@@ -91,18 +91,18 @@ vec4 nvec4(vec3 pos) {
 
 float undergroundFix = clamp(mix(max(lmcoord.t - 2.0 / 16.0, 0.0) * 1.14285714286, 1.0, clamp((eyeBrightnessSmooth.y / 255.0 - 2.0 / 16.0) * 4.0, 0.0, 1.0)), 0.0, 1.0);
 
-float transparencyFactor =  0.3 * (time[0]) +
+float transparencyFactor =  0.5 * (time[0]) +
                             0.9 * (time[1]) +
                             0.9 * (time[2]) +
                             0.9 * (time[3]) +
-                            0.3 * (time[4]) +
-                            0.14 * (time[5]);
+                            0.5 * (time[4]) +
+                            0.3 * (time[5]);
 
-float shadowFactor =  0.75 * (time[0]) +
+float shadowFactor =  0.55 * (time[0]) +
                       1.0 * (time[1]) +
                       1.0 * (time[2]) +
                       1.0 * (time[3]) +
-                      0.75 * (time[4]) +
+                      0.55 * (time[4]) +
                       0.25 * (time[5]);
 
 float torchFactor =   1.00 * (time[0]) +
