@@ -78,7 +78,7 @@ float cfGetDensity(vec3 wpos) {
     // Density increases in rain
     float rainDensity = mix(1.0, CLOUD_FOG_RAIN_DENSITY, rainStrength);
 
-    return profile * shape * CLOUD_FOG_DENSITY * rainDensity * mix(0.3, 1.0, transitionFade);
+    return profile * shape * CLOUD_FOG_DENSITY * rainDensity * mix(0.0, 1.0, transitionFade);
 }
 
 #define CF_LIGHT_STEPS 6

@@ -19,7 +19,7 @@ attribute vec4 at_tangent;
 attribute vec4 mc_midTexCoord;
 
 #ifdef TAA
-//#include "/lib/jitter.glsl"
+#include "/lib/jitter.glsl"
 #endif
 
 void main() {
@@ -66,7 +66,7 @@ void main() {
     viewNormal = normalize(gl_NormalMatrix*gl_Normal);
 	gl_Position = ftransform();
 	#ifdef TAA
-	//gl_Position.xy = taaJitter(gl_Position.xy,gl_Position.w);
+	gl_Position.xy = taaJitter(gl_Position.xy,gl_Position.w);
 	#endif
     
 	vec3 tangent = normalize(gl_NormalMatrix * at_tangent.xyz);
