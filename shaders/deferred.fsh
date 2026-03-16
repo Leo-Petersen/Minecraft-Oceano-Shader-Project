@@ -380,7 +380,7 @@ void main() {
                 VdotL, NdotL, lightMap.t,
                 distFactor, IGN, uniformity
             );
-            finalShadow += sssContribution * lightStrength * undergroundFix * (1.0 - time[5] * 0.42);
+            finalShadow += sssContribution * lightStrength * undergroundFix * (1.0 - time[5] * 0.2);
         }
         
         // Combine lighting
