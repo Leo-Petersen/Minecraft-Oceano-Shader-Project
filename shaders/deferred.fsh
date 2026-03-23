@@ -395,8 +395,8 @@ void main() {
         
         // PBR Specular
         vec3 specularBRDF = cookTorranceGGXBRDF(color, specularMap, lightMap.t, sunlightCol);
-        specularBRDF *= ShadowAccum * lightMap.t * lightStrength * (1.0 - rainStrength * 0.65);
-        specularBRDF *= mix(1.0, 0.8, distFactor);
+        specularBRDF *= ShadowAccum * lightMap.t * lightStrength * (1.0 - rainStrength * 0.65) * transitionFade;
+        //specularBRDF *= mix(1.0, 0.8, distFactor);
 
         // Combine lighting
         color *= (finalShadow + finalAmbient);
