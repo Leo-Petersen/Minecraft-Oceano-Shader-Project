@@ -24,9 +24,7 @@ option.DOF = DOF [experimental]
 option.BLOOM = Bloom
 option.CookTorranceGGXBRDF = Specular Reflections
 
-option.PBRReflection = Material Reflections
-option.PBRReflectionStr = Material Reflections Str
-option.PBR_REFLECTION_HQ = High Quality Reflections
+option.materialReflections = Material Reflections (WIP)
 option.volumetricCloudFog = Cloud Fog
 
 option.parallaxRes = Resource Pack Resolution
