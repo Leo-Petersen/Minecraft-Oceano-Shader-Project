@@ -49,7 +49,6 @@ vec3 SphericalGaussianFresnel(float HoL, vec3 baseReflectance) {
     return fresnel * (1.0 - baseReflectance) + baseReflectance;
 }
 
-// Returns SPECULAR ONLY — no diffuse component.
 // Albedo is needed only for metallic F0 calculation.
 vec3 cookTorranceGGXBRDF(vec3 albedo, vec2 specularMap, float skyMap, vec3 sunCol)
 {

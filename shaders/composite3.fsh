@@ -73,7 +73,6 @@ float undergroundFix = clamp(mix(max(lmcoord.t-2.0/16.0,0.0)*1.14285714286,1.0,c
 #include "/lib/raytrace.glsl"
 #include "/lib/waterBump.glsl"
 #include "/lib/puddles.glsl"
-#include "/lib/brdf.glsl"
 #include "/lib/cloudFog.glsl"
 #include "/lib/caveFog.glsl"
 
@@ -245,6 +244,41 @@ void main() {
 		}
 	#endif
 	
+
+	//// PBR Reflections (opaque surfaces) ////
+	#ifdef materialReflections
+	if (iswater < 0.5 && isglass < 0.5 && Depth < 1.0) {
+		float perceptualSmoothness = specularMap.r;
+		float metalness = specularMap.g;
+		
+		// Only reflect if there's PBR data worth reflecting
+		if (perceptualSmoothness > 0.1) {
+			float roughness = 1.0 - perceptualSmoothness;
+			
+			vec3 viewDir = normalize(viewPos.xyz);
+			float NdotV = max(dot(viewNormal, -viewDir), 0.001);
+			
+			// F0 from labPBR, metals use albedo color, dielectrics use 0.04
+			vec3 F0 = mix(vec3(0.04), color.rgb, metalness);
+			
+			// Fresnel with roughness consideration
+			vec3 fresnel = F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - NdotV, 5.0);
+			
+			// Reduce reflection on rough surfaces
+			fresnel *= 1.0 - roughness * roughness * 0.7;
+			
+			// SSR with sky fallback
+			vec4 pbrReflection = raytrace(reflectedskyBoxCol * lightMap.t, viewPos.xyz, viewNormal, 4);
+			vec3 reflectionCol = mix(reflectedskyBoxCol * lightMap.t, pbrReflection.rgb, pbrReflection.a);
+			
+			// Metals tint their reflection by their albedo
+			reflectionCol = mix(reflectionCol, reflectionCol * color.rgb, metalness);
+			
+			// Blend, metals replace diffuse, dielectrics add subtly
+			color.rgb += reflectionCol * fresnel;
+		}
+	}
+	#endif
 
 	//// Atmosphere Fog ////
 	#ifdef atmosphereFog
