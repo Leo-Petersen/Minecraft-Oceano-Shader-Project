@@ -261,23 +261,24 @@ void main() {
     
     float sinAngle = sin(angle);
     float cosAngle = cos(angle);
+
+    // Golden angle rotation matrix
+    const float goldenAngle = 2.39996323;
+    float goldenCos = cos(goldenAngle);
+    float goldenSin = sin(goldenAngle);
+    
+    // Initial direction from IGN noise rotation
+    vec2 dir = vec2(cosAngle, sinAngle);
     
     for (int i = 0; i < lightingQuality; i++) {
-        float theta = float(i) * 2.39996323; // Golden angle spiral
         float radius = sqrt((float(i) + 0.5) / float(lightingQuality));
+        vec2 offset = dir * radius;
         
-        float cosTheta = cos(theta);
-        float sinTheta = sin(theta);
-        vec2 dir = vec2(
-            cosTheta * cosAngle - sinTheta * sinAngle,
-            sinTheta * cosAngle + cosTheta * sinAngle
-        ) * radius;
-        
-        ShadowAccum += TransparentShadow(vec3(SampleCoords.xy + dir * filterSize, SampleCoords.z), transparencyFactor);
+        ShadowAccum += TransparentShadow(vec3(SampleCoords.xy + offset * filterSize, SampleCoords.z), transparencyFactor);
         
         #ifdef BounceColoredLight
         if ((i & 1) == 0) {
-            vec2 fluxCoord = SampleCoords.xy + dir * fluxRadius;
+            vec2 fluxCoord = SampleCoords.xy + offset * fluxRadius;
             if (fluxCoord.x >= 0.0 && fluxCoord.x <= 1.0 && 
                 fluxCoord.y >= 0.0 && fluxCoord.y <= 1.0) {
                 vec4 fluxSample = texture2D(shadowcolor0, fluxCoord);
@@ -286,6 +287,12 @@ void main() {
             }
         }
         #endif
+        
+        // Rotate direction by golden angle for next sample
+        dir = vec2(
+            dir.x * goldenCos - dir.y * goldenSin,
+            dir.x * goldenSin + dir.y * goldenCos
+        );
     }
 
     //// Process Shadow Results ////
