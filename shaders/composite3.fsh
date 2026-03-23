@@ -258,14 +258,24 @@ void main() {
 			vec3 viewDir = normalize(viewPos.xyz);
 			float NdotV = max(dot(viewNormal, -viewDir), 0.001);
 			
-			// F0 from labPBR, metals use albedo color, dielectrics use 0.04
-			vec3 F0 = mix(vec3(0.04), color.rgb, metalness);
+			vec3 F0;
+			float f0Raw = specularMap.g * 255.0;
+
+			if (f0Raw >= 229.5) {
+				F0 = color.rgb; // Metal
+			} else if (f0Raw > 0.5) {
+				// Dielectric, cap f0 to realistic range (max ~0.17 = diamond)
+				F0 = vec3(min(specularMap.g, 0.17));
+			} else {
+				F0 = vec3(0.04); // Default dielectric
+			}
+			float metalness = float(f0Raw >= 229.5);
 			
 			// Fresnel with roughness consideration
 			vec3 fresnel = F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - NdotV, 5.0);
 			
-			// Reduce reflection on rough surfaces
-			fresnel *= 1.0 - roughness * roughness * 0.7;
+			float reflectionFade = (metalness > 0.5) ? 1.0 : max(perceptualSmoothness - 0.3, 0.0) / 0.7;
+			fresnel *= reflectionFade;
 			
 			// SSR with sky fallback
 			vec4 pbrReflection = raytrace(reflectedskyBoxCol * lightMap.t, viewPos.xyz, viewNormal, 4);
