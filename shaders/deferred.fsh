@@ -393,8 +393,16 @@ void main() {
             finalShadow += sssContribution * lightStrength * undergroundFix * (1.0 - time[5] * 0.2);
         }
         
+        // PBR Specular
+        vec3 specularBRDF = cookTorranceGGXBRDF(color, specularMap, lightMap.t, sunlightCol);
+        specularBRDF *= ShadowAccum * lightMap.t * lightStrength * (1.0 - rainStrength * 0.65);
+        specularBRDF *= mix(1.0, 0.8, distFactor);
+
         // Combine lighting
         color *= (finalShadow + finalAmbient);
+
+        // Add specular on top of lit surface
+        color += specularBRDF;
 
         // Emission
         float nightAmount = time[5] + time[0] * 0.6 + time[4] * 0.6;

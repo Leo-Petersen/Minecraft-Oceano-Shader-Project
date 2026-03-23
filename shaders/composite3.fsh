@@ -244,15 +244,7 @@ void main() {
 			color.rgb = puddles(color.rgb, worldPos, reflectedskyBoxCol, viewPos.xyz, lightMap, iswet, surfaceHeight);
 		}
 	#endif
-
-
-	////cookTorranceGGXBRDF////
-	vec3 blinnBRDFReflection = vec3(0.0);
-		     blinnBRDFReflection = cookTorranceGGXBRDF(color.rgb, specularMap, lightMap.t, pow(sunCol, vec3(1/2.2))) * 
-			 //lightMap.t * (fakeCloudShadow) * ShadowAccum * (1+(time[5])) * transitionFade;
-			 lightMap.t * ShadowAccum * (1+(time[5])) * transitionFade;
-			 color.rgb += blinnBRDFReflection;
-
+	
 
 	//// Atmosphere Fog ////
 	#ifdef atmosphereFog

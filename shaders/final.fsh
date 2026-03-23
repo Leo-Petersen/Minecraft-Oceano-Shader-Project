@@ -68,7 +68,8 @@ void main() {
 	    //nothing, its minecraft
 
 	#elif ToneMap == 1 //ACES//
-		color = ACES(color * 0.85);
+		//color = ACES(color * 0.85);
+		color = ACES(color);
 		color = luminance(color, saturation);
 
 	#elif ToneMap == 2 //Filmic_Hejl2015//
