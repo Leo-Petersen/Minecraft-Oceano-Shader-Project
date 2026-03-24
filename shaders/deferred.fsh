@@ -35,6 +35,8 @@ uniform int frameCounter;
 uniform int isEyeInWater;
 uniform int heldBlockLightValue;
 uniform int heldBlockLightValue2;
+uniform int heldItemId;
+uniform int heldItemId2;
 
 uniform float frameTimeCounter;
 uniform float rainStrength;
@@ -65,6 +67,7 @@ varying vec3 Normal;
 #include "/lib/lighting.glsl"
 #include "/lib/brdf.glsl"
 #include "/lib/raytrace.glsl"
+#include "/lib/handlight.glsl"
 
 const vec3 voxelVolumeSize = vec3(VOXEL_VOLUME_SIZE, VOXEL_VOLUME_SIZE * 0.5, VOXEL_VOLUME_SIZE);
 
@@ -177,7 +180,18 @@ void main() {
     #endif
 
     float heldLightValue = max(float(heldBlockLightValue), float(heldBlockLightValue2));
-    float handlight = clamp(((heldLightValue*1.2) - 1.5 * length(viewPos.xyz)) / 18.0, 0.0, 0.9333);
+    float handlight = clamp(((heldLightValue * 1.2) - 1.5 * length(viewPos.xyz)) / 18.0, 0.0, 0.9333);
+
+    // Colored hand light
+    vec3 handLightColor = vec3(0.0);
+    if (heldBlockLightValue > 0) {
+        vec3 col = getBlocklightColor(heldItemId);
+        if (length(col) > 0.001) handLightColor = col;
+    }
+    if (heldBlockLightValue2 > 0) {
+        vec3 col2 = getBlocklightColor(heldItemId2);
+        if (length(col2) > 0.001) handLightColor = max(handLightColor, col2);
+    }
 
     lightMap.s *= (1.0 - darknessLightFactor * 0.5);
     float torchTimeBlend = mix(1.0, torchFactor, rawSkyLight);
@@ -227,7 +241,15 @@ void main() {
             voxelBlend = clamp(voxelStrength * FLOODFILL_BRIGHTNESS, 0.0, 1.0) * edgeFade;
         }
     #endif
-    vec3 finalBlockLightColor = mix(defaultTorchColor, voxelColor*2, voxelBlend);
+    
+    // When hand light dominates, use its color; otherwise use voxel/default
+    vec3 handColorBlend = (length(handLightColor) > 0.001) ? handLightColor : defaultTorchColor;
+    float handDominance = smoothstep(0.0, 0.5, handlight / max(lightMap.s, 0.001));
+    vec3 finalBlockLightColor = mix(
+        mix(defaultTorchColor, voxelColor * 2.0, voxelBlend),
+        handColorBlend,
+        handDominance
+    );
     vec3 torchTotal = finalBlockLightColor * torchIntensity * color;
 
     //// Setup Shadow Filter ////
