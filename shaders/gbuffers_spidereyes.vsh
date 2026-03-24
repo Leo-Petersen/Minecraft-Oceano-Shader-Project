@@ -1,4 +1,4 @@
-#version 120
+#version 130
 #include "/lib/settings.glsl"
 
 varying vec2 lmcoord;

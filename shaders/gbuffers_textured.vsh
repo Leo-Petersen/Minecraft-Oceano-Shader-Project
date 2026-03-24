@@ -1,4 +1,4 @@
-#version 120
+#version 130
 #include "/lib/settings.glsl"
 
 uniform mat4 gbufferModelViewInverse;

@@ -1,4 +1,4 @@
-#version 120
+#version 130
 
 #include "/lib/voxel_settings.glsl"
 #include "/lib/settings.glsl"

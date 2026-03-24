@@ -1,4 +1,4 @@
-#version 120
+#version 130
 
 uniform int worldTime;
 uniform vec3 upPosition;
