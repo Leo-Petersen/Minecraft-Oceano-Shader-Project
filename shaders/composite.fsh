@@ -32,7 +32,6 @@ uniform vec2 texelSize;
 uniform float far;
 uniform float near;
 uniform float eyeAltitude;
-uniform float frameCounter;
 uniform float frameTimeCounter;
 uniform float aspectRatio;
 uniform float viewWidth;

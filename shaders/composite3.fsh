@@ -39,7 +39,6 @@ uniform float near;
 uniform float blindness;
 uniform float darknessFactor;
 uniform float wetness;
-uniform float frameCounter;
 
 uniform int isEyeInWater;
 uniform int heldBlockLightValue;
