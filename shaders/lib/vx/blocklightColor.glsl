@@ -44,6 +44,10 @@ vec3 getBlocklightColor(int id) {
     else if (id == 21) color = vec3(0.5, 0.15, 0.9);
     // End Portal Frame (ID 22)
     else if (id == 22) color = vec3(0.5, 0.15, 0.9) * 0.3;
+    // Experience Orb (ID 23)
+    else if (id == 23) color = vec3(0.2, 1.0, 0.3);
+    // End Crystal (ID 24)
+    else if (id == 24) color = vec3(0.9, 0.4, 0.9);
     
     return color;
 }

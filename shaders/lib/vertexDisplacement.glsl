@@ -45,7 +45,7 @@ vec3 doVertexDisplacement(vec3 viewpos, vec3 worldpos){
 		viewpos.xyz += waving2 * 0.1;
 	}
 	//Fire//
-	if ( mc_Entity.x == 12153 && istopv > 0.9 )  {
+	if ( mc_Entity.x == 51 && istopv > 0.9 )  {
 		viewpos.xyz += waving2 * 2;
 	}
 	//Grass and Foliage//

@@ -39,7 +39,7 @@ void main() {
             mc_Entity.x == 11020 ||
             mc_Entity.x == 11030 ||
             mc_Entity.x == 11040 ||
-            mc_Entity.x == 12153 ) {
+            mc_Entity.x == 51 ) {
                 material = 0.03;
             }
 
@@ -47,21 +47,41 @@ void main() {
         if (mc_Entity.x == 13020 ) material = 0.05;
 
         //emissives//
-        if (mc_Entity.x == 12000 ||
-            mc_Entity.x == 12001 ||
-            mc_Entity.x == 12070 ||
-            mc_Entity.x == 12090 ||
-            mc_Entity.x == 12130 ||
-            mc_Entity.x == 12140 ||
-            mc_Entity.x == 12150 ||
-            mc_Entity.x == 12151 ||
-            mc_Entity.x == 12152 ||
-            mc_Entity.x == 12153 ) material = 0.07;
+        if (mc_Entity.x == 12070 ||    // ender chest (BSL)
+            mc_Entity.x == 12090 ||    // redstone ore (BSL)
+            mc_Entity.x == 10 ||       // lava
+            mc_Entity.x == 50 ||       // torch
+            mc_Entity.x == 51 ||       // fire
+            mc_Entity.x == 55 ||       // redstone wire
+            mc_Entity.x == 62 ||       // furnace
+            mc_Entity.x == 76 ||       // redstone torch
+            mc_Entity.x == 89 ||       // glowstone
+            mc_Entity.x == 91 ||       // jack o lantern
+            mc_Entity.x == 138 ||      // beacon
+            mc_Entity.x == 169 ||      // sea lantern
+            mc_Entity.x == 198 ||      // end rod
+            mc_Entity.x == 213 ||      // magma
+            mc_Entity.x == 10050 ||    // lantern
+            mc_Entity.x == 10052 ||    // soul fire/torch
+            mc_Entity.x == 10124 ||    // redstone lamp
+            mc_Entity.x == 10225 ||    // crying obsidian
+            mc_Entity.x == 10230 ||    // shroomlight
+            mc_Entity.x == 10231 ||    // campfire
+            mc_Entity.x == 10232 ||    // candles
+            mc_Entity.x == 10233 ||    // amethyst
+            mc_Entity.x == 10234 ||    // glow lichen
+            mc_Entity.x == 10235 ||    // froglight ochre
+            mc_Entity.x == 10236 ||    // froglight verdant
+            mc_Entity.x == 10237 ||    // froglight pearlescent
+            mc_Entity.x == 10238 ||    // sculk
+            mc_Entity.x == 10239 ||    // respawn anchor
+            mc_Entity.x == 10242      // cave vines
+            ) material = 0.07;
 
         //glass//
         if (mc_Entity.x == 13000) material = 0.09;
         if (mc_Entity.x == 13010) material = 0.11;
-        if (mc_Entity.x == 12152) material = 0.13;
+        if (mc_Entity.x == 10) material = 0.13;
 
     viewNormal = normalize(gl_NormalMatrix*gl_Normal);
 	gl_Position = ftransform();
