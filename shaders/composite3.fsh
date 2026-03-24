@@ -274,9 +274,11 @@ void main() {
 			// Fresnel with roughness consideration
 			vec3 fresnel = F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - NdotV, 5.0);
 			
-			float reflectionFade = (metalness > 0.5) ? 1.0 : max(perceptualSmoothness - 0.3, 0.0) / 0.7;
+			// Reduce reflection on rough surfaces
+			float reflectionFade = (metalness > 0.5) ? 1.0 : max(perceptualSmoothness - 0.5, 0.0) / 0.5;
 			fresnel *= reflectionFade;
-			
+			//fresnel *= 1.0 - roughness * roughness * 0.7;
+
 			// SSR with sky fallback
 			vec4 pbrReflection = raytrace(reflectedskyBoxCol * lightMap.t, viewPos.xyz, viewNormal, 4);
 			vec3 reflectionCol = mix(reflectedskyBoxCol * lightMap.t, pbrReflection.rgb, pbrReflection.a);
