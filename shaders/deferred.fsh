@@ -194,6 +194,8 @@ void main() {
     }
 
     lightMap.s *= (1.0 - darknessLightFactor * 0.5);
+
+    float originalBlockLight = lightMap.s;
     float torchTimeBlend = mix(1.0, torchFactor, rawSkyLight);
     float torchmapLight = max(lightMap.s, handlight) * lightMap.t * torchTimeBlend;
     float torchmapCovered = max(lightMap.s, handlight) * (1.0 - lightMap.t);
@@ -243,13 +245,11 @@ void main() {
     #endif
     
     // When hand light dominates, use its color; otherwise use voxel/default
-    vec3 handColorBlend = (length(handLightColor) > 0.001) ? handLightColor : defaultTorchColor;
-    float handDominance = smoothstep(0.0, 0.5, handlight / max(lightMap.s, 0.001));
-    vec3 finalBlockLightColor = mix(
-        mix(defaultTorchColor, voxelColor * 2.0, voxelBlend),
-        handColorBlend,
-        handDominance
-    );
+    vec3 voxelOrDefault = mix(defaultTorchColor, voxelColor * 2.0, voxelBlend);
+    vec3 handColor = (length(handLightColor) > 0.001) ? handLightColor : defaultTorchColor;
+
+    float totalWeight = originalBlockLight + handlight + 0.001;
+    vec3 finalBlockLightColor = (voxelOrDefault * originalBlockLight + handColor * handlight) / totalWeight;
     vec3 torchTotal = finalBlockLightColor * torchIntensity * color;
 
     //// Setup Shadow Filter ////
