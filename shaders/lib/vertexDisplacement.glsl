@@ -45,10 +45,19 @@ vec3 doVertexDisplacement(vec3 viewpos, vec3 worldpos){
 
 	float rainBoost = 1.0 + rainStrength * 1.0;
 
-	// Leaves and vines: full strength, strong lean (whole canopy sways)
-	if ( mc_Entity.x == 11050 ||
-	     mc_Entity.x == 11060 ) {
+	// Leaves: full strength, strong lean
+	if ( mc_Entity.x == 11050 ) {
 		viewpos.xyz += windDisplace(worldpos, 1.4 * rainBoost, 1.0);
+	}
+
+	// Vines: sway freely along the wall and outward, but never into it
+	if ( mc_Entity.x == 11060 ) {
+		vec3 disp = windDisplace(worldpos, 1.4 * rainBoost, 1.0);
+		// gl_Normal points outward from the wall the vine is attached to.
+		// Kill any displacement component going *into* the wall.
+		// This should fix vines clipping into blocks its placed on
+		disp -= gl_Normal * min(dot(disp, gl_Normal), 0.0);
+		viewpos.xyz += disp;
 	}
 
 	// Cobwebs: tiny wiggle, no lean
