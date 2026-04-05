@@ -106,7 +106,7 @@ float shadowFactor =  0.55 * (time[0]) +
                       1.0 * (time[2]) +
                       1.0 * (time[3]) +
                       0.55 * (time[4]) +
-                      0.25 * (time[5]);
+                      0.4 * (time[5]);
 
 float torchFactor =   1.00 * (time[0]) +
                       0.33 * (time[1]) +
