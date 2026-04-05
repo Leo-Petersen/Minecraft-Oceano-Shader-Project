@@ -11,6 +11,8 @@ varying vec4 color;
 
 void main() {
 	vec4 fragcolor = texture2D(texture,texcoord.xy) * color;
+	
+	if (fragcolor.a < 0.1) discard;
 
 	if (iswater == 1.0){
 		//fragcolor.a *= 0.8;
