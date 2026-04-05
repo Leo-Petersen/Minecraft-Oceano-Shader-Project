@@ -1,63 +1,80 @@
+// Gust-based foliage wind
+vec2 WIND_DIR = vec2(WIND_DIR_X, WIND_DIR_Z);
 
-
-float pi2wt = 3.14159 * 2.0 * (frameTimeCounter * 24.0);
-
-vec3 calcWave(in vec3 pos, in float fm, in float mm, in float ma, in float f0, in float f1, in float f2, in float f3, in float f4, in float f5) {
-	vec3 ret;
-	float magnitude,d0,d1,d2,d3;
-
-	magnitude = sin(pi2wt*fm + pos.x*0.5 + pos.z*0.5 + pos.y*0.5) * mm + ma;
-
-	d0 = sin(pi2wt*f0);
-	d1 = sin(pi2wt*f1);
-	d2 = sin(pi2wt*f2);
-
-	ret.x = sin(pi2wt*f3 + d0 + d1 - pos.x + pos.z + pos.y) * magnitude;
-	ret.z = sin(pi2wt*f4 + d1 + d2 + pos.x - pos.z + pos.y) * magnitude;
-	ret.y = sin(pi2wt*f5 + d2 + d0 + pos.z + pos.y - pos.y) * magnitude;
-
-	return ret;
+vec2 calcGust(vec3 worldpos) {
+	float proj = dot(worldpos.xz, WIND_DIR);
+	float phase = frameTimeCounter * GUST_SPEED - proj * GUST_WAVELENGTH;
+	float g = sin(phase) * 0.5 + 0.5;      // 0..1
+	g = pow(g, GUST_SHARPNESS);             // sharpen: long calm, brief peaks
+	return vec2(GUST_FLOOR + g * (1.0 - GUST_FLOOR), phase);
 }
 
-vec3 calcMove(in vec3 pos, in float f0, in float f1, in float f2, in float f3, in float f4, in float f5, in vec3 amp1, in vec3 amp2) {
-    vec3 move1 = calcWave(pos      , 0.0027, 0.0400, 0.0400, 0.0127, 0.0089, 0.0114, 0.0063, 0.0224, 0.0015) * amp1;
-	vec3 move2 = calcWave(pos+move1, 0.0348, 0.0400, 0.0400, f0, f1, f2, f3, f4, f5) * amp2;
-return move1+move2;
+vec3 calcFlutter(vec3 worldpos) {
+	float t = frameTimeCounter * FLUTTER_SPEED;
+	float s = FLUTTER_SCALE;
+	float a = sin(t        + worldpos.x * s + worldpos.z * s * 0.7);
+	float b = sin(t * 1.37 + worldpos.z * s - worldpos.y * s * 0.5);
+	float c = sin(t * 0.83 + worldpos.y * s + worldpos.x * s * 0.6);
+	return vec3(a + b * 0.5, c * 0.4, b + a * 0.5);
 }
+
+// Main displacement for leaves / foliage.
+// strength = overall multiplier (leaves get more than grass tops, etc.)
+// lean     = how much the thing bends into the wind during gusts (0 = none)
+vec3 windDisplace(vec3 worldpos, float strength, float lean) {
+	vec2  gust    = calcGust(worldpos);
+	vec3  flutter = calcFlutter(worldpos);
+
+	// Local wiggle: scales with gust so calm = subtle, gust = lively
+	vec3 local = flutter * 0.035 * gust.x;
+
+	// Directional lean: during a gust, cluster pushes in wind direction.
+	float leanWave = sin(gust.y) * gust.x;
+	vec3 push = vec3(WIND_DIR.x, 0.0, WIND_DIR.y) * leanWave * 0.09 * lean;
+
+	// Slight vertical bob during gusts
+	push.y += gust.x * gust.x * 0.015 * lean;
+
+	return (local + push) * strength;
+}
+
 
 vec3 doVertexDisplacement(vec3 viewpos, vec3 worldpos){
-	
+
 	float istopv = gl_MultiTexCoord0.t < mc_midTexCoord.t ? 1.0 : 0.0;
 
-	float wavyMult = 1.0;
-			
-	vec3 waving1 = calcMove(worldpos.xyz, 0.0041, 0.0070, 0.0044, 0.0038, 0.0063, 0.0000, vec3(0.8,0.0,0.8), vec3(0.8,0.0,0.48)) * wavyMult;
-			
-	vec3 waving2 = calcMove(worldpos.xyz, 0.0040, 0.0064, 0.0043, 0.0035, 0.0037, 0.0041, vec3(1.0,0.2,1.0), vec3(0.5,0.1,0.5)) * wavyMult;
+	float rainBoost = 1.0 + rainStrength * 1.0;
 
-	//Leaves and vines//
+	// Leaves and vines: full strength, strong lean (whole canopy sways)
 	if ( mc_Entity.x == 11050 ||
-		 mc_Entity.x == 11060 )	{
-		viewpos.xyz += waving1 * 1.4 * (1 + rainStrength * 1.0);
+	     mc_Entity.x == 11060 ) {
+		viewpos.xyz += windDisplace(worldpos, 1.4 * rainBoost, 1.0);
 	}
-	//Cobwebs//
-	if ( mc_Entity.x == 11080 )  {
-		viewpos.xyz += waving2 * 0.1;
+
+	// Cobwebs: tiny wiggle, no lean
+	if ( mc_Entity.x == 11080 ) {
+		vec3 flutter = calcFlutter(worldpos) * 0.01;
+		viewpos.xyz += flutter;
 	}
-	//Fire//
-	if ( mc_Entity.x == 51 && istopv > 0.9 )  {
-		viewpos.xyz += waving2 * 2;
+
+	// Fire: reuse flutter for flickering, only top vertices
+	if ( mc_Entity.x == 51 && istopv > 0.9 ) {
+		vec3 flutter = calcFlutter(worldpos);
+		viewpos.xz += flutter.xz * 0.08;
+		viewpos.y  += abs(flutter.y) * 0.05;
 	}
-	//Grass and Foliage//
-	if ( mc_Entity.x == 11030 || 
-		 mc_Entity.x == 11040  && istopv > 0.9 || 
-		 mc_Entity.x == 11000  && istopv > 0.9 || 
-		 mc_Entity.x == 11010 && istopv > 0.9|| 
-		 mc_Entity.x == 11020 && istopv > 0.9) {
-			
-		viewpos.xyz += waving2 * 1.0 * (1 + rainStrength * 1);
-		//viewpos.x -= (0.27 * rainStrength);
-		viewpos.y += grassHeight; //Long grass lol
+
+	// Grass and tall foliage: bend from the base (only top vertices move).
+	// Lower lean factor than leaves so grass streaks with wind rather than
+	// uprooting itself.
+	if ( mc_Entity.x == 11030 ||
+	     mc_Entity.x == 11040 && istopv > 0.9 ||
+	     mc_Entity.x == 11000 && istopv > 0.9 ||
+	     mc_Entity.x == 11010 && istopv > 0.9 ||
+	     mc_Entity.x == 11020 && istopv > 0.9 ) {
+
+		viewpos.xyz += windDisplace(worldpos, 1.15 * rainBoost, 0.8);
+		viewpos.y += grassHeight; // Long grass
 	}
 
 	return viewpos;
