@@ -321,7 +321,7 @@ void main() {
     //// Process Shadow Results ////
     ShadowAccum /= float(lightingQuality);
     ShadowAccum *= parallaxShadow;
-    ShadowAccum = mix(ShadowAccum, vec3(1.0), emission * 0.8);
+    //ShadowAccum = mix(ShadowAccum, vec3(1.0), emission * 0.8);
 
     float shadowLum = dot(ShadowAccum, vec3(0.2126, 0.7152, 0.0722));
     vec3 invShadowAccum = clamp(-ShadowAccum * Diffuse + vec3(0.4), vec3(0.0), vec3(1.0));
