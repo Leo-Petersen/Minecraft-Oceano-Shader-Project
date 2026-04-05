@@ -134,6 +134,7 @@ void main() {
     }
 
     vec3 color = texture2D(colortex0, texcoord).rgb;
+    vec3 albedo = color;
 
     //// Materials ////
     vec4 colortex2Map = texture2D(colortex2, texcoord); // .s = torchLightMap, .t = skyLightMap, .p = material
@@ -434,10 +435,9 @@ void main() {
         color += specularBRDF;
 
         // Emission
-        float nightAmount = time[5] + time[0] * 0.6 + time[4] * 0.6;
-        float emissionStrength = max(mix(1.0 - lightMap.t * lightMap.t, 1.0, nightAmount), 0.15);
-        float effectiveEmission = emission * emissionStrength;
-        color = mix(color, color * effectiveEmission * 2.5, effectiveEmission);
+        float darkness = 1.0 - lightMap.t;
+        float emissionStrength = pow(darkness, 3.0);
+        color += albedo * emission * emissionStrength * 5.0;
     #else
         float lightStrength = lightStr;
         vec3 ambientCol = bounceLight * (1.0 - rainStrength * rainShadowStr);
