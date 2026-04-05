@@ -144,16 +144,14 @@ void main() {
     color = gl_Color;
 
     #ifdef VoxelLighting
-    int entityId = int(mc_Entity.x);
-    uint voxelId = getVoxelId(entityId);
-    
-    if (voxelId > 0u) {
-        // Emissive block: write its light ID
-        updateVoxelMap(voxelId);
-    } else if (!isTransparent(entityId)) {
-        // Solid non-emissive block : write ID 1 to block light
-        updateVoxelMap(1u);
+    if (gl_VertexID % 4 == 0) {  // only first vertex of each quad
+        int entityId = int(mc_Entity.x);
+        uint voxelId = getVoxelId(entityId);
+        if (voxelId > 0u) {
+            updateVoxelMap(voxelId);
+        } else if (!isTransparent(entityId)) {
+            updateVoxelMap(1u);
+        }
     }
-    // Transparent blocks (air, glass, foliage) don't write anything (stay as 0)
     #endif
 }
