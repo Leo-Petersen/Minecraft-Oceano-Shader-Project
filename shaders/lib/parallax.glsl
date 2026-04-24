@@ -11,7 +11,7 @@ vec4 readNormal(in vec2 coord) {
     return texture2DGradARB(normals, fract(coord) * vtexcoordam.pq + vtexcoordam.st, dFdxy[0], dFdxy[1]);
 }
 
-float parallaxRes = clamp(vtexcoordam.p * float(atlasSize.x), 16.0, 4096.0); // Detect resource pack resolution
+float parallaxRes = clamp(vtexcoordam.p * float(atlasSize.x) * 0.75, 16.0, 4096.0); // Detect resource pack resolution, 0.75 for performance headroom
 
 vec2 calcParallax() {
     vec2 baseCoord = vtexcoord.xy * vtexcoordam.pq + vtexcoordam.st;
@@ -31,8 +31,8 @@ vec2 calcParallax() {
     distFactor = clamp(distFactor * distFactor, 0.0, 1.0);
     if (distFactor >= 1.0) return baseCoord;
     
-    float maxSteps = min(mix(parallaxRes, MIN_PARALLAX_STEPS, distFactor), float(MAX_PARALLAX_STEPS));
-    int steps = int(maxSteps);
+    float maxSteps = mix(parallaxRes, MIN_PARALLAX_STEPS, distFactor);
+    int steps = min(int(maxSteps), MAX_PARALLAX_STEPS);
     float stepDiv = 1.0 / maxSteps;
     
     float effectiveDepth = parallaxDepth * (1.0 - distFactor);
@@ -45,10 +45,8 @@ vec2 calcParallax() {
         float prevRayHeight = 1.0;
         float prevSurfaceHeight = normalSample.a;
         
-        float dither = fract(52.9829189 * fract(0.06711056 * gl_FragCoord.x + 0.00583715 * gl_FragCoord.y));
-        
-        coord += stepUV * dither;
-        float rayHeight = 1.0 - stepDiv * dither;
+        coord += stepUV * 0.5;
+        float rayHeight = 1.0 - stepDiv * 0.5;
         float surfaceHeight = readNormal(coord).a;
 
         for (int i = 0; i < MAX_PARALLAX_STEPS; i++) {
