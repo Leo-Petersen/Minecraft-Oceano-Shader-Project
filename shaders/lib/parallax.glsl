@@ -77,7 +77,7 @@ float GetParallaxShadow(float depth, float fade, vec2 coord, vec3 lightVector, m
     if (fade >= 1.0 || depth > HEIGHT_THRESHOLD) return 1.0;
     
     vec3 parallaxdir = tbnMatrix * lightVector;
-    parallaxdir.xy *= parallaxDepth * 2.0;
+    parallaxdir.xy *= parallaxShadowDepth * 2.0;
     
     vec2 newvTexCoord = (coord - vtexcoordam.st) / vtexcoordam.pq;
     float sampleStep = 0.32 / float(parallaxShadowQuality);
