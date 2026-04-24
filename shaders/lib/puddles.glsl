@@ -79,7 +79,7 @@ vec3 puddles(in vec3 color, in vec3 worldPos, in vec3 reflectedskyBoxCol, in vec
     vec3 rainDropNormal = mix(upVec, viewNormal, puddle);
          rainDropNormal = mix(viewNormal, rainDropNormal, heightMask);
     vec2 waveOffset = (worldPos.xz + cameraPosition.xz) * 10.0 - (worldPos.y + cameraPosition.y) * 10.0;
-         rainDropNormal.xy += getWaveHeight(waveOffset, 0.95, 0.0).x;
+         rainDropNormal.xy += getWaveHeight(waveOffset, 0.95, 0.0, dist).x;
 
     // Apply raindrop ripples where puddles exist
     rainDropNormal.xy += rainDrop.xy * puddle * rainStrength * heightMask;

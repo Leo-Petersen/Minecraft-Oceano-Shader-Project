@@ -150,11 +150,11 @@ void main() {
 	#ifdef Reflections
 	#ifdef ParallaxWater
 		vec3 posxz = wpos.xyz;
-		posxz = getParallaxDisplacement(posxz, iswater);
-		vec3 bump = getWaveHeight(posxz.xz - posxz.y, iswater, RandomAngle);
+		posxz = getParallaxDisplacement(posxz, iswater, dist);
+		vec3 bump = getWaveHeight(posxz.xz - posxz.y, iswater, RandomAngle, dist);
 		const float bumpmult = 0.5;
 	#else
-		vec3 bump = getWaveHeight((wpos.xz - wpos.y), iswater, RandomAngle);
+		vec3 bump = getWaveHeight((wpos.xz - wpos.y), iswater, RandomAngle, dist);
 		const float bumpmult = 0.5 * (WaterDepth + 0.5);
 	#endif
 

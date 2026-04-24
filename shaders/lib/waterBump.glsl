@@ -15,7 +15,7 @@ const mat2 rotationMatrix2 = mat2(
     -0.29552021, 0.95533649
 );
 
-float getWaterBump(vec2 posxz, float waveM, float waveZ, float iswater) {
+float getWaterBump(vec2 posxz, float waveM, float waveZ, float iswater, float viewDist) {
     float rainDrop = mix(1.0, 5.0, step(0.945, iswater));
     
     // Multiple octaves of waves at different scales
@@ -43,21 +43,21 @@ float getWaterBump(vec2 posxz, float waveM, float waveZ, float iswater) {
     float ripples = textureNoise(rippleCoord) * 0.3;
     
     float wave = largeWave + mediumWave * 0.5 + ripples;
-    float distanceFade = smoothstep(30.0, 120.0, dist);
+    float distanceFade = smoothstep(30.0, 120.0, viewDist);
     wave *= (1.0 - distanceFade * 0.6);
     wave *= mix(0.3, 1.0, iswater) * 0.05; 
     
     return wave;
 }
 
-vec3 getWaveHeight(vec2 posxz, float iswater, float randangle) {
+vec3 getWaveHeight(vec2 posxz, float iswater, float randangle, float viewDist) {
     const float deltaPos = 0.25;
     float waveZ = mix(3.0, 0.25, iswater);
     float waveM = mix(0.0, 2.0, iswater);
     
-    float h0 = getWaterBump(posxz, waveM, waveZ, iswater);
-    float h1 = getWaterBump(posxz + vec2(-deltaPos, 0.0), waveM, waveZ, iswater);
-    float h2 = getWaterBump(posxz + vec2(0.0, -deltaPos), waveM, waveZ, iswater);
+    float h0 = getWaterBump(posxz, waveM, waveZ, iswater, viewDist);
+    float h1 = getWaterBump(posxz + vec2(-deltaPos, 0.0), waveM, waveZ, iswater, viewDist);
+    float h2 = getWaterBump(posxz + vec2(0.0, -deltaPos), waveM, waveZ, iswater, viewDist);
 
     float xDelta = (h0 - h1) * 4.0;
     float yDelta = (h0 - h2) * 4.0;
@@ -68,15 +68,15 @@ vec3 getWaveHeight(vec2 posxz, float iswater, float randangle) {
     return wave;
 }
 
-vec3 getParallaxDisplacement(vec3 posxz, float iswater) {
+vec3 getParallaxDisplacement(vec3 posxz, float iswater, float viewDist) {
     
-    vec2 offset = viewVector.xy * (6.0 * WaterDepth) / max(dist, 1.0);
+    vec2 offset = viewVector.xy * (6.0 * WaterDepth) / max(viewDist, 1.0);
     
     float waveZ = mix(3.0, 0.25, iswater);
     float waveM = mix(0.0, 2.0, iswater);
     
     for(int i = 0; i < WaterPoints; i++){
-        posxz.xz = getWaterBump(posxz.xz - posxz.y, waveM, waveZ, iswater) * offset + posxz.xz;
+        posxz.xz = getWaterBump(posxz.xz - posxz.y, waveM, waveZ, iswater, viewDist) * offset + posxz.xz;
     }
     
     return posxz;

@@ -77,6 +77,7 @@ float Diffuse = max(0.0, dot(viewNormal, shadowLightPosition * 0.01));
 #include "/lib/lightCol.glsl"
 #include "/lib/raytrace.glsl"
 #include "/lib/waterShadow.glsl"
+#include "/lib/waterBump.glsl"
 #include "/lib/caustics.glsl"
 #include "/lib/fog.glsl"
 #include "/lib/waterFog.glsl"
