@@ -76,12 +76,6 @@ void main() {
 	float processedTorchLight = processTorchLight(rawTorchLight, rawSkyLight, processedSkyLight, 
 	                                               handlight, darknessLightFactor);
 
-	#ifdef TAA
-	float RandomAngle = 0.0;	
-	#else
-	float RandomAngle = 0.0;	
-	#endif
-
 	#ifdef Reflections
 	float waterTransparency = 1.0 - iswater;
 	#else
@@ -209,10 +203,10 @@ void main() {
 	#ifdef ParallaxWater
 		vec3 posxz = wpos.xyz;
 		posxz = getParallaxDisplacement(posxz, iswater, dist);
-		vec3 bump = getWaveHeight(posxz.xz - posxz.y, iswater, RandomAngle, dist);
+		vec3 bump = getWaveHeight(posxz.xz - posxz.y, iswater, 0, dist);
 		const float bumpmult = 0.5;
 	#else
-		vec3 bump = getWaveHeight((wpos.xz - wpos.y), iswater, RandomAngle);
+		vec3 bump = getWaveHeight((wpos.xz - wpos.y), iswater, 0, dist);
 		const float bumpmult = 0.5 * (WaterDepth + 0.5);
 	#endif
 

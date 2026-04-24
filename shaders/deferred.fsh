@@ -455,7 +455,7 @@ void main() {
     #endif
 
     //// Eye-in-water Fog ////
-    if (isEyeInWater == 1.0) {
+    if (isEyeInWater == 1) {
         float fogDepth = 1.0 - exp(-11.3 * length(worldPos.xz) / 100.0);
         color.rgb = mix(color.rgb, vec3(0.0, 0.36, 0.51) * 0.05 * (1.0 - time[5] * 0.64) * (1.0 - rainStrength), fogDepth);
     }
