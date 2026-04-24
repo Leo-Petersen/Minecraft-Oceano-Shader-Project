@@ -16,16 +16,16 @@ float parallaxRes = clamp(vtexcoordam.p * float(atlasSize.x), 16.0, 4096.0); // 
 vec2 calcParallax() {
     vec2 baseCoord = vtexcoord.xy * vtexcoordam.pq + vtexcoordam.st;
     
-    if (dist >= parallaxFarDist) {
-        return baseCoord;
-    }
+    float angleFactor = clamp(1.0 + viewVector.z, 0.1, 1.0);
+    float effectiveFarDist = parallaxFarDist * angleFactor;
+    if (dist >= effectiveFarDist) return baseCoord;
 
     // check for flat normal map (skip parallax on surfaces without height data)
     vec3 normalMap = readNormal(vtexcoord.xy).xyz * 2.0 - 1.0;
     float normalCheck = normalMap.x + normalMap.y;
     if (normalCheck < -1.999) return baseCoord;
 
-    float distFactor = (dist - parallaxNearDist) / (parallaxFarDist - parallaxNearDist);
+    float distFactor = (dist - parallaxNearDist) / (effectiveFarDist - parallaxNearDist);
     distFactor = clamp(distFactor * distFactor, 0.0, 1.0);
     
     // early exit if fully faded
