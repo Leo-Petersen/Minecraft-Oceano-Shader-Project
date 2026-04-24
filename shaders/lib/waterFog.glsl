@@ -115,6 +115,11 @@ vec3 getWaterDepthFog(vec3 color, vec3 fragpos, vec3 fragpos2, float iswater, fl
         vec3 currentWorldPos = startWorldPos + worldStep * (startRay / increment);
         vec3 waterSurfaceWorldPos = mat3(gbufferModelViewInverse) * fragpos2 + gbufferModelViewInverse[3].xyz;
         
+        // Pre-compute loop-invariant values
+        float phase = phaseWater(cosTheta);
+        vec3 stepTransmittance = exp(-waterExtinctionCoeff * increment);
+        vec3 scatterBase = sunCol * phase * 0.08;
+
         vec3 accumulatedScatter = vec3(0.0);
         vec3 accumulatedTransmittance = vec3(1.0);
         
@@ -139,16 +144,12 @@ vec3 getWaterDepthFog(vec3 color, vec3 fragpos, vec3 fragpos2, float iswater, fl
             float distToSurfaceClamped = max(0.0, distToSurface);
             
             vec3 surfaceToSample = exp(-waterExtinctionCoeff * distToSurfaceClamped);
-            float phase = phaseWater(cosTheta);
-            vec3 multiScatBoost = 1.0 + waterSSA * 0.5;
             
-            float scatterStrength = 0.08;
-            vec3 inScatter = sunCol * surfaceToSample * phase * shadowSample;
-            inScatter *= (1.0 + causticIntensity * 2.0) * scatterStrength;
+            vec3 inScatter = scatterBase * surfaceToSample * shadowSample;
+            inScatter *= (1.0 + causticIntensity * 2.0);
             
-            vec3 sampleTransmittance = exp(-waterExtinctionCoeff * dist);
             accumulatedScatter += inScatter * accumulatedTransmittance * increment;
-            accumulatedTransmittance *= exp(-waterExtinctionCoeff * increment);
+            accumulatedTransmittance *= stepTransmittance;
             
             currentWorldPos += worldStep;
         }
@@ -271,6 +272,13 @@ vec3 getUnderwaterFog(vec3 color, vec3 viewPos, float lightMapSky) {
         vec3 currentWorldPos = cameraPosition + rayDirWorld * startRay;
         vec3 worldStep = rayDirWorld * increment;
         
+        // Pre-compute loop-invariant values
+        float phase = phaseWater(cosTheta);
+        vec3 multiScatBoost = 1.0 + waterSSA * 0.55;
+        vec3 stepTransmittance = exp(-underwaterExtinction * increment);
+        vec3 scatterBase = sunCol * phase * 0.14 * multiScatBoost;
+        float invLightDirY = 1.0 / max(0.1, lightDir.y);
+
         vec3 accumulatedScatter = vec3(0.0);
         vec3 accumulatedTransmittance = vec3(1.0);
         
@@ -292,7 +300,7 @@ vec3 getUnderwaterFog(vec3 color, vec3 viewPos, float lightMapSky) {
             float sampleDepth = estimatedDepth - rayDist * rayDirWorld.y;
             sampleDepth = max(0.1, sampleDepth);
             
-            float distToSurface = sampleDepth / max(0.1, lightDir.y);
+            float distToSurface = sampleDepth * invLightDirY;
             vec3 causticPos = currentWorldPos + lightDir * distToSurface;
             
             vec3 causticValue = waterCaustics(causticPos, 1.0);
@@ -301,19 +309,13 @@ vec3 getUnderwaterFog(vec3 color, vec3 viewPos, float lightMapSky) {
             
             vec3 surfaceToSample = exp(-underwaterExtinction * sampleDepth * 0.3);
             
-            float phase = phaseWater(cosTheta);
-
-            vec3 multiScatBoost = 1.0 + waterSSA * 0.55;
-            
-            float scatterStrength = 0.14;
-            vec3 inScatter = sunCol * surfaceToSample * phase * shadowSample;
-            inScatter *= (1.0 + causticIntensity * 2.0) * scatterStrength;
-            inScatter *= multiScatBoost;
+            vec3 inScatter = scatterBase * surfaceToSample * shadowSample;
+            inScatter *= (1.0 + causticIntensity * 2.0);
             inScatter *= distanceFalloff; 
             inScatter = min(inScatter, vec3(4.0));
             
             accumulatedScatter += inScatter * accumulatedTransmittance * increment;
-            accumulatedTransmittance *= exp(-underwaterExtinction * increment);
+            accumulatedTransmittance *= stepTransmittance;
             
             currentWorldPos += worldStep;
         }
