@@ -255,7 +255,7 @@ void main() {
     vec3 torchTotal = finalBlockLightColor * torchIntensity * color;
 
     //// Setup Shadow Filter ////
-    vec4 shadowCoord = ShadowSpace();
+    vec4 shadowCoord = ShadowSpace(worldPos);
     shadowCoord.xy *= distort(shadowCoord.xy);
     shadowCoord.z /= 6.0;
 

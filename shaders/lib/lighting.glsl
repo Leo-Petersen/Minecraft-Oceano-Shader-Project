@@ -20,12 +20,8 @@ float bayer2(vec2 a) {
 #define bayer64(a)  (bayer32(0.5 * (a)) * 0.25 + bayer2(a))
 float dither64 = bayer64(gl_FragCoord.xy);
 
-vec4 ShadowSpace() {
-    vec3 ClipSpace = vec3(texcoord, Depth) * 2.0 - 1.0;
-    vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0);
-    vec3 View = ViewW.xyz / ViewW.w;
-    vec4 World = gbufferModelViewInverse * vec4(View, 1.0);
-    vec4 ShadowSpace = shadowProjection * shadowModelView * World;
+vec4 ShadowSpace(vec3 worldPos) {
+    vec4 ShadowSpace = shadowProjection * shadowModelView * vec4(worldPos, 1.0);
     return ShadowSpace;
 }
 
@@ -75,73 +71,6 @@ vec3 TransparentShadowHardware(vec3 SampleCoords, float transparencyFactor) {
 vec3 TransparentShadow(in vec3 SampleCoords, float transparencyFactor) {
     return TransparentShadowHardware(SampleCoords, transparencyFactor);
 }
-
-float getViewDistance() {
-    vec3 ClipSpace = vec3(texcoord, Depth) * 2.0 - 1.0;
-    vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0);
-    vec3 View = ViewW.xyz / ViewW.w;
-    return length(View);
-}
-
-
-/// Unused, this is a bad implementation, but left in for potential future use or reference
-#ifdef PCSS
-float PCSSBlockerSearch(vec3 shadowCoord, mat2 Rotation, vec3 Rotationvec3) {
-    float blockerSum = 0.0;
-    float numBlockers = 0.0;
-    float viewDistance = getViewDistance();
-    float distanceScale = clamp(viewDistance / 256.0, 0.1, 4.0);
-    float searchSize = (0.003 * filterStr * (1.0 + rainStrength)) / distanceScale;
-    
-    float ditherOffset = dither64;
-    
-    for (int i = 0; i < 3; i++) {
-        int index = int(64.0 * fract(sin(dot(floor(Rotationvec3) + vec3(i), vec3(12.9898, 78.233, 45.164))) * 43758.5453)) % 64;
-        vec2 offset = poissonDisk64[index] * searchSize * Rotation;
-        offset *= 0.75 + ditherOffset * 0.5;
-        
-        float shadowMapDepth = texture2D(shadowtex0Raw, shadowCoord.xy + offset).x;
-        
-        if (shadowMapDepth < shadowCoord.z - 0.001) {
-            blockerSum += shadowMapDepth;
-            numBlockers += 1.0;
-        }
-    }
-    
-    return (numBlockers > 0.0) ? blockerSum / numBlockers : -1.0;
-}
-
-float PCSSPenumbraSize(float receiverDepth, float blockerDepth) {
-    if (blockerDepth < 0.0) return 0.006 * filterStr;
-    
-    float penumbra = (receiverDepth - blockerDepth) / max(blockerDepth, 0.001);
-    
-    float slope = 12.0; 
-    penumbra = 1.0 - exp(-slope * penumbra);
-    penumbra = smoothstep(0.0, 1.0, penumbra);
-    
-    float lightWidth = 0.06;
-    
-    return clamp(penumbra * lightWidth * filterStr, 
-                0.002 * filterStr, 
-                0.03 * filterStr * (1.0 + rainStrength)); 
-}
-
-vec3 PCSSFiltering(vec3 shadowCoord, float penumbraSize, float transparencyFactor, mat2 Rotation, vec3 Rotationvec3) {
-    vec3 shadowSum = vec3(0.0);
-    float filterSize = penumbraSize * (1.0 + rainStrength * 2.0);
-
-    int sampleCount = max(lightingQuality / 2, 2);
-    
-    for (int i = 0; i < sampleCount; i++) {
-        int index = int(64.0 * fract(sin(dot(floor(Rotationvec3) + vec3(i), vec3(12.9898, 78.233, 45.164))) * 43758.5453)) % 64;
-        vec2 offset = poissonDisk64[index] * filterSize * Rotation;
-        shadowSum += TransparentShadowHardware(vec3(shadowCoord.xy + offset, shadowCoord.z), transparencyFactor);
-    }
-    
-    return shadowSum / float(sampleCount);
-}
-#endif
 
 
 ////Fake Cloud Shadow////

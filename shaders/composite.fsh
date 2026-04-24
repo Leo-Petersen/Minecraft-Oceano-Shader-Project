@@ -88,6 +88,12 @@ void main() {
 		 viewPos /= viewPos.w;
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos.xyz + gbufferModelViewInverse[3].xyz;
 
+	vec4 screenPos1 = vec4(texcoord, Depth1, 1.0);
+    vec4 viewPos1 = gbufferProjectionInverse * (screenPos1 * 2.0 - 1.0);
+    viewPos1 /= viewPos1.w;
+    vec3 worldPos1 = mat3(gbufferModelViewInverse) * viewPos1.xyz 
+                   + gbufferModelViewInverse[3].xyz;
+
 	////Materials////
 	float material = texture2D(colortex2, texcoord).p;
 	float iswater = float(material > 0.08 && material < 0.10);
@@ -97,7 +103,7 @@ void main() {
 	////WaterShadow////
 	float ShadowVisibility = 1.0;
 	if (iswater == 1.0 || isglass == 1.0 || isslime == 1.0){
-		  ShadowVisibility = GetShadow().r*transitionFade;
+		  ShadowVisibility = shadowSample(worldPos).r * transitionFade;
 	}
 
 	////Calculate sun////
@@ -220,19 +226,15 @@ void main() {
 
 
 	///Caustics///
-	#ifdef Caustics
+    #ifdef Caustics
 	float WaterShadowVisibility = 1.0;
-	if (iswater == 1.0 || isEyeInWater > 0.9){
-
-		  WaterShadowVisibility = GetCausticsShadow().r*transitionFade*Diffuse;
-
-		vec3 fragpos3 = vec3(texcoord.st, Depth1);
-			fragpos3 = normalizedVec3(gbufferProjectionInverse * normalizedVec4(fragpos3 * 2.0 - 1.0));
-		vec3 worldPosWater = mat3(gbufferModelViewInverse) * fragpos3.xyz + gbufferModelViewInverse[3].xyz;
-		vec3 caustics = waterCaustics(worldPosWater, WaterShadowVisibility);
-		color.rgb *= caustics;
-	}
-	#endif
+    if (iswater == 1.0 || isEyeInWater > 0.9) {
+        WaterShadowVisibility = shadowSample(worldPos1).r 
+                              * transitionFade * Diffuse;
+        vec3 caustics = waterCaustics(worldPos1, WaterShadowVisibility);
+        color.rgb *= caustics;
+    }
+    #endif
 
 	///Lightmap///
 	float heldLightValue = max(float(heldBlockLightValue), float(heldBlockLightValue2));
