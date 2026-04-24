@@ -16,22 +16,22 @@ float parallaxRes = clamp(vtexcoordam.p * float(atlasSize.x), 16.0, 4096.0); // 
 vec2 calcParallax() {
     vec2 baseCoord = vtexcoord.xy * vtexcoordam.pq + vtexcoordam.st;
     
-    float angleFactor = clamp(1.0 + viewVector.z, 0.1, 1.0);
+    float angleFactor = clamp(1.0 + viewVector.z, 0.3, 1.0);
     float effectiveFarDist = parallaxFarDist * angleFactor;
     if (dist >= effectiveFarDist) return baseCoord;
 
-    // check for flat normal map (skip parallax on surfaces without height data)
-    vec3 normalMap = readNormal(vtexcoord.xy).xyz * 2.0 - 1.0;
-    float normalCheck = normalMap.x + normalMap.y;
-    if (normalCheck < -1.999) return baseCoord;
+    vec4 normalSample = readNormal(vtexcoord.xy);
+
+    vec3 normalMap = normalSample.xyz * 2.0 - 1.0;
+    if (normalMap.x + normalMap.y < -1.999) return baseCoord;
+
+    if (normalSample.a > HEIGHT_THRESHOLD) return baseCoord;
 
     float distFactor = (dist - parallaxNearDist) / (effectiveFarDist - parallaxNearDist);
     distFactor = clamp(distFactor * distFactor, 0.0, 1.0);
-    
-    // early exit if fully faded
     if (distFactor >= 1.0) return baseCoord;
     
-    float maxSteps = mix(parallaxRes, MIN_PARALLAX_STEPS, distFactor);
+    float maxSteps = min(mix(parallaxRes, MIN_PARALLAX_STEPS, distFactor), float(MAX_PARALLAX_STEPS));
     int steps = int(maxSteps);
     float stepDiv = 1.0 / maxSteps;
     
@@ -43,7 +43,7 @@ vec2 calcParallax() {
         
         vec2 prevCoord = coord;
         float prevRayHeight = 1.0;
-        float prevSurfaceHeight = readNormal(coord).a;
+        float prevSurfaceHeight = normalSample.a;
         
         coord += stepUV * 0.5;
         float rayHeight = 1.0 - stepDiv * 0.5;
@@ -78,14 +78,12 @@ float GetParallaxShadow(float depth, float fade, vec2 coord, vec3 lightVector, m
     vec3 parallaxdir = tbnMatrix * lightVector;
     parallaxdir.xy *= parallaxDepth * 2.0;
     
-    vec2 dcdx = dFdx(coord);
-    vec2 dcdy = dFdy(coord);
     vec2 newvTexCoord = (coord - vtexcoordam.st) / vtexcoordam.pq;
-    float sampleStep = 0.1 / float(parallaxShadowQuality);
+    float sampleStep = 0.32 / float(parallaxShadowQuality);
     
     vec2 ptexCoord = fract(newvTexCoord + parallaxdir.xy * sampleStep) * vtexcoordam.pq + vtexcoordam.st;
-    float texHeight = texture2DGrad(normals, coord, dcdx, dcdy).a;
-    float texHeightOffset = texture2DGrad(normals, ptexCoord, dcdx, dcdy).a;
+    float texHeight = texture2DGradARB(normals, coord, dFdxy[0], dFdxy[1]).a;
+    float texHeightOffset = texture2DGradARB(normals, ptexCoord, dFdxy[0], dFdxy[1]).a;
     
     float texFactor = clamp((depth - texHeightOffset) / sampleStep + 1.0, 0.0, 1.0);
     float height = mix(depth, texHeight, texFactor);
@@ -95,11 +93,12 @@ float GetParallaxShadow(float depth, float fade, vec2 coord, vec3 lightVector, m
     float stepHeight = parallaxdir.z * sampleStep;
     
     for (int i = 0; i < parallaxShadowQuality; i++) {
-        float iJittered = float(i) + 0.5;
-        float currentHeight = height + stepHeight * iJittered;
+        float iOffset = float(i) + 0.5;
+        float currentHeight = height + stepHeight * iOffset;
+
         
-        vec2 parallaxCoord = fract(newvTexCoord + stepOffset * iJittered) * vtexcoordam.pq + vtexcoordam.st;
-        float offsetHeight = texture2DGrad(normals, parallaxCoord, dcdx, dcdy).a;
+        vec2 parallaxCoord = fract(newvTexCoord + stepOffset * iOffset) * vtexcoordam.pq + vtexcoordam.st;
+        float offsetHeight = texture2DGradARB(normals, parallaxCoord, dFdxy[0], dFdxy[1]).a;
         
         float sampleShadow = clamp(1.0 - (offsetHeight - currentHeight) * parallaxShadowStrength, 0.0, 1.0);
         minShadow = min(minShadow, sampleShadow);
