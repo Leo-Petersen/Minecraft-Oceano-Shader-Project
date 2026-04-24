@@ -25,6 +25,8 @@ float bayer2(vec2 a) {
 
 float randomJitter = fract(bayer64(gl_FragCoord.xy) + frameTimeCounter * INV_EIGHT) - 0.5;
 
+float parallaxRes = clamp(vtexcoordam.p * float(atlasSize.x), 16.0, 4096.0); // Detect resource pack resolution
+
 vec2 calcParallax() {
     vec2 baseCoord = vtexcoord.xy * vtexcoordam.pq + vtexcoordam.st;
     
