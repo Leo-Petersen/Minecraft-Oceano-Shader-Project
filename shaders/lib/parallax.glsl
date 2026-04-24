@@ -45,8 +45,9 @@ vec2 calcParallax() {
         float prevRayHeight = 1.0;
         float prevSurfaceHeight = normalSample.a;
         
-        coord += stepUV * 0.5;
-        float rayHeight = 1.0 - stepDiv * 0.5;
+        float dither = fract(dot(floor(gl_FragCoord.xy), vec2(0.5, 0.25)));
+        coord += stepUV * dither;
+        float rayHeight = 1.0 - stepDiv * dither;
         float surfaceHeight = readNormal(coord).a;
 
         for (int i = 0; i < MAX_PARALLAX_STEPS; i++) {
