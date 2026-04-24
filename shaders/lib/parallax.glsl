@@ -1,7 +1,6 @@
 #define PARALLAX_EPSILON 0.001
 #define SHADOW_EPSILON 0.01
 #define HEIGHT_THRESHOLD 0.98
-#define INV_EIGHT 0.125
 
 mat2 dFdxy = mat2(
     dFdx(vtexcoord.xy * vtexcoordam.pq),
@@ -11,19 +10,6 @@ mat2 dFdxy = mat2(
 vec4 readNormal(in vec2 coord) {
     return texture2DGradARB(normals, fract(coord) * vtexcoordam.pq + vtexcoordam.st, dFdxy[0], dFdxy[1]);
 }
-
-float bayer2(vec2 a) {
-    a = floor(a);
-    return fract(dot(a, vec2(0.5, a.y * 0.75)));
-}
-
-#define bayer4(a)   (bayer2(0.5*(a))*0.25+bayer2(a))
-#define bayer8(a)   (bayer4(0.5*(a))*0.25+bayer2(a))
-#define bayer16(a)  (bayer8(0.5*(a))*0.25+bayer2(a))
-#define bayer32(a)  (bayer16(0.5*(a))*0.25+bayer2(a))
-#define bayer64(a)  (bayer32(0.5*(a))*0.25+bayer2(a))
-
-float randomJitter = fract(bayer64(gl_FragCoord.xy) + frameTimeCounter * INV_EIGHT) - 0.5;
 
 float parallaxRes = clamp(vtexcoordam.p * float(atlasSize.x), 16.0, 4096.0); // Detect resource pack resolution
 
@@ -54,14 +40,13 @@ vec2 calcParallax() {
     vec2 coord = vtexcoord.xy;
 
     if (viewVector.z < -PARALLAX_EPSILON) {
-        float jitter = (randomJitter + 0.5) * (1.0 - distFactor * 0.5);
         
         vec2 prevCoord = coord;
         float prevRayHeight = 1.0;
         float prevSurfaceHeight = readNormal(coord).a;
         
-        coord += stepUV * jitter;
-        float rayHeight = 1.0 - stepDiv * jitter;
+        coord += stepUV * 0.5;
+        float rayHeight = 1.0 - stepDiv * 0.5;
         float surfaceHeight = readNormal(coord).a;
 
         for (int i = 0; i < MAX_PARALLAX_STEPS; i++) {
@@ -91,7 +76,7 @@ float GetParallaxShadow(float depth, float fade, vec2 coord, vec3 lightVector, m
     if (fade >= 1.0 || depth > HEIGHT_THRESHOLD) return 1.0;
     
     vec3 parallaxdir = tbnMatrix * lightVector;
-    parallaxdir.xy *= parallaxShadowDepth * 2.0;
+    parallaxdir.xy *= parallaxDepth * 2.0;
     
     vec2 dcdx = dFdx(coord);
     vec2 dcdy = dFdy(coord);
@@ -110,7 +95,7 @@ float GetParallaxShadow(float depth, float fade, vec2 coord, vec3 lightVector, m
     float stepHeight = parallaxdir.z * sampleStep;
     
     for (int i = 0; i < parallaxShadowQuality; i++) {
-        float iJittered = float(i) + randomJitter;
+        float iJittered = float(i) + 0.5;
         float currentHeight = height + stepHeight * iJittered;
         
         vec2 parallaxCoord = fract(newvTexCoord + stepOffset * iJittered) * vtexcoordam.pq + vtexcoordam.st;
