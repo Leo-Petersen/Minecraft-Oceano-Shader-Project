@@ -33,7 +33,7 @@ float GetNoHSquared(float radiusTan, float NoL, float NoV, float VoL) {
 float GGXDistribution(float NoHsqr, float alpha) {
     float alpha2 = alpha * alpha;
     float denom  = NoHsqr * (alpha2 - 1.0) + 1.0;
-    return alpha2 / (3.14159265 * denom * denom);
+    return alpha2 / (PI * denom * denom);
 }
 
 // Denominator (4·NdotL·NdotV) is baked into the 0.5/ form
@@ -122,5 +122,5 @@ float calculateDiffuse(vec3 lightDir, vec3 viewDir, vec3 normal, float roughness
     float lightScatter = 1.0 + (f90 - 1.0) * pow(1.0 - NdotL, 5.0);
     float viewScatter = 1.0 + (f90 - 1.0) * pow(1.0 - NdotV, 5.0);
 
-    return (lightScatter * viewScatter * NdotL) / 3.14159265;
+    return (lightScatter * viewScatter * NdotL) / PI;
 }

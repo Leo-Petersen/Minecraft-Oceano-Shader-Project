@@ -20,7 +20,7 @@ const vec3 waterScatteringCoeff = vec3(0.0045, 0.0060, 0.0080);
 float phaseHG(float cosTheta, float g) {
     float g2 = g * g;
     float denom = 1.0 + g2 - 2.0 * g * cosTheta;
-    return (1.0 - g2) / (4.0 * 3.14159265 * pow(denom, 1.5));
+    return (1.0 - g2) / (4.0 * PI * pow(denom, 1.5));
 }
 
 float phaseWater(float cosTheta) {
@@ -30,7 +30,7 @@ float phaseWater(float cosTheta) {
 }
 
 float phaseRayleigh(float cosTheta) {
-    return (3.0 / (16.0 * 3.14159265)) * (1.0 + cosTheta * cosTheta);
+    return (3.0 / (16.0 * PI)) * (1.0 + cosTheta * cosTheta);
 }
 
 vec3 multiScatteringApprox(vec3 extinction, vec3 scattering, float depth) {

@@ -40,6 +40,7 @@ uniform float rainStrength;
 uniform float nightVision;
 uniform float darknessFactor;
 uniform float darknessLightFactor;
+uniform float PI;
 
 uniform vec3 skyColor;
 uniform vec3 cameraPosition;

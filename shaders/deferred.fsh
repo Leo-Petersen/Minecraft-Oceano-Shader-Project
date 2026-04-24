@@ -48,6 +48,7 @@ uniform float viewHeight, viewWidth;
 uniform float aspectRatio;
 uniform float wetness;
 uniform float blindness;
+uniform float PI;
 
 uniform vec3 shadowLightPosition;
 uniform vec3 cameraPosition;

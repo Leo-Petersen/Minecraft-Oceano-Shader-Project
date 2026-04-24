@@ -85,7 +85,7 @@ float getViewDistance() {
 
 
 /// Unused, this is a bad implementation, but left in for potential future use or reference
-#ifdef PCSS_ENABLED
+#ifdef PCSS
 float PCSSBlockerSearch(vec3 shadowCoord, mat2 Rotation, vec3 Rotationvec3) {
     float blockerSum = 0.0;
     float numBlockers = 0.0;
@@ -184,7 +184,7 @@ float ambientOcclusion(sampler2D depthTexture) {
     int aoSamples = aoQuality + 1;
     float initialRadius = aoRadius / exp2(0.14 * aoQuality);
     float depth = ld(texture2D(depthTexture, texcoord.xy).r);
-    const float piAngle = 0.0174603175;
+    const float piAngle = 0.0174532925;
 
     #ifdef TAA
     float ditherValue = fract(IGN(gl_FragCoord.xy) + float(int(frameCounter) % 8) * 0.125);
@@ -198,7 +198,7 @@ float ambientOcclusion(sampler2D depthTexture) {
     vec2 scale = vec2(1.0 / aspectRatio, 1.0) * gbufferProjection[1][1] / (2.74747742 * max(far * depth, 6.0));
 
     // Compute the rotation step angle
-    float stepAngle = 3.14159265 / float(aoSamples);
+    float stepAngle = PI / float(aoSamples);
     float cosStep = cos(stepAngle);
     float sinStep = sin(stepAngle);
     mat2 rotStep = mat2(cosStep, sinStep, -sinStep, cosStep);
