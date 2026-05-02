@@ -66,10 +66,11 @@ void main() {
 
 	#if ToneMap == 0 //Default MC Tonemap//
 	    //nothing, its minecraft
+		//has a bunch of colour crushing issues etc due to not adgusting out of the srgb pipeline
 
 	#elif ToneMap == 1 //ACES//
-		//color = ACES(color * 0.85);
-		color = ACES(color);
+		color = ACES(color * 0.95); // Exposure adjustment
+		//color = ACES(color);
 		color = luminance(color, saturation);
 
 	#elif ToneMap == 2 //Filmic_Hejl2015//
