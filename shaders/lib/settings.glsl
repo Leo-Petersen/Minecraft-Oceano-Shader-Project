@@ -78,7 +78,7 @@
     #define BorderFog
     #define caveFog
     
-    #define volumetricCloudFog // WIP
+    //#define volumetricCloudFog // WIP, disabled due to performance and visually not being worth it
         // Shape controls
             #define CLOUD_FOG_DENSITY 0.8        // [0.5 0.8 1.0 1.5 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0] Overall density multiplier
             #define CLOUD_FOG_RAIN_DENSITY 1.5   // [1.5 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0] Density multiplier during rain
