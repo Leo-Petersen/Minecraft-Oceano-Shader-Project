@@ -11,18 +11,12 @@ vec4 readNormal(in vec2 coord) {
     return texture2DGradARB(normals, fract(coord) * vtexcoordam.pq + vtexcoordam.st, dFdxy[0], dFdxy[1]);
 }
 
-float bayer2(vec2 a) {
-    a = floor(a);
-    return fract(dot(a, vec2(0.5, a.y * 0.75)));
+// Interleaved gradient noise
+float interleavedGradientNoise(vec2 coord) {
+    return fract(52.9829189 * fract(dot(coord, vec2(0.06711056, 0.00583715))));
 }
 
-#define bayer4(a)   (bayer2(0.5*(a))*0.25+bayer2(a))
-#define bayer8(a)   (bayer4(0.5*(a))*0.25+bayer2(a))
-#define bayer16(a)  (bayer8(0.5*(a))*0.25+bayer2(a))
-#define bayer32(a)  (bayer16(0.5*(a))*0.25+bayer2(a))
-#define bayer64(a)  (bayer32(0.5*(a))*0.25+bayer2(a))
-
-float randomJitter = fract(bayer64(gl_FragCoord.xy) + frameTimeCounter * 0.125) - 0.5;
+float parallaxJitter = interleavedGradientNoise(gl_FragCoord.xy) * 0.5 - 0.25;
 
 vec2 calcParallax() {
     vec2 baseCoord = vtexcoord.xy * vtexcoordam.pq + vtexcoordam.st;
@@ -52,7 +46,7 @@ vec2 calcParallax() {
     vec2 coord = vtexcoord.xy;
 
     if (viewVector.z < -PARALLAX_EPSILON) {
-        float jitter = (randomJitter + 0.5) * (1.0 - distFactor * 0.5);
+        float jitter = (parallaxJitter + 0.5) * (1.0 - distFactor * 0.5);
         //float jitter = 1.0;
         
         vec2 prevCoord = coord;
@@ -68,26 +62,35 @@ vec2 calcParallax() {
             
             if (rayHeight <= surfaceHeight) {
                 float prevDiff = prevRayHeight - prevSurfaceHeight;
-                float currDiff = rayHeight    - surfaceHeight;
+                float currDiff = surfaceHeight - rayHeight;
+                float heightJump = surfaceHeight - prevSurfaceHeight;
 
-                // Proper binary search with explicit brackets
-                vec2  lo = prevCoord,  hi = coord;
-                float loRay = prevRayHeight, hiRay = rayHeight;
+                // Steep wall detection: if the surface rose sharply in one step,
+                // binary search oscillates on the discontinuity causing per-pixel noise.
+                // Use linear interpolation instead
+                if (heightJump > stepDiv * 2.0) {
+                    float t = prevDiff / max(prevDiff + currDiff, 0.0001);
+                    coord = mix(prevCoord, coord, t);
+                } else {
+                    // Smooth surface: binary search for precision
+                    vec2  lo = prevCoord,  hi = coord;
+                    float loRay = prevRayHeight, hiRay = rayHeight;
 
-                for (int b = 0; b < 6; b++) {
-                    vec2  midCoord = (lo + hi) * 0.5;
-                    float midRay   = (loRay + hiRay) * 0.5;
-                    float midSurf  = readNormal(midCoord).a;
+                    for (int b = 0; b < 6; b++) { // 6 ?
+                        vec2  midCoord = (lo + hi) * 0.5;
+                        float midRay   = (loRay + hiRay) * 0.5;
+                        float midSurf  = readNormal(midCoord).a;
 
-                    if (midRay < midSurf) {   // ray is below surface, pull back
-                        hi    = midCoord;
-                        hiRay = midRay;
-                    } else {                   // ray is above surface, push forward
-                        lo    = midCoord;
-                        loRay = midRay;
+                        if (midRay < midSurf) {
+                            hi    = midCoord;
+                            hiRay = midRay;
+                        } else {
+                            lo    = midCoord;
+                            loRay = midRay;
+                        }
                     }
+                    coord = (lo + hi) * 0.5;
                 }
-                coord = (lo + hi) * 0.5;
                 break;
             }
             
@@ -127,7 +130,7 @@ float GetParallaxShadow(float depth, float fade, vec2 coord, vec3 lightVector, m
     float stepHeight = parallaxdir.z * sampleStep;
     
     for (int i = 0; i < parallaxShadowQuality; i++) {
-        float iJittered = float(i) + randomJitter;
+        float iJittered = float(i) + parallaxJitter;
         float currentHeight = height + stepHeight * iJittered;
         
         vec2 parallaxCoord = fract(newvTexCoord + stepOffset * iJittered) * vtexcoordam.pq + vtexcoordam.st;
