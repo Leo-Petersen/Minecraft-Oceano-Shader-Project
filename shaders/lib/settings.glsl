@@ -43,13 +43,14 @@
 
 //Parallax//
     //#define Parallax
+        #define parallaxQuality 64 // [16 32 64 128 256 512]
         #define MAX_PARALLAX_STEPS 64
         #define MIN_PARALLAX_STEPS 4.0
         #define parallaxDepth       0.25 //[0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00]
         #define parallaxNearDist    1
         #define parallaxFarDist     24 //[1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50]
     #define ParallaxShadow
-        #define parallaxShadowQuality  4 //[1 2 3 4 5 6 7 8 9 10 12 14 16 18 20]
+        #define parallaxShadowQuality  8 //[1 2 3 4 5 6 7 8 9 10 12 14 16 18 20]
         #define parallaxShadowDepth  0.50 //[0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00] 'Technically' this should match parallaxDepth, but a higher value looks better
         #define parallaxShadowStrength 8 //[1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28]
     
