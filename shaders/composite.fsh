@@ -49,6 +49,8 @@ uniform vec3 shadowLightPosition;
 varying vec2 texcoord;
 varying vec2 lmcoord;
 
+varying vec3 viewVector;
+
 /*
 const bool colortex7Clear = false;
 const int colortex7Format = RGBA16F;
