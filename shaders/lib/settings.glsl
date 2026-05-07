@@ -43,7 +43,8 @@
 
 //Parallax//
     //#define Parallax
-        #define parallaxQuality 64 // [16 32 64 128 256 512]
+        #define parallaxQuality 64 // [8 16 32 64 128 256 512]
+        #define parallaxTAA // Disable and increase parallaxQuality/parallaxShadowQuality if wanting high quality parallax
         #define MAX_PARALLAX_STEPS 64
         #define MIN_PARALLAX_STEPS 4.0
         #define parallaxDepth       0.25 //[0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00]
