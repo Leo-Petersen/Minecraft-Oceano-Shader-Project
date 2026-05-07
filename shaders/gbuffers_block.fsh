@@ -10,6 +10,7 @@ uniform sampler2D specular;
 uniform sampler2D colortex2;
 
 uniform float frameTimeCounter;
+uniform int frameCounter;
 uniform ivec2 atlasSize; 
 uniform vec3 shadowLightPosition;
 uniform vec3 cameraPosition;

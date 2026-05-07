@@ -9,7 +9,7 @@ uniform sampler2D normals;
 uniform sampler2D specular;
 uniform sampler2D colortex10;
 
-uniform vec3 skyColor;
+uniform int frameCounter;
 
 uniform float frameTimeCounter;
 uniform float viewWidth;
@@ -20,6 +20,7 @@ uniform float screenBrightness;
 
 uniform ivec2 atlasSize; 
 uniform vec3 shadowLightPosition;
+uniform vec3 skyColor;
 
 uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferProjectionInverse;

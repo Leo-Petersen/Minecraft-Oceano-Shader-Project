@@ -8,6 +8,7 @@ uniform sampler2D normals;
 uniform sampler2D specular;
 
 uniform float frameTimeCounter;
+uniform int frameCounter;
 uniform float viewWidth;
 uniform float viewHeight;
 
