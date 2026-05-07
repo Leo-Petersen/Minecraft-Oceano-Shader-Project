@@ -69,7 +69,7 @@ void main() {
 		//has a bunch of colour crushing issues etc due to not adgusting out of the srgb pipeline
 
 	#elif ToneMap == 1 //ACES//
-		color = ACES(color * 0.95); // Exposure adjustment
+		color = ACES(color * 0.85); // Exposure adjustment
 		//color = ACES(color);
 		color = luminance(color, saturation);
 
