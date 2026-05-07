@@ -43,6 +43,7 @@ uniform float wetness;
 uniform int isEyeInWater;
 uniform int heldBlockLightValue;
 uniform int heldBlockLightValue2;
+uniform int frameCounter;
 
 uniform vec3 cameraPosition;
 uniform vec3 skyColor;
@@ -273,13 +274,27 @@ void main() {
 			// Fresnel with roughness consideration
 			vec3 fresnel = F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - NdotV, 5.0);
 			
-			// Reduce reflection on rough surfaces
-			float reflectionFade = (metalness > 0.5) ? 1.0 : max(perceptualSmoothness - 0.5, 0.0) / 0.5;
+			float reflectionFade = (metalness > 0.5) ? 1.0 : smoothstep(0.1, 0.5, perceptualSmoothness);
 			fresnel *= reflectionFade;
 			//fresnel *= 1.0 - roughness * roughness * 0.7;
 
+			// Roughness-jittered reflection normal for blurry SSR (TAA resolves the noise)
+			vec3 reflNormal = viewNormal;
+			#ifdef TAA
+			float h1 = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
+			float h2 = fract(h1 * 3.321 + 0.7123);
+			h1 = fract(h1 + float(frameCounter % 8) * 0.125);
+			h2 = fract(h2 + float(frameCounter % 8) * 0.125);
+			vec3 tangent = normalize(cross(reflNormal, abs(reflNormal.y) > 0.99 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0)));
+			vec3 bitangent = cross(reflNormal, tangent);
+			float jitterStrength = roughness * roughness * 0.4;
+			reflNormal = normalize(reflNormal
+				+ tangent   * (h1 - 0.5) * jitterStrength
+				+ bitangent * (h2 - 0.5) * jitterStrength);
+			#endif
+
 			// SSR with sky fallback
-			vec4 pbrReflection = raytrace(reflectedskyBoxCol * lightMap.t, viewPos.xyz, viewNormal, 4);
+			vec4 pbrReflection = raytrace(reflectedskyBoxCol * lightMap.t, viewPos.xyz, reflNormal, 4);
 			vec3 reflectionCol = mix(reflectedskyBoxCol * lightMap.t, pbrReflection.rgb, pbrReflection.a);
 			
 			// Metals tint their reflection by their albedo
