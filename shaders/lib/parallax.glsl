@@ -11,12 +11,24 @@ vec4 readNormal(in vec2 coord) {
     return texture2DGradARB(normals, fract(coord) * vtexcoordam.pq + vtexcoordam.st, dFdxy[0], dFdxy[1]);
 }
 
+float bayer2(vec2 a) {
+    a = floor(a);
+    return fract(dot(a, vec2(0.5, a.y * 0.75)));
+}
+
+#define bayer4(a)   (bayer2(0.5*(a))*0.25+bayer2(a))
+#define bayer8(a)   (bayer4(0.5*(a))*0.25+bayer2(a))
+#define bayer16(a)  (bayer8(0.5*(a))*0.25+bayer2(a))
+#define bayer32(a)  (bayer16(0.5*(a))*0.25+bayer2(a))
+#define bayer64(a)  (bayer32(0.5*(a))*0.25+bayer2(a))
+
 // Interleaved gradient noise
 float interleavedGradientNoise(vec2 coord) {
     return fract(52.9829189 * fract(dot(coord, vec2(0.06711056, 0.00583715))));
 }
 
-float parallaxJitter = interleavedGradientNoise(gl_FragCoord.xy) * 0.5 - 0.25;
+float parallaxJitter = fract(interleavedGradientNoise(gl_FragCoord.xy)) - 0.5;
+float shadowJitter = fract(bayer64(gl_FragCoord.xy) + frameTimeCounter * 0.125) - 0.5;
 
 vec2 calcParallax() {
     vec2 baseCoord = vtexcoord.xy * vtexcoordam.pq + vtexcoordam.st;
@@ -130,7 +142,7 @@ float GetParallaxShadow(float depth, float fade, vec2 coord, vec3 lightVector, m
     float stepHeight = parallaxdir.z * sampleStep;
     
     for (int i = 0; i < parallaxShadowQuality; i++) {
-        float iJittered = float(i) + parallaxJitter;
+        float iJittered = float(i) + shadowJitter;
         float currentHeight = height + stepHeight * iJittered;
         
         vec2 parallaxCoord = fract(newvTexCoord + stepOffset * iJittered) * vtexcoordam.pq + vtexcoordam.st;
