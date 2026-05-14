@@ -54,6 +54,10 @@ vec3 luminance(vec3 color, float strength) {
 	return color;
 }
 
+// This is here to make it appear in the settings menu, dont ask my why it doesn't show up otherwise
+#ifdef parallaxTAA
+#endif
+
 void main() {
     #ifdef Parallax
     vec2 parallaxedUV = calcParallax();

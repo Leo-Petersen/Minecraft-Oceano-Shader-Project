@@ -27,7 +27,7 @@ float interleavedGradientNoise(vec2 coord) {
     return fract(52.9829189 * fract(dot(coord, vec2(0.06711056, 0.00583715))));
 }
 
-#ifdef parallaxTAA
+#if defined parallaxTAA && defined TAA
 float parallaxJitter = fract(interleavedGradientNoise(gl_FragCoord.xy) + float(frameCounter % 8) / 8.0) - 0.5;
 float shadowJitter = fract(bayer64(gl_FragCoord.xy) + float(frameCounter % 8) / 8.0) - 0.5;
 #else

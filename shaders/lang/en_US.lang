@@ -6,10 +6,11 @@ value.ToneMap.2=Filmic_Hejl2015
 value.ToneMap.3=Oceano
 value.ToneMap.4=AgX
 
-option.tonemapSaturation = Saturation
+option.exposure=Exposure
+option.tonemapSaturation=Saturation
 option.saturation=Strength
 option.filmGrain=Strength
-option.fakecloudshadow = Cloud Shadows
+option.fakecloudshadow=Cloud Shadows
 
 option.BounceLight = Fill Light
 option.BounceColoredLight = Fill Color Light
@@ -27,4 +28,5 @@ option.CookTorranceGGXBRDF = Specular Reflections
 option.materialReflections = Material Reflections (WIP)
 option.volumetricCloudFog = Cloud Fog
 
-option.parallaxRes = Resource Pack Resolution
+option.parallaxTAA=Parallax TAA
+option.parallaxTAA.comment= Smooths imperfections in Parallax. Disable then increase parallaxQuality & parallaxShadowQuality to obtain higher quality parallax

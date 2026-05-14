@@ -65,28 +65,34 @@ void main() {
 	#endif
 
 	#if ToneMap == 0 //Default MC Tonemap//
-	    //nothing, its minecraft
-		//has a bunch of colour crushing issues etc due to not adgusting out of the srgb pipeline
+		color *= exposure;
+		color = luminance(color, saturation);
+
+		//The following fixes colors being crushed due to not adgusting out of the srgb pipeline
+		float shoulder = 0.5;
+		vec3 over = max(color - shoulder, 0.0);
+		float range = 1.0 - shoulder;
+		color = min(color, shoulder) + range * (1.0 - exp(-over / range));
 
 	#elif ToneMap == 1 //ACES//
-		color = ACES(color * 0.85); // Exposure adjustment
+		color = ACES(color * 0.8 * exposure); // Exposure adjustment
 		//color = ACES(color);
 		color = luminance(color, saturation);
 
 	#elif ToneMap == 2 //Filmic_Hejl2015//
 		//color = vec3(1.0) - exp(-color * 1.4);
  		//color = pow(color, vec3(1.1));
-		color = ToneMapFilmic_Hejl2015(color, 10.0); //(color.rgb input, float whitepoint)
+		color = ToneMapFilmic_Hejl2015(color * exposure, 10.0); //(color.rgb input, float whitepoint)
 		color = luminance(color, saturation);
 
 	#elif ToneMap == 3 //Oceano (wip)//
  		color = pow(color, vec3(1/1.45));
-		color = ACES(color);
+		color = ACES(color * exposure);
 		color = luminance(color, saturation);
 
 	#elif ToneMap == 4 //AgX//
 		//color *= 2;  // Exposure adjustment
-		color = agxCdl(color, vec3(1.0), vec3(0.0), vec3(1.75), 1.2);
+		color = agxCdl(color * exposure, vec3(1.0), vec3(0.0), vec3(1.75), 1.2);
 		color = vec3(1.0) - exp(-color * 4.0);
 		//color = luminance(color, saturation);
 	#endif

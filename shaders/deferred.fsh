@@ -350,6 +350,7 @@ void main() {
     #endif
 
     //// Rain Shadow Strength ////
+    // Currently redundant legacy code
     #ifdef disableRainShadows
         float rainShadowStr = 24.0;
     #else
