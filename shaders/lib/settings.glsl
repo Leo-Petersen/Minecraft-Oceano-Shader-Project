@@ -3,7 +3,7 @@
     const int shadowMapResolution = 2048; //[512 768 1024 1256 1536 2048 3072 4096 6144 8192] Resolution of shadows
     const int noiseTextureResolution = 2048; //64
     const float sunPathRotation = -30.0f; //[-50.0f -40.0f -30.0f -20.0f -10.0f 0.0f 10.0f 20.0f 30.0f 40.0f 50.0f]
-    #define shadowMap
+    #define shadowMap // WIP, broke this at one point, will re-visit
     //#define disableRainShadows
     const float shadowDistance = 384;  //[128 160 192 224 256 320 384 448 512]
     const float shadowDistortion = 0.85; //[0.70 0.75 0.80 0.85 0.90 0.95] Distortion of shadow map

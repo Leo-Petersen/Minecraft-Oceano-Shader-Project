@@ -273,63 +273,71 @@ void main() {
 
     //// Shadow Sampling ////
     vec3 ShadowAccum = vec3(0.0);
-    float filterSize = 0.0025 * filterStr * (1.0 + rainStrength * 2.0);
 
-    #ifdef BounceColoredLight
-        vec3 flux = vec3(0.0);
-        float fluxRadius = 0.08;
-        float validSamples = 0.0;
-    #else
-        vec3 flux = vec3(0.4);
-    #endif
-    
-    float sinAngle = sin(angle);
-    float cosAngle = cos(angle);
+    #ifdef shadowMap
+        float filterSize = 0.0025 * filterStr * (1.0 + rainStrength * 2.0);
 
-    // Golden angle rotation matrix
-    const float goldenAngle = 2.39996323;
-    float goldenCos = cos(goldenAngle);
-    float goldenSin = sin(goldenAngle);
-    
-    // Initial direction from IGN noise rotation
-    vec2 dir = vec2(cosAngle, sinAngle);
-    
-    for (int i = 0; i < lightingQuality; i++) {
-        float radius = sqrt((float(i) + 0.5) / float(lightingQuality));
-        vec2 offset = dir * radius;
-        
-        ShadowAccum += TransparentShadow(vec3(SampleCoords.xy + offset * filterSize, SampleCoords.z), transparencyFactor);
-        
         #ifdef BounceColoredLight
-        if ((i & 1) == 0) {
-            vec2 fluxCoord = SampleCoords.xy + offset * fluxRadius;
-            if (fluxCoord.x >= 0.0 && fluxCoord.x <= 1.0 && 
-                fluxCoord.y >= 0.0 && fluxCoord.y <= 1.0) {
-                vec4 fluxSample = texture2D(shadowcolor0, fluxCoord);
-                flux += fluxSample.rgb * (1.0 - fluxSample.a);
-                validSamples += 1.0;
-            }
-        }
+            vec3 flux = vec3(0.0);
+            float fluxRadius = 0.08;
+            float validSamples = 0.0;
+        #else
+            vec3 flux = vec3(0.4);
         #endif
         
-        // Rotate direction by golden angle for next sample
-        dir = vec2(
-            dir.x * goldenCos - dir.y * goldenSin,
-            dir.x * goldenSin + dir.y * goldenCos
-        );
-    }
+        float sinAngle = sin(angle);
+        float cosAngle = cos(angle);
 
-    //// Process Shadow Results ////
-    ShadowAccum /= float(lightingQuality);
-    ShadowAccum *= parallaxShadow;
-    //ShadowAccum = mix(ShadowAccum, vec3(1.0), emission * 0.8);
+        // Golden angle rotation matrix
+        const float goldenAngle = 2.39996323;
+        float goldenCos = cos(goldenAngle);
+        float goldenSin = sin(goldenAngle);
+        
+        // Initial direction from IGN noise rotation
+        vec2 dir = vec2(cosAngle, sinAngle);
+        
+        for (int i = 0; i < lightingQuality; i++) {
+            float radius = sqrt((float(i) + 0.5) / float(lightingQuality));
+            vec2 offset = dir * radius;
+            
+            ShadowAccum += TransparentShadow(vec3(SampleCoords.xy + offset * filterSize, SampleCoords.z), transparencyFactor);
+            
+            #ifdef BounceColoredLight
+            if ((i & 1) == 0) {
+                vec2 fluxCoord = SampleCoords.xy + offset * fluxRadius;
+                if (fluxCoord.x >= 0.0 && fluxCoord.x <= 1.0 && 
+                    fluxCoord.y >= 0.0 && fluxCoord.y <= 1.0) {
+                    vec4 fluxSample = texture2D(shadowcolor0, fluxCoord);
+                    flux += fluxSample.rgb * (1.0 - fluxSample.a);
+                    validSamples += 1.0;
+                }
+            }
+            #endif
+            
+            // Rotate direction by golden angle for next sample
+            dir = vec2(
+                dir.x * goldenCos - dir.y * goldenSin,
+                dir.x * goldenSin + dir.y * goldenCos
+            );
+        }
+
+        //// Process Shadow Results ////
+        ShadowAccum /= float(lightingQuality);
+        ShadowAccum *= parallaxShadow;
+        //ShadowAccum = mix(ShadowAccum, vec3(1.0), emission * 0.8);
+    #else
+        ShadowAccum = sunlightCol;
+        vec3 flux = vec3(0.4);
+    #endif
 
     float shadowLum = dot(ShadowAccum, vec3(0.2126, 0.7152, 0.0722));
     vec3 invShadowAccum = clamp(-ShadowAccum * Diffuse + vec3(0.4), vec3(0.0), vec3(1.0));
 
     //// Process Flux / Bounce Light ////
-    #ifdef BounceColoredLight
-        flux = (validSamples > 0.0) ? flux / validSamples : vec3(0.4);
+    #ifdef shadowMap
+        #ifdef BounceColoredLight
+            flux = (validSamples > 0.0) ? flux / validSamples : vec3(0.4);
+        #endif
     #endif
     
     flux = max(flux, vec3(0.0001));
@@ -366,7 +374,7 @@ void main() {
         #endif
         float ambientStrength = ambientStr * 0.1;
     #else
-        float ambientStrength = 0.2;
+        float ambientStrength = 0.03;
         ShadowAccum = vec3(0.5);
     #endif
     
@@ -405,25 +413,27 @@ void main() {
         finalAmbient += vec3(0.025, 0.028, 0.035) * (1.0 - undergroundBlend) * pow(ao, 0.42) * textureAO * 5.0;
 
         // Subsurface scattering
-        if ((isFoliage || isGrass > 0.0) && sssAmount > 0.01) {
-            // View/Light directions
-            vec3 viewDir = normalize(-viewPos.xyz);
-            vec3 lightDir = shadowLightPosition * 0.01;
-            float VdotL = dot(viewDir, lightDir);
-            float NdotL = dot(normal, lightDir);
+        #ifdef shadowMap
+            if ((isFoliage || isGrass > 0.0) && sssAmount > 0.01) {
+                // View/Light directions
+                vec3 viewDir = normalize(-viewPos.xyz);
+                vec3 lightDir = shadowLightPosition * 0.01;
+                float VdotL = dot(viewDir, lightDir);
+                float NdotL = dot(normal, lightDir);
 
-            // SSS parameters
-            float sssScale = isFoliage ? 1.5 : 1.0;
-            float uniformity = isFoliage ? 0.5 : 1.5;
-            
-            vec3 sssContribution = calculateSSS(
-                SampleCoords, color, sunlightCol,
-                sssAmount * sssScale,
-                VdotL, NdotL, lightMap.t,
-                distFactor, IGN, uniformity
-            );
-            finalShadow += sssContribution * lightStrength * undergroundFix * (1.0 - time[5] * 0.2);
-        }
+                // SSS parameters
+                float sssScale = isFoliage ? 1.5 : 1.0;
+                float uniformity = isFoliage ? 0.5 : 1.5;
+                
+                vec3 sssContribution = calculateSSS(
+                    SampleCoords, color, sunlightCol,
+                    sssAmount * sssScale,
+                    VdotL, NdotL, lightMap.t,
+                    distFactor, IGN, uniformity
+                );
+                finalShadow += sssContribution * lightStrength * undergroundFix * (1.0 - time[5] * 0.2);
+            }
+        #endif
         
         // PBR Specular
         vec3 specularBRDF = cookTorranceGGXBRDF(color, specularMap, lightMap.t, sunlightCol);
