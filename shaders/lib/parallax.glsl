@@ -80,34 +80,8 @@ vec2 calcParallax() {
             if (rayHeight <= surfaceHeight) {
                 float prevDiff = prevRayHeight - prevSurfaceHeight;
                 float currDiff = surfaceHeight - rayHeight;
-                float heightJump = surfaceHeight - prevSurfaceHeight;
-
-                // Steep wall detection: if the surface rose sharply in one step,
-                // binary search oscillates on the discontinuity causing per-pixel noise.
-                // Use linear interpolation instead
-                if (heightJump > stepDiv * 2.0) {
-                    float t = prevDiff / max(prevDiff + currDiff, 0.0001);
-                    coord = mix(prevCoord, coord, t);
-                } else {
-                    // Smooth surface: binary search for precision
-                    vec2  lo = prevCoord,  hi = coord;
-                    float loRay = prevRayHeight, hiRay = rayHeight;
-
-                    for (int b = 0; b < 6; b++) { // 6 ?
-                        vec2  midCoord = (lo + hi) * 0.5;
-                        float midRay   = (loRay + hiRay) * 0.5;
-                        float midSurf  = readNormal(midCoord).a;
-
-                        if (midRay < midSurf) {
-                            hi    = midCoord;
-                            hiRay = midRay;
-                        } else {
-                            lo    = midCoord;
-                            loRay = midRay;
-                        }
-                    }
-                    coord = (lo + hi) * 0.5;
-                }
+                float t = prevDiff / max(prevDiff + currDiff, 0.0001);
+                coord = mix(prevCoord, coord, t);
                 break;
             }
             
