@@ -361,7 +361,7 @@ void main() {
         #else
             float fakeCloudShadow = 1.0;
         #endif
-        float ambientStrength = ambientStr * 0.1;
+        float ambientStrength = ambientStr * 0.1142;
     #else
         float ambientStrength = 0.03;
         ShadowAccum = vec3(0.5);
