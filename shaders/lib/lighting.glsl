@@ -67,12 +67,6 @@ vec3 TransparentShadowHardware(vec3 SampleCoords, float transparencyFactor) {
     return sunlightCol * shadowOpaque;
 }
 
-// Legacy function
-vec3 TransparentShadow(in vec3 SampleCoords, float transparencyFactor) {
-    return TransparentShadowHardware(SampleCoords, transparencyFactor);
-}
-
-
 ////Fake Cloud Shadow////
 float cloudNoise(float noise, vec3 worldPos) {
     return texture2D(noisetex, 0.000017 * (vec2(noise) + frameTimeCounter * 3.0 + (worldPos.xz + cameraPosition.xz))).r;

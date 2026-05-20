@@ -68,6 +68,8 @@ void main() {
     vec3 fragpos = toNDC(vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z));
     vec4 terrainColor = vec4(texture2DGradARB(texture, parallaxedUV, dFdxy[0], dFdxy[1]) * glcolor);
     vec4 specularData = texture2D(specular, parallaxedUV);
+    vec4 normalRaw = texture2D(normals, parallaxedUV);
+    
     vec2 specularMap = specularData.rg;
     float emission = specularData.a < 0.99 ? specularData.a : 0.0;
 
@@ -84,8 +86,6 @@ void main() {
     if (isFoliage > 0.5 && labSSS < 0.01) {
         labSSS = 0.75;
     }
-
-    vec4 normalRaw = texture2D(normals, parallaxedUV);
     
     vec2 normalXY = normalRaw.rg * 2.0 - 1.0;
     vec3 normalData = vec3(normalXY, sqrt(1.0 - dot(normalXY, normalXY)));

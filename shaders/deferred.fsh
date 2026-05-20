@@ -77,22 +77,6 @@ vec3 worldToVoxelUV(vec3 worldPos) {
     return voxelPos / voxelVolumeSize;
 }
 
-vec3 getWorldPos(float depth) {
-    vec3 ClipSpace = vec3(texcoord, depth) * 2.0 - 1.0;
-    vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0);
-    vec3 View = ViewW.xyz / ViewW.w;
-    vec4 World = gbufferModelViewInverse * vec4(View, 1.0);
-    return World.xyz;
-}
-
-vec3 nvec3(vec4 pos) {
-    return pos.xyz / pos.w;
-}
-
-vec4 nvec4(vec3 pos) {
-    return vec4(pos.xyz, 1.0);
-}
-
 float undergroundFix = clamp(mix(max(lmcoord.t - 2.0 / 16.0, 0.0) * 1.14285714286, 1.0, clamp((eyeBrightnessSmooth.y / 255.0 - 2.0 / 16.0) * 4.0, 0.0, 1.0)), 0.0, 1.0);
 
 float transparencyFactor =  0.5 * (time[0]) +
@@ -156,10 +140,16 @@ void main() {
          lightMap.t = clamp(lightMap.t, ((1.0 - nightVision) * min_skyLightMap) + (0.5 * nightVision), 1.0);
          lightMap.t = pow(lightMap.t * (1.0 - darknessLightFactor), 0.5);
 
+    vec3 normal = normalize(decodeNormal(colortex1Map.xy));
+
     vec4 screenPos = vec4(texcoord, texture2D(depthtex0, texcoord).r, 1.0);
     vec4 viewPos = gbufferProjectionInverse * (screenPos * 2.0 - 1.0);
     viewPos /= viewPos.w;
     vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos.xyz + gbufferModelViewInverse[3].xyz;
+
+    vec3 worldNormal = mat3(gbufferModelViewInverse) * normal;
+    float NdotL = max(dot(normal, normalize(shadowLightPosition)), 0.0);
+    vec3 shadowWorldPos = worldPos + worldNormal * 0.04 * (1.0 - NdotL);
 
     float distFactor = length(worldPos.xz) / 120.0;
           distFactor = pow(distFactor, 2.2);
@@ -171,8 +161,6 @@ void main() {
     float roughness = clamp(1.0 - specularMap.r, 0.01, 0.99);
     vec3 reflectedskyBoxCol = texture2D(colortex8, texcoord).rgb;
     
-    vec3 normal = normalize(decodeNormal(colortex1Map.xy));
-
     float Diffuse = calculateDiffuse(shadowLightPosition * 0.01, normalize(-viewPos.xyz), normal, roughness);
 
     //// Calculate LightMap Colour and Values ////
@@ -217,7 +205,6 @@ void main() {
     float voxelBlend = 0.0;
     
     #ifdef VoxelLighting
-        vec3 worldNormal = (gbufferModelViewInverse * vec4(normal, 0.0)).xyz;
         vec3 samplePos = worldPos + worldNormal * 0.5;
         vec3 voxelUV = worldToVoxelUV(samplePos);
         
@@ -255,7 +242,7 @@ void main() {
     vec3 torchTotal = finalBlockLightColor * torchIntensity * color;
 
     //// Setup Shadow Filter ////
-    vec4 shadowCoord = ShadowSpace(worldPos);
+    vec4 shadowCoord = ShadowSpace(shadowWorldPos);
     shadowCoord.xy *= distort(shadowCoord.xy);
     shadowCoord.z /= 6.0;
 
@@ -300,7 +287,7 @@ void main() {
             float radius = sqrt((float(i) + 0.5) / float(lightingQuality));
             vec2 offset = dir * radius;
             
-            ShadowAccum += TransparentShadow(vec3(SampleCoords.xy + offset * filterSize, SampleCoords.z), transparencyFactor);
+            ShadowAccum += TransparentShadowHardware(vec3(SampleCoords.xy + offset * filterSize, SampleCoords.z), transparencyFactor);
             
             #ifdef BounceColoredLight
             if ((i & 1) == 0) {
@@ -342,11 +329,11 @@ void main() {
     
     flux = max(flux, vec3(0.0001));
     flux *= (1.0 - rainStrength * 0.88);
-    flux /= dot(vec3(0.0721, 0.7154, 0.2125), flux);
-    if (Depth < 0.56) flux /= dot(vec3(0.0721, 0.7154, 0.2125), flux) + rainStrength * 0.5;
+    flux /= dot(vec3(0.2126, 0.7152, 0.0722), flux);
+    if (Depth < 0.56) flux /= dot(vec3(0.2126, 0.7152, 0.0722), flux) + rainStrength * 0.5;
 
     vec3 bounceLight = backLight(flux);
-    bounceLight = mix(shadowCol, bounceLight, dot(vec3(0.0721, 0.7154, 0.2125), flux) + 0.5);
+    bounceLight = mix(shadowCol, bounceLight, dot(vec3(0.2126, 0.7152, 0.0722), flux) + 0.5);
     bounceLight *= 0.55;
     float bounceLum = dot(bounceLight, vec3(0.2126, 0.7152, 0.0722));
           bounceLight = mix(bounceLight, vec3(bounceLum), mix(bounceDesaturation, 0.9, rainStrength)); // Fixes bounce light being too strong at sunrise / sunset

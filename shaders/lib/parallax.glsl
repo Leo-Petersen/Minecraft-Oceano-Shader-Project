@@ -110,11 +110,6 @@ float GetParallaxShadow(float depth, float fade, vec2 coord, vec3 lightVector, m
     float sampleStep = 0.1 / float(parallaxShadowQuality);
     
     vec2 ptexCoord = fract(newvTexCoord + parallaxdir.xy * sampleStep) * vtexcoordam.pq + vtexcoordam.st;
-    float texHeight = texture2DGrad(normals, coord, dcdx, dcdy).a;
-    float texHeightOffset = texture2DGrad(normals, ptexCoord, dcdx, dcdy).a;
-    
-    float texFactor = clamp((depth - texHeightOffset) / sampleStep + 1.0, 0.0, 1.0);
-    float height = mix(depth, texHeight, texFactor);
     float minShadow = 1.0;
     
     vec2 stepOffset = parallaxdir.xy * sampleStep;
@@ -122,7 +117,7 @@ float GetParallaxShadow(float depth, float fade, vec2 coord, vec3 lightVector, m
     
     for (int i = 0; i < parallaxShadowQuality; i++) {
         float iJittered = float(i) + shadowJitter;
-        float currentHeight = height + stepHeight * iJittered;
+        float currentHeight = depth + stepHeight * iJittered;
         
         vec2 parallaxCoord = fract(newvTexCoord + stepOffset * iJittered) * vtexcoordam.pq + vtexcoordam.st;
         float offsetHeight = texture2DGrad(normals, parallaxCoord, dcdx, dcdy).a;

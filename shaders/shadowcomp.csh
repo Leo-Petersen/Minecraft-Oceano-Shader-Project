@@ -88,7 +88,6 @@ void main() {
             light = getFloodfill(floodfillSamplerCopy, previousPos, validPreviousPos);
         }
     }
-    // else: solid block (ID 1) or emissive : light stays at 0 (no propagation)
     
     // Emissive blocks (IDs 2-199) emit their own color
     if (voxel >= 2u && voxel < 200u) {
