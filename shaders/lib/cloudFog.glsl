@@ -76,7 +76,7 @@ float cfGetDensity(vec3 wpos) {
     float shape = cfShape(wpos.xz);
 
     // Density increases in rain
-    float rainDensity = mix(1.0, CLOUD_FOG_RAIN_DENSITY, rainStrength);
+    float rainDensity = mix(1.0, CLOUD_FOG_RAIN_DENSITY * 0.15, rainStrength);
 
     return profile * shape * CLOUD_FOG_DENSITY * rainDensity * mix(0.0, 1.0, transitionFade);
 }
@@ -241,8 +241,7 @@ vec4 getVolumetricCloudFog(vec3 camPos, vec3 fogCol) {
         float powderMix = mix(1.0, powder, smoothstep(-0.1, 0.5, cosTheta));
 
         float ambient = CLOUD_FOG_MIN_BRIGHTNESS + 0.3;
-        float rainDim = 1.0 - rainStrength * 0.8;
-        float direct  = shadow * lightTransmit * powderMix * phase * heightShade * 5.0 * rainDim;
+        float direct  = shadow * lightTransmit * powderMix * phase * heightShade * 5.0;
         float light   = ambient + direct;
 
         float tau       = density * sigmaE * stepSize;
@@ -250,8 +249,7 @@ vec4 getVolumetricCloudFog(vec3 camPos, vec3 fogCol) {
 
         // Slight blue tint with depth
         float depthRatio = float(i) / float(CLOUD_FOG_SAMPLES);
-        vec3 tintedFog   = fogCol * (1.0 + vec3(-0.05, 0.0, 0.08) * depthRatio)
-                         * (1.0 - rainStrength * 0.7);
+        vec3 tintedFog   = fogCol * (1.0 + vec3(-0.05, 0.0, 0.08) * depthRatio);
 
         // Energy-conserving in-scattering
         scattered    += tintedFog * light * (1.0 - stepTrans) * transmittance;

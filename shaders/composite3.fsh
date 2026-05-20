@@ -308,30 +308,58 @@ void main() {
 
 	//// Atmosphere Fog ////
 	#ifdef atmosphereFog
-	if (Depth < 1.0 && isEyeInWater < 0.9) {
+	if (isEyeInWater < 0.9) {
 		vec3 viewDir = normalize(viewPos.xyz);
-		float sunAngleCosine = 1.0 - clamp(dot(viewDir, shadowLightPosition * 0.01), 0.0, 1.0);
-		sunAngleCosine = pow(sunAngleCosine, 2.0) * (3.0 - 2.0 * sunAngleCosine);
-		sunAngleCosine = 1.0 / sunAngleCosine - 1.0;
-		sunAngleCosine = 1.0 - exp(-sunAngleCosine / 12.0);
-		sunAngleCosine = clamp(sunAngleCosine, 0.01, 2.0) * (1.0 - rainStrength * 0.999);
-		
-		// Normal atmospheric fog
-		float normalFogDist = pow(length(worldPos.xz) / 140.0, 2.2);
-		float normalFogDepth = clamp(1.0 - exp(-0.1 * normalFogDist), 0.0, 0.35);
-		vec3 normalFog = mix(color.rgb, atmoColor*2, normalFogDepth * pow(sunAngleCosine, 0.2));
-		
-		// Rain fog 
-		float rainFogDist = pow(length(worldPos.xz) / 60.0, 1.2);
-		float rainFogDepth = clamp(1.0 - exp(-0.15 * rainFogDist), 0.0, 0.4);
-		vec3 rainFogColor = cloudFogCol * 0.4;
-		vec3 rainFog = mix(color.rgb, rainFogColor, rainFogDepth);
-		
-		// Blend between normal and rain fog
-		color.rgb = mix(normalFog, rainFog, rainStrength);
+
+		// Horizon factor for sky fog: 0 at horizon, 1 at zenith
+		// Use the world-space up direction to get the elevation angle
+		vec3 worldViewDir = mat3(gbufferModelViewInverse) * viewDir;
+		float elevation = abs(worldViewDir.y); // 0 = horizon, 1 = straight up/down
+
+		if (Depth < 1.0) {
+			// --- Terrain fog (existing logic) ---
+			float sunAngleCosine = 1.0 - clamp(dot(viewDir, shadowLightPosition * 0.01), 0.0, 1.0);
+			sunAngleCosine = pow(sunAngleCosine, 2.0) * (3.0 - 2.0 * sunAngleCosine);
+			sunAngleCosine = 1.0 / sunAngleCosine - 1.0;
+			sunAngleCosine = 1.0 - exp(-sunAngleCosine / 12.0);
+			sunAngleCosine = clamp(sunAngleCosine, 0.01, 2.0) * (1.0 - rainStrength * 0.999);
+
+			// Normal atmospheric fog
+			float normalFogDist = pow(length(worldPos.xz) / 60.0, 1.2);
+			float normalFogDepth = clamp(1.0 - exp(-0.15 * normalFogDist), 0.0, 0.85);
+			vec3 normalFog = mix(color.rgb, atmoColor * 2, normalFogDepth * pow(sunAngleCosine, 0.2));
+
+			// Rain fog
+			float rainFogDist = pow(length(worldPos.xz) / 20.0, 1.2);
+			float rainFogDepth = clamp(1.0 - exp(-0.2 * rainFogDist), 0.0, 0.9);
+			float cLum = dot(cloudFogCol, vec3(0.2126, 0.7152, 0.0722));
+			vec3 rainFogColor = mix(pow(cloudFogCol * 0.35, vec3(1.2)), vec3(cLum * 0.35), 0.55);
+
+	        // Match the sky fog at the horizon so there's no seam
+			float horizonFog = (1.0 - smoothstep(0.0, 0.45, elevation)) * rainStrength * 0.85;
+			float distToEdge = smoothstep(0.5, 1.0, length(worldPos.xz) / far);
+			rainFogDepth = mix(rainFogDepth, max(rainFogDepth, horizonFog), distToEdge);
+
+			vec3 rainFog = mix(color.rgb, rainFogColor, rainFogDepth);
+
+			// Blend between normal and rain fog
+			color.rgb = mix(normalFog, rainFog, rainStrength);
+
+		} else {
+			// --- Sky fog: soften the horizon in all weather ---
+			float cLum = dot(cloudFogCol, vec3(0.2126, 0.7152, 0.0722));
+			vec3 rainFogColor = mix(cloudFogCol * 0.35, vec3(cLum * 0.35), 0.55);
+
+			// Clear weather: subtle atmospheric haze at the horizon
+			float skyAtmoFog = (1.0 - smoothstep(0.0, 0.3, elevation)) * (1.0 - rainStrength);
+			color.rgb = mix(color.rgb, atmoColor * 2, skyAtmoFog * 0.15);
+
+			// Rain: heavier fog band at the horizon
+			float skyRainFog = (1.0 - smoothstep(0.0, 0.45, elevation)) * rainStrength;
+			color.rgb = mix(color.rgb, rainFogColor, skyRainFog * 0.85);
+		}
 	}
 	#endif
-
 
 	//// Cave Fog ////
 	#ifdef caveFog
@@ -345,6 +373,7 @@ void main() {
 	#ifdef BorderFog
 	float effects = blindness + darknessFactor;
 	float borderFog = clamp(pow(length(worldPos.xz) / far, 14.0) * 0.7, 0.0, 1.0);
+	borderFog *= (1.0 - rainStrength);
 	if (Depth < 1.0 && isEyeInWater < 0.9) {
 		color.rgb = mix(color.rgb, skyBoxCol * (1.0 - effects * 0.95), borderFog);
 	}

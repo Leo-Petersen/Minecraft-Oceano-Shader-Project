@@ -140,6 +140,7 @@ void main() {
 	//Sun Glare//
     vec3 sunGlare = pow(sunDist*0.07, 1.8) * sunCol;
 		 sunGlare = 1.0 - exp( -sunGlare ); 
+		 sunGlare *= (1-rainStrength * 0.35);
 		 sunGlare *= 2.0;
 	//Screen Glare//
 	#ifdef screenSunGlare
@@ -196,12 +197,12 @@ void main() {
 	vec3 reflectedskyBoxCol = texture2D(colortex8, texcoord.st).rgb+ReflectAtmoGlare;
 	#ifdef screenSunGlare
 	float visibleSun = float(texture2D(depthtex1, lightPos + 0.5).r >= 1.0);
-	vec3 finalGlare = (screensunGlare) * sunStr * (1.0 - ((time2[1].y)*rainStrength))* transitionFade * (1.0-isEyeInWater) * visibleSun * transitionFade;
+	vec3 finalGlare = (screensunGlare) * sunStr * (1.0 - ((time2[1].y)*rainStrength)) * transitionFade * (1.0-isEyeInWater) * visibleSun * transitionFade;
 	#else
 	vec3 finalGlare = vec3(0.0);
 	#endif
 
-	vec3 finalSun = (mainSun + sunGlare + atmoGlare*atmoStr*transitionFade) * (1.0 - ((time2[1].y)*rainStrength)) * (1.0-isEyeInWater) * sunStr * transitionFade;
+	vec3 finalSun = (mainSun + sunGlare + atmoGlare*atmoStr*transitionFade) * (1.0 - ((time2[1].y)*rainStrength) * 0.7) * (1.0-isEyeInWater) * sunStr * transitionFade;
 
 	
 	////Colours////

@@ -26,7 +26,7 @@ option.BLOOM = Bloom
 option.CookTorranceGGXBRDF = Specular Reflections
 
 option.materialReflections = Material Reflections (WIP)
-option.volumetricCloudFog = Cloud Fog
+option.volumetricCloudFog = Cloud Fog (WIP)
 
 option.parallaxTAA=Parallax TAA
-option.parallaxTAA.comment= Smooths imperfections in Parallax. Disable then increase parallaxQuality & parallaxShadowQuality to obtain higher quality parallax
+    option.parallaxTAA.comment= Smooths imperfections in Parallax. Disable then increase parallaxQuality & parallaxShadowQuality to obtain higher quality parallax

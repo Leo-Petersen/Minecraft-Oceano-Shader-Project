@@ -136,33 +136,54 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
     altitudeFactor = pow(altitudeFactor, 10.0 - (rainStrength * 9.0));
 
     #ifdef volumetricLight
-    float altitudeFog = (1.0 - (exp(-50.0 * pow(length(worldPos.xz) / pow(far, startFactor) * closeFactor * 0.155, 2.5 - (2.0 * rainStrength)))));
-          altitudeFog *= (1.0 - altitudeFactor) * FogStrength;
-          altitudeFog *= timeFactor * 0.05 + sunAngleCosine * 0.1;
+         float altitudeFog = (1.0 - (exp(-50.0 * pow(length(worldPos.xz) / pow(far, startFactor) * closeFactor * 0.155, 2.5 - (2.0 * rainStrength)))));
+               altitudeFog *= (1.0 - altitudeFactor) * FogStrength;
+               altitudeFog *= timeFactor * 0.05 + sunAngleCosine * 0.1;
 
-    float rainFogDepth = length(worldPos.xz) / 20.0;
-          rainFogDepth = (1.0 - exp(-0.2 * pow(rainFogDepth, 0.75)));
-          rainFogDepth = clamp(rainFogDepth, 0.0, 0.85);
-          rainFogDepth *= rainStrength;
+         float rainFogDepth = length(worldPos.xz) / 20.0;
+             rainFogDepth = (1.0 - exp(-0.1 * pow(rainFogDepth, 0.75)));
+             rainFogDepth = clamp(rainFogDepth, 0.0, 0.85);
 
-    float rayweight = ray * weight * 4.0 * pow(glare, 0.5) * timeFactor;
-          rayweight *= clamp(altitudeFog, 0.025, 1.9) * 100.0;
-          rayweight += clamp(altitudeFog * 5010.0 * timeFactor * ray * weight, 0.0, 1.9);
-          rayweight *= transitionFade;
-          rayweight *= 0.25 * (1.0 + isEyeInWater * 8.0);
+         // Height fade, same structure as altitudeFactor but tuned for rain
+         // Rain fog is densest at ground level, thins out above the altitude threshold
+         float rainAltFactor = (worldPos.y + eyeAltitude + 1000.0 - altitude) * 0.001;
+               rainAltFactor = clamp(rainAltFactor, 0.0, 1.0);
+               rainAltFactor = pow(rainAltFactor, 2.0); // gentler falloff than the main fog's pow(10)
+               
+               rainFogDepth *= (1.0 - rainAltFactor * 0.7); // keep 30% fog even at height so it doesn't vanish
+               rainFogDepth *= rainStrength*3;
+
+         float rayweight = ray * weight * 1.5 * pow(glare, 0.5) * timeFactor;
+               rayweight *= clamp(altitudeFog, 0.025, 1.9) * 100.0;
+               rayweight += clamp(altitudeFog * 5010.0 * timeFactor * ray * weight, 0.0, 1.9);
+               rayweight *= transitionFade;
+               rayweight *= 0.25 * (1.0 + isEyeInWater * 8.0);
           if (isEyeInWater > 0.9){
             rayweight = clamp(rayweight, 0.0, 1.0);
           } else {
             rayweight = clamp(rayweight, 0.0, 0.5 * (1.0 - rainStrength * 0.4));
           }
-    
-    vec3 rainVolume = (rayweight * (vec3(0.1, 0.08, 0.14)) * 6.0 * rainFogDepth) + skyColor * 0.2 + (vec3(0.01, 0.011, 0.014) * time[5]);
-         rainVolume = mix(color, rainVolume * 0.6, rainFogDepth);
 
+         float rawVolumetric = ray * weight * timeFactor;
+         float scatteredRain = rawVolumetric * rainStrength * 0.2;
+
+         // Tint toward sun color but mostly neutral (overcast scattering is diffuse)
+         float sunLum = dot(sunCol, vec3(0.2126, 0.7152, 0.0722));
+         vec3 scatterColor = mix(sunCol * 0.3, vec3(sunLum * 0.3), 0.7);
+
+         // Desaturate and darken volumeColor to get an overcast rain tint
+         float volLum = dot(volumeColor, vec3(0.2126, 0.7152, 0.0722));
+         vec3 rainFogBase = mix(volumeColor * 0.35, vec3(volLum * 0.3), 0.6); // mostly grey, hint of sky color
+         rainFogBase += vec3(0.01, 0.011, 0.014) * time[5]; // night offset
+
+         vec3 rainVolume = (rayweight * rainFogBase * 6.0 * rainFogDepth) + volumeColor * 0.08;
+         rainVolume += scatterColor * scatteredRain * rainFogDepth;
+         rainVolume = mix(color, rainVolume * 0.6, rainFogDepth);
+        
          volumeColor = mix(volumeColor, sunCol, pow(sunAngleCosine, 2.3) * 0.5);
 
     vec3 finalFogCol = mix(color, volumeColor * vec3(0.72 * (1.0 - (rainStrength - isEyeInWater) * 0.9)), rayweight);
-        if (isEyeInWater < 1.0) finalFogCol = (finalFogCol * (1.0 - rainStrength)) + (rainVolume * rainStrength);		 
+         finalFogCol = mix(finalFogCol, rainVolume, smoothstep(0.0, 1.0, rainStrength));	 
 
     color = clamp(finalFogCol, vec3(0.0), vec3(1.0));
 
