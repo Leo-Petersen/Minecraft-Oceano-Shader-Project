@@ -337,7 +337,7 @@ void main() {
 	#ifdef caveFog
 	if (Depth < 1.0 && isEyeInWater < 0.9) {
 		float heldLight = max(float(heldBlockLightValue), float(heldBlockLightValue2));
-		color.rgb = applyCaveFog(color.rgb, worldPos, colortex2Data.t, heldLight, 0.025*(1 - undergroundFix), colortex2Data.s);
+		color.rgb = CaveFog(color.rgb, worldPos, colortex2Data.t, heldLight, 0.5*(1 - undergroundFix), colortex2Data.s);
 	}
 	#endif
 

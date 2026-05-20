@@ -436,9 +436,11 @@ void main() {
         color += specularBRDF;
 
         // Emission
-        float darkness = 1.0 - lightMap.t;
-        float emissionStrength = pow(darkness, 3.0);
-        color += albedo * emission * emissionStrength * 5.0;
+        #ifdef materialEmission
+            float darkness = 1.0 - (lightMap.t + pow(lightMap.s, 1.5));
+            float emissionStr = pow(darkness, 3.0);
+            color += albedo * emission * emissionStr * emissionStrength;
+        #endif
     #else
         float lightStrength = lightStr;
         vec3 ambientCol = bounceLight * (1.0 - rainStrength * rainShadowStr);

@@ -75,7 +75,7 @@ void main() {
 		color = min(color, shoulder) + range * (1.0 - exp(-over / range));
 
 	#elif ToneMap == 1 //ACES//
-		color = ACES(color * 0.8 * exposure); // Exposure adjustment
+		color = ACES(color * 0.85 * exposure); // Exposure adjustment
 		//color = ACES(color);
 		color = luminance(color, saturation);
 

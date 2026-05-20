@@ -35,43 +35,43 @@ uniform sampler2D depthtex0;
 
     float weight[6] = float[6](0.0556, 0.1667, 0.2777, 0.2777, 0.1667, 0.0556);
 
-vec3 BloomTile(float lod, vec2 coord, vec2 offset) {
-    vec3 bloom = vec3(0.0);
-    float scale = exp2(lod);
-    coord = (coord - offset) * scale;
-    float padding = 0.5 + 0.005 * scale;
+    vec3 BloomTile(float lod, vec2 coord, vec2 offset) {
+        vec3 bloom = vec3(0.0);
+        float scale = exp2(lod);
+        coord = (coord - offset) * scale;
+        float padding = 0.5 + 0.005 * scale;
 
-    if (abs(coord.x - 0.5) < padding && abs(coord.y - 0.5) < padding) {
-        for (int i = 0; i < 6; i++) {
-            for (int j = 0; j < 6; j++) {
-                float wg = weight[i] * weight[j];
-                vec2 pixelOffset = vec2((float(i) - 2.5) * pw, (float(j) - 2.5) * ph);
-                vec2 sampleCoord = coord + pixelOffset * scale;
-                vec3 sampleColor = texture2D(colortex0, sampleCoord).rgb;
+        if (abs(coord.x - 0.5) < padding && abs(coord.y - 0.5) < padding) {
+            for (int i = 0; i < 6; i++) {
+                for (int j = 0; j < 6; j++) {
+                    float wg = weight[i] * weight[j];
+                    vec2 pixelOffset = vec2((float(i) - 2.5) * pw, (float(j) - 2.5) * ph);
+                    vec2 sampleCoord = coord + pixelOffset * scale;
+                    vec3 sampleColor = texture2D(colortex0, sampleCoord).rgb;
 
-                float brightness = dot(sampleColor, vec3(0.2126, 0.7152, 0.0722));
-                
-                float brightnessWeight = smoothstep(0.6, 1.0, brightness);
-                
-                float depth = texture2D(depthtex0, sampleCoord).r;
-                if (depth < 1.0) {
-                    float emission = texture2D(colortex13, sampleCoord).r;
+                    float brightness = dot(sampleColor, vec3(0.2126, 0.7152, 0.0722));
                     
-                    // Emissive pixels
-                    if (emission > 0.01) {
-                        float emissiveThreshold = 0.6 - emission * 0.4;
-                        brightnessWeight = smoothstep(emissiveThreshold, 1.0, brightness);
-                        brightnessWeight *= 1.0 + emission * 5.0;
+                    float brightnessWeight = smoothstep(0.6, 1.0, brightness);
+                    
+                    float depth = texture2D(depthtex0, sampleCoord).r;
+                    if (depth < 1.0) {
+                        float emission = texture2D(colortex13, sampleCoord).r;
+                        
+                        // Emissive pixels
+                        if (emission > 0.01) {
+                            float emissiveThreshold = 0.6 - emission * 0.4;
+                            brightnessWeight = smoothstep(emissiveThreshold, 1.0, brightness);
+                            brightnessWeight *= 1.0 + emission * 5.0;
+                        }
                     }
+                    
+                    bloom += sampleColor * wg * brightnessWeight;
                 }
-                
-                bloom += sampleColor * wg * brightnessWeight;
             }
         }
-    }
 
-    return pow(bloom / 32.0, vec3(0.25));
-}
+        return pow(bloom / 32.0, vec3(0.25));
+    }
 #endif
 
 void main() {

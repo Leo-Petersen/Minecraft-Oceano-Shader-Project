@@ -141,7 +141,7 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
           altitudeFog *= timeFactor * 0.05 + sunAngleCosine * 0.1;
 
     float rainFogDepth = length(worldPos.xz) / 20.0;
-          rainFogDepth = (1.0 - exp(-0.2 * pow(rainFogDepth, 1.0)));
+          rainFogDepth = (1.0 - exp(-0.2 * pow(rainFogDepth, 0.75)));
           rainFogDepth = clamp(rainFogDepth, 0.0, 0.85);
           rainFogDepth *= rainStrength;
 
@@ -156,7 +156,7 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
             rayweight = clamp(rayweight, 0.0, 0.5 * (1.0 - rainStrength * 0.4));
           }
     
-    vec3 rainVolume = (rayweight * (vec3(0.1, 0.1, 0.11)) * 3.0 * rainFogDepth) + skyColor * 0.2 + (vec3(0.01, 0.011, 0.014) * time[5]);
+    vec3 rainVolume = (rayweight * (vec3(0.1, 0.08, 0.14)) * 6.0 * rainFogDepth) + skyColor * 0.2 + (vec3(0.01, 0.011, 0.014) * time[5]);
          rainVolume = mix(color, rainVolume * 0.6, rainFogDepth);
 
          volumeColor = mix(volumeColor, sunCol, pow(sunAngleCosine, 2.3) * 0.5);

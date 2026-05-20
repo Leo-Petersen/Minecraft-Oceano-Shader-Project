@@ -111,16 +111,17 @@ void main() {
 	     normalData.z = sqrt(1.0-dot(normalData.xy, normalData.xy));	
 		 normalData *= tbnMatrix;
 
-	float shadowFactor = 1.0;
-	#ifdef Parallax
-		#ifdef ParallaxShadow
-			float surfaceDepth = texture2DGradARB(normals, parallaxedUV, dFdxy[0], dFdxy[1]).a;
-			float parallaxFade = clamp(dist * 0.04, 0.0, 1.0);
-			if (dot(viewNormal, shadowLightPosition) > 0) {
-				shadowFactor = GetParallaxShadow(surfaceDepth, parallaxFade, parallaxedUV, normalize(shadowLightPosition), tbnMatrix);
-			}
-		#endif
-	#endif
+    float surfaceHeight = texture2DGradARB(normals, parallaxedUV, dFdxy[0], dFdxy[1]).a;
+
+    float shadowFactor = 1.0;
+    #ifdef Parallax
+        #ifdef ParallaxShadow
+            float parallaxFade = clamp(dist * 0.04, 0.0, 1.0);
+            if (dot(viewNormal, shadowLightPosition) > 0) {
+                shadowFactor = GetParallaxShadow(surfaceHeight, parallaxFade, parallaxedUV, normalize(shadowLightPosition), tbnMatrix);
+            }
+        #endif
+    #endif
 
 	if (isportal > 0.0) {
 		float t = frameTimeCounter * 0.0026;
