@@ -282,12 +282,14 @@ void main() {
         
         // Initial direction from IGN noise rotation
         vec2 dir = vec2(cosAngle, sinAngle);
-        
+
+        float shadowBias = getShadowBias(SampleCoords);
+
         for (int i = 0; i < lightingQuality; i++) {
             float radius = sqrt((float(i) + 0.5) / float(lightingQuality));
             vec2 offset = dir * radius;
             
-            ShadowAccum += TransparentShadowHardware(vec3(SampleCoords.xy + offset * filterSize, SampleCoords.z), transparencyFactor);
+            ShadowAccum += TransparentShadowHardware(vec3(SampleCoords.xy + offset * filterSize, SampleCoords.z), transparencyFactor, shadowBias);
             
             #ifdef BounceColoredLight
             if ((i & 1) == 0) {

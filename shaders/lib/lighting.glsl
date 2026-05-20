@@ -40,8 +40,7 @@ float getShadowBias(vec3 SampleCoords) {
     return baseBias + slopeBias;
 }
 
-vec3 TransparentShadowHardware(vec3 SampleCoords, float transparencyFactor) {
-    float bias = getShadowBias(SampleCoords);
+vec3 TransparentShadowHardware(vec3 SampleCoords, float transparencyFactor, float bias) {
     vec3 biasedCoords = vec3(SampleCoords.xy, SampleCoords.z - bias);
     
     // Hardware PCF shadow sampling
@@ -56,6 +55,9 @@ vec3 TransparentShadowHardware(vec3 SampleCoords, float transparencyFactor) {
         return vec3(0.0);
     }
     
+    if (shadowOpaque > 0.99) {
+        return sunlightCol * shadowOpaque;
+    }
 
     if (shadowOpaque > shadowTransparent + 0.01) {
         vec4 shadowCol = texture2D(shadowcolor0, SampleCoords.xy);
@@ -105,7 +107,6 @@ float ambientOcclusion(sampler2D depthTexture) {
     float ambientOcclusion = 0.0;
 
     int aoSamples = aoQuality + 1;
-    float initialRadius = aoRadius / exp2(0.14 * aoQuality);
     float depth = ld(texture2D(depthTexture, texcoord.xy).r);
     const float piAngle = 0.0174532925;
 
@@ -117,22 +118,28 @@ float ambientOcclusion(sampler2D depthTexture) {
 
     float rotation = 360.0 / aoSamples * fract(ditherValue);
 
-    float sampleRadius = initialRadius * (0.5 + ditherValue * 0.5);
+    float sampleRadius = aoRadius * (0.5 + ditherValue * 0.5);
     vec2 scale = vec2(1.0 / aspectRatio, 1.0) * gbufferProjection[1][1] / (2.74747742 * max(far * depth, 6.0));
 
-    // Compute the rotation step angle
+    // Precompute linearization constants for ld()
+    float linDepthA = 2.0 * near;
+    float linDepthB = far + near;
+    float linDepthC = far - near;
+
+    // Precompute the rotation step
     float stepAngle = PI / float(aoSamples);
     float cosStep = cos(stepAngle);
     float sinStep = sin(stepAngle);
     mat2 rotStep = mat2(cosStep, sinStep, -sinStep, cosStep);
 
-    // Compute initial direction
+    // Initial direction
     float startAngle = rotation * piAngle;
     vec2 dir = vec2(cos(startAngle), sin(startAngle)) * sampleRadius * scale;
 
     for (int j = 0; j < aoSamples; j++) {
-        float sampleDepth1 = ld(texture2D(depthTexture, texcoord.xy + dir).r);
-        float sampleDepth2 = ld(texture2D(depthTexture, texcoord.xy - dir).r);
+        // Inline linearized depth, using precomputed constants
+        float sampleDepth1 = linDepthA / (linDepthB - texture2D(depthTexture, texcoord.xy + dir).r * linDepthC);
+        float sampleDepth2 = linDepthA / (linDepthB - texture2D(depthTexture, texcoord.xy - dir).r * linDepthC);
 
         float sampleOffset1 = far * (depth - sampleDepth1) / sampleRadius;
         float sampleOffset2 = far * (depth - sampleDepth2) / sampleRadius;
@@ -145,7 +152,7 @@ float ambientOcclusion(sampler2D depthTexture) {
     }
 
     ambientOcclusion /= float(aoSamples);
-    return pow(ambientOcclusion, 0.25 * aoQuality + 1.5);
+    return pow(ambientOcclusion, aoStrength);
 }
 
 ////SSS////
