@@ -86,12 +86,12 @@ float transparencyFactor =  0.5 * (time[0]) +
                             0.5 * (time[4]) +
                             0.3 * (time[5]);
 
-float shadowFactor =  0.55 * (time[0]) +
+float shadowFactor =  0.65 * (time[0]) +
                       1.0 * (time[1]) +
                       1.0 * (time[2]) +
                       1.0 * (time[3]) +
-                      0.55 * (time[4]) +
-                      0.4 * (time[5]);
+                      0.65 * (time[4]) +
+                      0.35 * (time[5]);
 
 float torchFactor =   1.00 * (time[0]) +
                       0.33 * (time[1]) +
@@ -338,7 +338,7 @@ void main() {
 
     vec3 bounceLight = backLight(flux);
     bounceLight = mix(shadowCol, bounceLight, dot(vec3(0.2126, 0.7152, 0.0722), flux) + 0.5);
-    bounceLight *= 0.55;
+    bounceLight *= 0.55 * BounceLightStr;
     float bounceLum = dot(bounceLight, vec3(0.2126, 0.7152, 0.0722));
           bounceLight = mix(bounceLight, vec3(bounceLum), mix(bounceDesaturation, 0.9, rainStrength)); // Fixes bounce light being too strong at sunrise / sunset
 
@@ -363,7 +363,7 @@ void main() {
         #else
             float fakeCloudShadow = 1.0;
         #endif
-        float ambientStrength = ambientStr * 0.1142;
+        float ambientStrength = ambientStr * 0.09;
     #else
         float ambientStrength = 0.03;
         ShadowAccum = vec3(0.5);

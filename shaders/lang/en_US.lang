@@ -15,7 +15,9 @@ option.fakecloudshadow=Cloud Shadows
 option.BounceLight = Fill Light
 option.BounceColoredLight = Fill Color Light
 option.bounceQuality = Fill Quality
+option.BounceLightStr = Fill Strength
 
+screen.AO = Ambient Occlusion
 option.AO = Ambient Occlusion
 option.aoRadius = Occlusion Radius
 
