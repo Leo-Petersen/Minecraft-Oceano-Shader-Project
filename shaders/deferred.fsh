@@ -231,6 +231,8 @@ void main() {
             
             voxelBlend = clamp(voxelStrength * FLOODFILL_BRIGHTNESS, 0.0, 1.0) * edgeFade;
         }
+    #else
+        defaultTorchColor *= 1.5;
     #endif
     
     // When hand light dominates, use its color; otherwise use voxel/default
@@ -420,7 +422,7 @@ void main() {
                     VdotL, NdotL, lightMap.t,
                     distFactor, IGN, uniformity
                 );
-                finalShadow += sssContribution * lightStrength * undergroundFix * (1.0 - time[5] * 0.2);
+                finalShadow += sssContribution * lightStrength * undergroundFix * (1.0 - time[5] * 0.5);
             }
         #endif
         

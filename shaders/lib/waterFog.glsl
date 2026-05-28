@@ -73,7 +73,7 @@ vec3 getWaterDepthFog(vec3 color, vec3 fragpos, vec3 fragpos2, float iswater, fl
     float depthBlend = 1.0 - exp(-depth * 0.15);
     vec3 baseWaterColor = mix(shallowWaterColor, deepWaterColor, depthBlend);
     
-    vec3 rainyWaterColor = mix(baseWaterColor, vec3(0.08, 0.1, 0.12), rainStrength * 0.6);
+    vec3 rainyWaterColor = mix(baseWaterColor, vec3(deepwaterR, deepwaterG, deepwaterB)/255, rainStrength * 0.85);
     baseWaterColor = mix(baseWaterColor, rainyWaterColor, rainStrength);
     
     float fogStr = 0.7 * time[0] + 1.0 * time[1] + 1.0 * time[2] + 
@@ -155,7 +155,7 @@ vec3 getWaterDepthFog(vec3 color, vec3 fragpos, vec3 fragpos2, float iswater, fl
         }
         
         volumetricScatter = accumulatedScatter * fogStr * transitionFade * viewAngleBoost;
-        volumetricScatter *= (1.0 - rainStrength * 0.7);
+        volumetricScatter *= (1.0 - rainStrength * 0.85);
         
         float avgDepth = endRay * 0.5;
         vec3 shallowShaftColor = sunCol * vec3(shallowwaterR, shallowwaterG, shallowwaterB)/255;
@@ -170,7 +170,7 @@ vec3 getWaterDepthFog(vec3 color, vec3 fragpos, vec3 fragpos2, float iswater, fl
     #endif
     
     vec3 ambientMultiScatter = multiScatteringApprox(waterExtinctionCoeff, waterScatteringCoeff, depth);
-    ambientMultiScatter *= sunCol * fogStr * 0.15 * (1.0 - rainStrength * 0.5);
+    ambientMultiScatter *= sunCol * fogStr * 0.15 * (1.0 - rainStrength * 0.85);
     baseWaterColor += ambientMultiScatter;
     
     vec3 worldPos = mat3(gbufferModelViewInverse) * fragpos + gbufferModelViewInverse[3].xyz;
@@ -221,7 +221,7 @@ vec3 getUnderwaterFog(vec3 color, vec3 viewPos, float lightMapSky) {
     vec3 baseWaterColor = mix(shallowWaterColor, deepWaterColor, depthBlend);
     baseWaterColor = mix(baseWaterColor, abyssColor, abyssBlend * 0.45);
     
-    vec3 rainyWaterColor = mix(baseWaterColor, vec3(0.11, 0.15, 0.19), rainStrength * 0.55);
+    vec3 rainyWaterColor = mix(baseWaterColor, vec3(0.11, 0.15, 0.19), rainStrength * 0.85);
     baseWaterColor = mix(baseWaterColor, rainyWaterColor, rainStrength);
     
     float fogStr = 0.55 * time[0] + 1.0 * time[1] + 1.0 * time[2] + 

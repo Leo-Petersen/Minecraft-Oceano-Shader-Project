@@ -199,7 +199,7 @@ vec3 calculateSSS(
     float phase = pow(max(0.0, -VdotL) * 0.5 + 0.5, 2.0);
     
     float lightLum = dot(lightColor, vec3(0.2126, 0.7152, 0.0722));
-    vec3 sssAlbedo = mix(vec3(lightLum), sqrt(albedo), clamp(lightLum * 2.0, 0.0, 1.0));
+    vec3 sssAlbedo = mix(vec3(lightLum), sqrt(albedo), clamp(lightLum * 2.0, 0.15, 1.0));
     vec3 sssContribution = lightColor * sssAlbedo * sssColor;
     
     sssContribution *= phase * sssAmount * transmission * skyLight;

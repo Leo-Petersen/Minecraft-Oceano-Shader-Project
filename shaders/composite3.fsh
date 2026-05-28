@@ -311,13 +311,11 @@ void main() {
 	if (isEyeInWater < 0.9) {
 		vec3 viewDir = normalize(viewPos.xyz);
 
-		// Horizon factor for sky fog: 0 at horizon, 1 at zenith
-		// Use the world-space up direction to get the elevation angle
 		vec3 worldViewDir = mat3(gbufferModelViewInverse) * viewDir;
 		float elevation = abs(worldViewDir.y); // 0 = horizon, 1 = straight up/down
 
 		if (Depth < 1.0) {
-			// --- Terrain fog (existing logic) ---
+			// Terrain fog
 			float sunAngleCosine = 1.0 - clamp(dot(viewDir, shadowLightPosition * 0.01), 0.0, 1.0);
 			sunAngleCosine = pow(sunAngleCosine, 2.0) * (3.0 - 2.0 * sunAngleCosine);
 			sunAngleCosine = 1.0 / sunAngleCosine - 1.0;
@@ -346,17 +344,17 @@ void main() {
 			color.rgb = mix(normalFog, rainFog, rainStrength);
 
 		} else {
-			// --- Sky fog: soften the horizon in all weather ---
+			// Soften the horizon in all weather
 			float cLum = dot(cloudFogCol, vec3(0.2126, 0.7152, 0.0722));
 			vec3 rainFogColor = mix(cloudFogCol * 0.35, vec3(cLum * 0.35), 0.55);
 
-			// Clear weather: subtle atmospheric haze at the horizon
+			// Subtle atmospheric haze at the horizon during clear weather
 			float skyAtmoFog = (1.0 - smoothstep(0.0, 0.3, elevation)) * (1.0 - rainStrength);
 			color.rgb = mix(color.rgb, atmoColor * 2, skyAtmoFog * 0.15);
 
-			// Rain: heavier fog band at the horizon
+			// Stronger fog at the horizon during rainy weather, to blend with the ground fog and prevent a harsh 'line'
 			float skyRainFog = (1.0 - smoothstep(0.0, 0.45, elevation)) * rainStrength;
-			color.rgb = mix(color.rgb, rainFogColor, skyRainFog * 0.85);
+			color.rgb = mix(color.rgb, rainFogColor, skyRainFog); // This is a hard blend to ensure the sky fog completely overrides the ground fog at the horizon, preventing any visible seams
 		}
 	}
 	#endif
