@@ -4,6 +4,11 @@
 
 /*
 const int colortex0Format = R11F_G11F_B10F;
+#ifdef PHOTONICS_ENABLED
+const int colortex14Format = RGBA8;     // Photonics: unlit albedo
+const int colortex15Format = RGBA8;     // Photonics: flat normals
+const int colortex12Format = RGBA16F;   // Photonics: indirect GI
+#endif
 */
 
 uniform sampler2D noisetex;

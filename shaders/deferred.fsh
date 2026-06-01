@@ -1,4 +1,4 @@
-#version 130
+#version 430 compatibility
 
 #include "/lib/voxel_settings.glsl"
 #include "/lib/settings.glsl"
@@ -69,6 +69,10 @@ varying vec3 Normal;
 #include "/lib/brdf.glsl"
 #include "/lib/raytrace.glsl"
 #include "/lib/handlight.glsl"
+#if defined(PHOTONICS) && defined(PHOTONICS_ENABLED)
+#include "/photonics/ph_samplers.glsl"
+uniform sampler2D radiosity_indirect;
+#endif
 
 const vec3 voxelVolumeSize = vec3(VOXEL_VOLUME_SIZE, VOXEL_VOLUME_SIZE * 0.5, VOXEL_VOLUME_SIZE);
 
@@ -439,14 +443,32 @@ void main() {
 
         // Emission
         #ifdef materialEmission
-            float darkness = 1.0 - (lightMap.t + pow(lightMap.s, 1.5));
-            float emissionStr = pow(darkness, 3.0);
-            color += albedo * emission * emissionStr * emissionStrength;
+            float emissionStr = mix(0.05, 1.0, torchFactor) + (1.0 - lightMap.t) * 0.5;
+            emissionStr = clamp(emissionStr, 0.0, 1.0);
+            #if defined(PHOTONICS) && defined(PHOTONICS_ENABLED)
+                color += albedo * emission * emissionStrength * 0.1;
+            #else
+                color += albedo * emission * emissionStr * emissionStrength * 0.5;
+            #endif
         #endif
     #else
         float lightStrength = lightStr;
         vec3 ambientCol = bounceLight * (1.0 - rainStrength * rainShadowStr);
              color *= Diffuse * ShadowAccum * clamp(pow(lightMap.t, 4.0), 0.24, 1.0) * lightStrength * (1.0 - rainStrength * 0.2) + ambientStrength * ambientCol;
+    #endif
+    
+    //// Photonics Raytraced Lighting ////
+    #if defined(PHOTONICS) && defined(PHOTONICS_ENABLED)
+    {
+        vec3 phDirect = sample_photonics_direct(texcoord);
+        vec3 phHandheld = sample_photonics_handheld(texcoord);
+
+        float phBrightness = dot(phDirect + phHandheld, vec3(0.299, 0.587, 0.114));
+        vec3 phTinted = albedo * finalBlockLightColor * phBrightness;
+        float phTimeScale = torchTimeBlend * mix(lightMap.t * 0.5, 1.0, 1.0 - rawSkyLight);
+        float phAO = textureAO * pow(ao, 0.4);
+        color += phTinted * phAO * phTimeScale * 5;
+    }
     #endif
 
     #ifdef skyLightMap
@@ -455,7 +477,11 @@ void main() {
 
     //// Block Light ////
     #ifdef torchLightMap
-        color += torchTotal * textureAO;
+        #if defined(PHOTONICS) && defined(PHOTONICS_ENABLED)
+            color += torchTotal * textureAO * 0.15;
+        #else
+            color += torchTotal * textureAO;
+        #endif
     #endif
 
     //// Eye-in-water Fog ////

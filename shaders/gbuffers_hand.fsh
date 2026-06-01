@@ -76,10 +76,18 @@ void main() {
 		#endif
 	#endif
 
+#ifdef PHOTONICS_ENABLED
+/* RENDERTARGETS: 0,1,2,8,13,14,15 */
+#else
 /* RENDERTARGETS: 0,1,2,8,13 */
+#endif
 	gl_FragData[0] = color;
 	gl_FragData[1] = vec4(encodeNormal(normalData), specularMap);
 	gl_FragData[2] = vec4(lightMap, material, shadowFactor);
 	gl_FragData[3] = vec4(0.0, 0.0, 0.0, 1.0); // No skybox reflection for hand, but write to buffer to fix issues
 	gl_FragData[4] = vec4(emission, surfaceHeight, textureAO, 1.0);
+#ifdef PHOTONICS_ENABLED
+	gl_FragData[5] = vec4(color.rgb, 1.0);
+	gl_FragData[6] = vec4(0.5 * viewNormal + 0.5, 1.0);
+#endif
 }

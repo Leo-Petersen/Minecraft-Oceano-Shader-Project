@@ -1,5 +1,8 @@
 # Values #
 
+option.PHOTONICS_ENABLED=Photonics (Very WIP)
+option.PHOTONICS_ENABLED.comment=Enable Photonics raytracing. Requires the Photonics mod. Implementation currently unfinished, very WIP, many bugs
+
 value.ToneMap.0=Minecraft
 value.ToneMap.1=ACES
 value.ToneMap.2=Filmic_Hejl2015
@@ -17,7 +20,6 @@ option.BounceColoredLight = Fill Color Light
 option.bounceQuality = Fill Quality
 option.BounceLightStr = Fill Strength
 
-screen.AO = Ambient Occlusion
 option.AO = Ambient Occlusion
 option.aoRadius = Occlusion Radius
 

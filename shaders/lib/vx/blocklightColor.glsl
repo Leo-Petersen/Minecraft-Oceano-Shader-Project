@@ -4,6 +4,8 @@ vec3 getBlocklightColor(int id) {
     
     // Torch, Lantern (ID 2)
     if (id == 2) color = vec3(1.0, 0.6, 0.25);
+    // Copper Torch (ID 26)
+    else if (id == 26) color = vec3(0.5, 0.9, 0.23);
     // Glowstone (ID 3)
     else if (id == 3) color = vec3(1.0, 0.85, 0.5);
     // Sea Lantern (ID 4)

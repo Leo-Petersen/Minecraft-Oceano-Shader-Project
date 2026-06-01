@@ -191,9 +191,17 @@ void main() {
 		color.a = 1.0;
 	}
 
+#ifdef PHOTONICS_ENABLED
+/* RENDERTARGETS: 0,1,2,13,14,15 */
+#else
 /* RENDERTARGETS: 0,1,2,13 */
+#endif
 	gl_FragData[0] = color; //colortex0
     gl_FragData[1] = vec4(encodeNormal(normalData), specularMap);
 	gl_FragData[2] = vec4(lmcoord, 0.0, shadowFactor);
-	gl_FragData[3] = vec4(0.0, 0.0, 1.0, 1.0); 
+	gl_FragData[3] = vec4(0.0, 0.0, 1.0, 1.0);
+#ifdef PHOTONICS_ENABLED
+	gl_FragData[4] = vec4(color.rgb, 1.0);
+	gl_FragData[5] = vec4(0.5 * viewNormal + 0.5, 1.0);
+#endif
 }

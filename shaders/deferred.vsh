@@ -1,4 +1,4 @@
-#version 130
+#version 430 compatibility
 
 uniform int worldTime;
 uniform vec3 upPosition;

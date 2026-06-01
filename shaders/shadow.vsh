@@ -34,6 +34,8 @@ vec4 calcShadowDistortion(in vec4 pos) {
 uint getVoxelId(int entityId) {
     // Torch (ID 50)
     if (entityId == 50) return 2u;
+    // Copper Torch (ID 60)
+    if (entityId == 60) return 26u;
     // Lantern (ID 10050)
     if (entityId == 10050) return 2u;
     // Glowstone (ID 89)
@@ -105,7 +107,7 @@ bool isTransparent(int entityId) {
     // Fire
     if (entityId == 51) return true;
     // Torches (small, shouldn't block)
-    if (entityId == 50 || entityId == 76 || entityId == 10052) return true;
+    if (entityId == 50 || entityId == 76 || entityId == 10052 || entityId == 60) return true;
     // Redstone wire
     if (entityId == 55) return true;
     // End rod
