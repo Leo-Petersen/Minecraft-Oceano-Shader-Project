@@ -104,6 +104,13 @@ float torchFactor =   1.00 * (time[0]) +
                       1.00 * (time[4]) +
                       1.00 * (time[5]);
 
+float photonicsTorchFactor =   1.00 * (time[0]) +
+                               0.33 * (time[1]) +
+                               0.33 * (time[2]) +
+                               0.33 * (time[3]) +
+                               1.00 * (time[4]) +
+                               2.50 * (time[5]);
+
 // Fixes bounce light being too strong at sunrise/sunset
 float bounceDesaturation = 0.9 * (time[0]) +
                            0.0 * (time[1]) +
@@ -191,6 +198,7 @@ void main() {
 
     float originalBlockLight = lightMap.s;
     float torchTimeBlend = mix(1.0, torchFactor, rawSkyLight);
+    float ph_torchTimeBlend = mix(1.0, photonicsTorchFactor, rawSkyLight);
     float torchmapLight = max(lightMap.s, handlight) * lightMap.t * torchTimeBlend;
     float torchmapCovered = max(lightMap.s, handlight) * (1.0 - lightMap.t);
     lightMap.s = (torchmapLight * pow(ao, 0.24) * 0.5) + torchmapCovered;
@@ -442,6 +450,13 @@ void main() {
         color += specularBRDF;
 
         // Emission
+        #if defined(PHOTONICS) && defined(PHOTONICS_ENABLED)
+            if (material > 0.06 && material < 0.08) {
+            float emissiveTimeScale = ph_torchTimeBlend * mix(lightMap.t * 0.5, 1.0, 1.0 - rawSkyLight);
+            color *= 3.0 * emissiveTimeScale;
+            }
+        #endif
+
         #ifdef materialEmission
             float emissionStr = mix(0.05, 1.0, torchFactor) + (1.0 - lightMap.t) * 0.5;
             emissionStr = clamp(emissionStr, 0.0, 1.0);
@@ -463,8 +478,8 @@ void main() {
         vec3 phDirect = sample_photonics_direct(texcoord);
         vec3 phHandheld = sample_photonics_handheld(texcoord);
 
-        float phBrightness = dot(phDirect + phHandheld, vec3(0.299, 0.587, 0.114));
-        vec3 phTinted = albedo * finalBlockLightColor * phBrightness;
+        vec3 phColor = phDirect + phHandheld;
+        vec3 phTinted = albedo * phColor;
         float phTimeScale = torchTimeBlend * mix(lightMap.t * 0.5, 1.0, 1.0 - rawSkyLight);
         float phAO = textureAO * pow(ao, 0.4);
         color += phTinted * phAO * phTimeScale * 5;

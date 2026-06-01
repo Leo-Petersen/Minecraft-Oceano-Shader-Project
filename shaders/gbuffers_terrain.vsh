@@ -120,6 +120,7 @@ void main() {
             mc_Entity.x == 12090 ||    // redstone ore (BSL)
             mc_Entity.x == 10 ||       // lava
             mc_Entity.x == 50 ||       // torch
+            mc_Entity.x == 60 ||       // copper torch
             mc_Entity.x == 51 ||       // fire
             mc_Entity.x == 55 ||       // redstone wire
             mc_Entity.x == 62 ||       // furnace
