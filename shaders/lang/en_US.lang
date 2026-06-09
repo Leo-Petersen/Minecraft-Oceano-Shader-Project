@@ -13,13 +13,17 @@ option.exposure=Exposure
 option.tonemapSaturation=Saturation
 option.saturation=Strength
 option.filmGrain=Strength
-option.fakecloudshadow=Cloud Shadows
+option.fakecloudshadow=Fake Cloud Shadows
 
-option.BounceLight = Fill Light
-option.BounceColoredLight = Fill Color Light
-option.bounceQuality = Fill Quality
-option.BounceLightStr = Fill Strength
+screen.FillLight = Fake GI Fill Light
+    option.BounceLight = Fake GI Fill Light
+    option.BounceLight.comment = Adds a fill ('bounced') light to the scene to fake global illumination using psuedo values and surrounding texture colors. Can cause subtle color bleeding on shadows cast by 'saturated' blocks when colored is enabled.
+    option.BounceColoredLight = Colored Fake GI
+    option.BounceColoredLight.comment = Toggles whether the fake GI fill light should be colored by the surrounding texture colors or just use the sun color. Can cause more noticeable color bleeding on shadows cast by 'saturated' blocks.
+    option.bounceQuality = Quality
+    option.BounceLightStr = Strength
 
+screen.AO = Ambient Occlusion
 option.AO = Ambient Occlusion
 option.aoRadius = Occlusion Radius
 

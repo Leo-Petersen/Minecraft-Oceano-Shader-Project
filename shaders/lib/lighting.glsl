@@ -165,14 +165,9 @@ vec3 calculateSSS(
     float NdotL,
     float skyLight,
     float distFactor,
-    float IGN,
-    float uniformity
+    float IGN
 ) {
     if (sssAmount < 0.01) return vec3(0.0);
-    
-    // Backlit detection
-    float backlit = max(0.0, -NdotL);
-    backlit = mix(backlit, 0.5, uniformity);
     
     // Sample shadow for occlusion
     const float sssRadius = 0.002;
@@ -187,25 +182,23 @@ vec3 calculateSSS(
     sssColor = mix(vec3(1.0), sssColor, 0.5);
 
     // SSS needs light to transmit through, backfacing AND in light path
-    float transmission = sssShadow * backlit;
+    float transmission = sssShadow;
     
     // Kill SSS on front lit surfaces
     float frontlit = max(0.0, NdotL);
-    transmission *= 1.0 - frontlit * 0.9;
+    transmission *= 1.0 - frontlit;
     
     if (transmission < 0.01) return vec3(0.0);
     
     // Forward scattering phase
     float phase = pow(max(0.0, -VdotL) * 0.5 + 0.5, 2.0);
     
-    float lightLum = dot(lightColor, vec3(0.2126, 0.7152, 0.0722));
-    vec3 sssAlbedo = mix(vec3(lightLum), sqrt(albedo), clamp(lightLum * 2.0, 0.15, 1.0));
+    vec3 sssAlbedo = mix(lightColor, sqrt(albedo), 0.2);
     vec3 sssContribution = lightColor * sssAlbedo * sssColor;
     
-    sssContribution *= phase * sssAmount * transmission * skyLight;
+    sssContribution *= phase * sssAmount * transmission * skyLight * 0.8;
     sssContribution *= (1.0 - rainStrength * 0.5);
     sssContribution *= mix(1.0, 0.5, distFactor);
-    //sssContribution *= 2.0;
     
     return sssContribution;
 }

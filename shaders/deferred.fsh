@@ -417,25 +417,24 @@ void main() {
 
         // Subsurface scattering
         #ifdef shadowMap
-            if ((isFoliage || isGrass > 0.0) && sssAmount > 0.01) {
-                // View/Light directions
-                vec3 viewDir = normalize(-viewPos.xyz);
-                vec3 lightDir = shadowLightPosition * 0.01;
-                float VdotL = dot(viewDir, lightDir);
-                float NdotL = dot(normal, lightDir);
+            #ifdef SubsurfaceScattering
+                if ((isFoliage || isGrass > 0.0) && sssAmount > 0.01) {
+                    // View/Light directions
+                    vec3 viewDir = normalize(-viewPos.xyz);
+                    vec3 lightDir = shadowLightPosition * 0.01;
+                    float VdotL = dot(viewDir, lightDir);
+                    float NdotL = dot(normal, lightDir);
 
-                // SSS parameters
-                float sssScale = isFoliage ? 1.5 : 1.0;
-                float uniformity = isFoliage ? 0.5 : 1.5;
-                
-                vec3 sssContribution = calculateSSS(
-                    SampleCoords, color, sunlightCol,
-                    sssAmount * sssScale,
-                    VdotL, NdotL, lightMap.t,
-                    distFactor, IGN, uniformity
-                );
-                finalShadow += sssContribution * lightStrength * undergroundFix * (1.0 - time[5] * 0.5);
-            }
+                    // Calculate SSS                    
+                    vec3 sssContribution = calculateSSS(
+                        SampleCoords, color, sunlightCol,
+                        sssAmount,
+                        VdotL, NdotL, lightMap.t,
+                        distFactor, IGN
+                    );
+                    finalShadow += sssContribution * lightStrength * undergroundFix * (1.0 - time[5] * 0.5);
+                }
+            #endif
         #endif
         
         // PBR Specular
