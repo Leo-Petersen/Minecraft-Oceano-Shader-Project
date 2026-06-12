@@ -117,7 +117,7 @@ void main() {
 	// Water Refraction and Reflection //
 	if (iswater == 1.0){
 		vec3 viewDir = normalize(viewPos.xyz);
-		float normalDotEye = dot(waterNormal, -viewDir);
+		float normalDotEye = max(dot(waterNormal, -viewDir), 0.0);
 
 		float fogDepth2 = pow(length(worldPos.xz) / 18, 1.0);
 			  fogDepth2 = clamp(1/exp(1.2 * fogDepth2), 0.0, 1.0);
@@ -185,11 +185,15 @@ void main() {
 		float absorptionFactor = exp(-depthDifference * 0.08);
 		refractedColor *= mix(waterAbsorption, vec3(1.0), absorptionFactor);
 		
-
-		vec4 waterreflection = raytrace(reflectedskyBoxCol*lightMap.t, viewPos.xyz, waterNormal, 6);
-		
 		float fresnel = pow(1.0 - normalDotEye, 5.0);
-		fresnel = mix(0.02, 1.0, fresnel); // F0 for water ~0.02
+			  fresnel = mix(0.2, 1.0, fresnel);
+
+		vec4 waterreflection;
+		if (fresnel > 0.05) {
+			waterreflection = raytrace(reflectedskyBoxCol*lightMap.t, viewPos.xyz, waterNormal, 6);
+		} else {
+			waterreflection = vec4(reflectedskyBoxCol*lightMap.t, 0.0);
+		}
 		
 		vec3 reflectionCol = mix(reflectedskyBoxCol*lightMap.t, waterreflection.rgb, waterreflection.a);
 
@@ -227,7 +231,7 @@ void main() {
 		vec4 glassreflection = raytrace(reflectedskyBoxCol*lightMap.t, viewPos.xyz, viewNormal, 4);
 		vec3 reflectionCol = mix(reflectedskyBoxCol*lightMap.t, glassreflection.rgb, glassreflection.a);
 
-		color.rgb = mix(color.rgb, reflectionCol, fresnel * 0.7);
+		color.rgb = mix(color.rgb, reflectionCol, fresnel);
 		
 		// Sun specular
 		color.rgb += reflectedSun;
@@ -324,6 +328,7 @@ void main() {
 
 			// Normal atmospheric fog
 			float normalFogDist = pow(length(worldPos.xz) / 60.0, 1.2);
+			//float fogCap = (iswater == 1.0) ? 0.35 : 0.85; // Temp fix for the grey line of fog on the horizon of water. Decent compromise for now.
 			float normalFogDepth = clamp(1.0 - exp(-0.15 * normalFogDist), 0.0, 0.85);
 			vec3 normalFog = mix(color.rgb, atmoColor * 2, normalFogDepth * pow(sunAngleCosine, 0.2));
 

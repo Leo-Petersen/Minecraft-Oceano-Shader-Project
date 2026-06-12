@@ -14,7 +14,6 @@ uniform sampler2D colortex3;
 uniform sampler2D colortex5; 
 uniform sampler2D colortex8; 
 uniform sampler2D colortex9; 
-uniform sampler2D texture; 
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 uniform sampler2DShadow shadowtex0;
@@ -162,7 +161,7 @@ void main() {
 		
 		float sparkle = pow(NdotH, 256.0) * 3.0;
 		//sparkle *= lightMap.t; // Covered by water shadow, not needed
-		sparkle *= (1.0 - rainStrength*0.94) * 2 * transitionFade * ShadowVisibility; // Reduce in rain
+		sparkle *= (1.0 - rainStrength*0.94) * 1.5 * transitionFade * ShadowVisibility; // Reduce in rain
 		vec3 reflectSun = sunCol * sparkle;
 
 		float packedWaveLight = texture2D(colortex3, texcoord).a;

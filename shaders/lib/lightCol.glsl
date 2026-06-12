@@ -56,9 +56,9 @@ vec3 shadowCol = (vec3(3, 8, 150)/255 * (time[0]) +
 ////Fog Color////
 vec3 fogCol = (
 				vec3(255, 100, 50)/255 * (time[0]) + 
-				vec3(30, 80, 255)/255 * (time[1]) + 
-				vec3(30, 80, 255)/255 * (time[2]) + 
-				vec3(30, 80, 255)/255 * (time[3]) + 
+				vec3(60, 100, 255)/255 * (time[1]) + 
+				vec3(60, 100, 255)/255 * (time[2]) + 
+				vec3(60, 100, 255)/255 * (time[3]) + 
 				vec3(255, 100, 50)/255 * (time[4])  + 
 				(vec3(40, 90, 255)/255 * (time[5])) * (1.0 - rainStrength)) + 
 						((1 - time[5])*(vec3(skyColor) * (rainStrength * 0.45))) + 
