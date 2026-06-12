@@ -431,18 +431,19 @@ void main() {
         #ifdef shadowMap
             #ifdef SubsurfaceScattering
                 if ((isFoliage || isGrass > 0.0) && sssAmount > 0.01) {
-                    // View/Light directions
                     vec3 viewDir = normalize(-viewPos.xyz);
                     vec3 lightDir = shadowLightPosition * 0.01;
                     float VdotL = dot(viewDir, lightDir);
                     float NdotL = dot(normal, lightDir);
 
-                    // Calculate SSS                    
+                    float sssFalloffMin = isFoliage ? 0.5 : 0.1;  // leaves keep 50%, grass keeps 10%, looks weird if they match? idk
+
                     vec3 sssContribution = calculateSSS(
                         SampleCoords, color, sunlightCol,
                         sssAmount,
                         VdotL, NdotL, lightMap.t,
-                        distFactor, IGN
+                        distFactor, IGN,
+                        sssFalloffMin
                     );
                     finalShadow += sssContribution * lightStrength * undergroundFix * (1.0 - time[5] * 0.5);
                 }
