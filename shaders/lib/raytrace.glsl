@@ -43,7 +43,10 @@ vec4 raytrace(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnelView) {
 
         float dynamicThreshold = length(stepVector) * pow(length(stepVector), 0.1) * 2.0; 
 
-        if (error < dynamicThreshold && texture2D(colortex2, position.st).g > 0.15) {
+        float hitMaterial = texture2D(colortex2, position.st).p;
+        bool hitIsWater = (hitMaterial > 0.08 && hitMaterial < 0.10);
+
+        if (error < dynamicThreshold && texture2D(colortex2, position.st).g > 0.15 && !hitIsWater) {
             stepCount++;
             if (stepCount >= maxRefinements) {
                 color = texture2D(colortex0, position.st);
