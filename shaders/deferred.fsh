@@ -25,6 +25,9 @@ uniform sampler2D specular;
 uniform sampler3D floodfillSampler;
 uniform sampler3D floodfillSamplerCopy;
 
+uniform mat4 shadowProjectionInverse;
+uniform mat4 shadowModelViewInverse;
+
 uniform mat4 gbufferProjection;
 uniform mat4 gbufferProjectionInverse;
 uniform mat4 gbufferModelView, gbufferModelViewInverse;
@@ -69,6 +72,8 @@ varying vec3 Normal;
 #include "/lib/brdf.glsl"
 #include "/lib/raytrace.glsl"
 #include "/lib/handlight.glsl"
+#include "/lib/waterBump.glsl"
+#include "/lib/caustics.glsl"
 #if defined(PHOTONICS) && defined(PHOTONICS_ENABLED)
 #include "/photonics/ph_samplers.glsl"
 uniform sampler2D radiosity_indirect;
@@ -118,6 +123,13 @@ float bounceDesaturation = 0.9 * (time[0]) +
                            0.0 * (time[3]) +
                            0.9 * (time[4]) +
                            0.7 * (time[5]);
+
+float causticTimeFactor =  0.6 * (time[0]) +
+                           1.0 * (time[1]) +
+                           1.0 * (time[2]) +
+                           1.0 * (time[3]) +
+                           0.6 * (time[4]) +
+                           1.0 * (time[5]);
 
 void main() {
     // Early out for sky pixels
@@ -447,6 +459,19 @@ void main() {
 
         // Add specular on top of lit surface
         color += specularBRDF;
+
+        // Reflected water caustics, light bouncing off water onto surfaces
+        #ifdef reflectedCaustics
+        {
+            vec3 sunDirWorld = normalize(mat3(gbufferModelViewInverse) * (shadowLightPosition * 0.01));
+            vec3 reflCaust = reflectedWaterCaustics(
+                worldPos, worldNormal, sunDirWorld,
+                pow(lightMap.t, 0.5), iswater, shadowLum, causticTimeFactor
+            );
+            reflCaust *= sunlightCol * transitionFade * (1.0 - rainStrength * 0.85);
+            color.rgb += albedo * reflCaust;
+        }
+        #endif
 
         // Emission
         #if defined(PHOTONICS) && defined(PHOTONICS_ENABLED)

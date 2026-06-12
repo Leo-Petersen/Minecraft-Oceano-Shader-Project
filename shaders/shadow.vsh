@@ -138,6 +138,7 @@ void main() {
     gl_Position = position;
     gl_Position.z /= 6.0;
 
+    iswater = 0.0;
     if (mc_Entity.x == 13000) {
         iswater = 1.00;
     }

@@ -20,6 +20,7 @@ void main() {
 		fragcolor.rgb *= (dot(vec3(0.2126, 0.7152, 0.0722), fragcolor.rgb) + (1-rainStrength));
 	}
 	
-/* DRAWBUFFERS:0 */
+/* DRAWBUFFERS:01 */
 	gl_FragData[0] = fragcolor;
+	gl_FragData[1] = vec4(iswater, 0.0, 0.0, 1.0);
 }

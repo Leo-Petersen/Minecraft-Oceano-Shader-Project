@@ -27,11 +27,14 @@ screen.AO = Ambient Occlusion
 option.AO = Ambient Occlusion
 option.aoRadius = Occlusion Radius
 
-option.rainReflection = Puddles
+screen.Reflections = Water
+    option.rainReflection = Puddles
+    option.reflectedCaustics = Caustics Reflections
+    option.reflectedCausticsStrength = Strength
+    option.CookTorranceGGXBRDF = Specular Reflections
 
 option.DOF = DOF [experimental]
 option.BLOOM = Bloom
-option.CookTorranceGGXBRDF = Specular Reflections
 
 option.materialReflections = Material Reflections (WIP)
 option.volumetricCloudFog = Cloud Fog (WIP)
