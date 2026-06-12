@@ -27,7 +27,7 @@ vec3 reflectedWaterCaustics(
     float incidence = max(-dot(worldNormal, reflectedLightDir), 0.0);
     if (incidence < 0.01) return vec3(0.0);
 
-    float shadowMask = 1.0 - smoothstep(0.05, 0.5, fragmentSunVisibility);
+    float shadowMask = 1.0 - smoothstep(0.53, 0.6, fragmentSunVisibility);
     if (shadowMask < 0.01) return vec3(0.0);
 
     // March from fragment toward the water surface along the reverse reflection path.
@@ -103,7 +103,7 @@ vec3 reflectedWaterCaustics(
 
     vec3 tint = vec3(0.72, 0.92, 1.0);
     float intensity = caust * incidence * shadowMask * skyLight * distFalloff * 0.44 * causticTimeFactor * reflectedCausticsStrength;
-          intensity = pow(intensity, 4);
+          intensity = pow(intensity, 5);
 
     return tint * intensity;
 }
