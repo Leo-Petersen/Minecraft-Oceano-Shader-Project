@@ -129,7 +129,7 @@ float causticTimeFactor =  0.6 * (time[0]) +
                            1.0 * (time[2]) +
                            1.0 * (time[3]) +
                            0.6 * (time[4]) +
-                           1.0 * (time[5]);
+                           0.7 * (time[5]);
 
 void main() {
     // Early out for sky pixels

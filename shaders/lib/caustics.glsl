@@ -102,7 +102,7 @@ vec3 reflectedWaterCaustics(
     float distFalloff = exp(-distToWater * 0.15);
 
     vec3 tint = vec3(0.72, 0.92, 1.0);
-    float intensity = caust * incidence * shadowMask * skyLight * distFalloff * 0.45 * causticTimeFactor * reflectedCausticsStrength;
+    float intensity = caust * incidence * shadowMask * skyLight * distFalloff * 0.44 * causticTimeFactor * reflectedCausticsStrength;
           intensity = pow(intensity, 4);
 
     return tint * intensity;
