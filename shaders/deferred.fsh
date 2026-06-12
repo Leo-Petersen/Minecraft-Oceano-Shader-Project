@@ -404,7 +404,7 @@ void main() {
 
         // Direct sunlight
         vec3 finalShadow = sunlightCol * Diffuse * ShadowAccum * lightMap.t * lightStrength * (1.0 - rainStrength * 0.7);
-        finalShadow *= mix(1.0, 0.8, distFactor); // Reduce direct light on distant terrain to balance with fog and prevent harsh edges
+        finalShadow *= mix(1.0, 0.6, distFactor); // Reduce direct light on distant terrain to balance with fog and prevent harsh edges
 
         // Bounce mask, restrict bounce light to shadowed areas
         float bounceMask = 1.0 - smoothstep(0.0, 0.25, shadowLum * max(Diffuse, 0.0));
@@ -421,8 +421,9 @@ void main() {
 
         // Distance shadow transition (fade out of fake bouncelighting)
         float distShadowDiffuse = mix(Diffuse, 1.0, isGrass); //Remove diffuse on grass with distance, not 'correct' but looks like artifacting otherwise
-        float distShadowMask = 1.0 - smoothstep(0.0, 0.1, shadowLum * distShadowDiffuse * transitionFade); //Using the full diffuse at distance makes distain terrain look too harsh, this achieves a good middle ground
-        finalAmbient = mix(finalAmbient, mix(finalAmbient, shadowDistColor * 2.5, distShadowMask), distFactor * undergroundBlend);
+        float distShadowMask = 1.0 - smoothstep(0.0, 0.15, shadowLum * distShadowDiffuse * transitionFade); // Using the full diffuse at distance makes distain terrain look too harsh, this achieves a good middle ground
+        vec3 warmShadowDist = mix(shadowDistColor, sunlightCol * 0.4, 0.08);
+        finalAmbient = mix(finalAmbient, mix(finalAmbient, warmShadowDist * 2.5, distShadowMask), distFactor * undergroundBlend);
 
         // Underground ambient
         finalAmbient += vec3(0.025, 0.028, 0.035) * (1.0 - undergroundBlend) * pow(ao, 0.42) * textureAO * 5.0;
@@ -436,15 +437,13 @@ void main() {
                     float VdotL = dot(viewDir, lightDir);
                     float NdotL = dot(normal, lightDir);
 
-                    float sssFalloffMin = isFoliage ? 0.5 : 0.1;  // leaves keep 50%, grass keeps 10%, looks weird if they match? idk
-
                     vec3 sssContribution = calculateSSS(
                         SampleCoords, color, sunlightCol,
                         sssAmount,
                         VdotL, NdotL, lightMap.t,
-                        distFactor, IGN,
-                        sssFalloffMin
+                        distFactor, IGN
                     );
+                    
                     finalShadow += sssContribution * lightStrength * undergroundFix * (1.0 - time[5] * 0.5);
                 }
             #endif

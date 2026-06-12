@@ -165,8 +165,7 @@ vec3 calculateSSS(
     float NdotL,
     float skyLight,
     float distFactor,
-    float IGN,
-    float distFalloffMin
+    float IGN
 ) {
     if (sssAmount < 0.01) return vec3(0.0);
     
@@ -199,7 +198,6 @@ vec3 calculateSSS(
     
     sssContribution *= phase * sssAmount * transmission * skyLight * 0.8;
     sssContribution *= (1.0 - rainStrength * 0.5);
-    sssContribution *= mix(1.0, distFalloffMin, distFactor);
     
     return sssContribution;
 }
