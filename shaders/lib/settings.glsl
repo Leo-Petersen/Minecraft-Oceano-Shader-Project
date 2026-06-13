@@ -8,7 +8,7 @@
     const float sunPathRotation = -30.0f; // [-50.0f -40.0f -30.0f -20.0f -10.0f 0.0f 10.0f 20.0f 30.0f 40.0f 50.0f]
     #define shadowMap // WIP, broke this at one point, will re-visit
     //#define disableRainShadows
-    const float shadowDistance = 160;  // [64 96 128 160 192 224 256 320 384 448 512] enabled or disabled? differs between versions of iris, will test later
+    const float shadowDistance = 256;  // [64 96 128 160 192 224 256 320 384 448 512] enabled or disabled? differs between versions of iris, will test later
     const float shadowDistortion = 0.85; // [0.70 0.75 0.80 0.85 0.90 0.95] Distortion of shadow map
     #define VoxelLighting
 
