@@ -11,9 +11,11 @@ value.ToneMap.4=AgX
 
 option.exposure=Exposure
 option.tonemapSaturation=Saturation
-option.saturation=Strength
-option.filmGrain=Strength
+option.saturation=Saturation Strength
+option.filmGrain=Grain Strength
 option.fakecloudshadow=Fake Cloud Shadows
+
+option.SSS_Quality = SSS Quality
 
 screen.FillLight = Fake GI Fill Light
     option.BounceLight = Fake GI Fill Light
@@ -24,8 +26,9 @@ screen.FillLight = Fake GI Fill Light
     option.BounceLightStr = Strength
 
 screen.AO = Ambient Occlusion
-option.AO = Ambient Occlusion
-option.aoRadius = Occlusion Radius
+    option.aoRadius = Occlusion Radius
+    option.aoQuality = Occlusion Quality
+    option.aoStrength = Occlusion Strength
 
 screen.Reflections = Water
     option.rainReflection = Puddles

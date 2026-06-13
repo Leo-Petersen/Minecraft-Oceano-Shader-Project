@@ -1,4 +1,3 @@
-
 const bool shadowHardwareFiltering0 = true;
 const bool shadowHardwareFiltering1 = true;
 const bool shadowcolor0Nearest = true;
@@ -7,18 +6,6 @@ const bool shadowcolor1Nearest = true;
 // NOTE: shadowcolor still uses sampler2D (to get actual color values)
 float Depth = texture2D(depthtex0, texcoord).r;
 vec3 viewNormal = normalize(decodeNormal(texture2D(colortex1, texcoord).xy));
-
-float bayer2(vec2 a) {
-    a = floor(a);
-    return fract(dot(a, vec2(0.5, a.y * 0.75)));
-}
-
-#define bayer4(a)   (bayer2(0.5 * (a)) * 0.25 + bayer2(a))
-#define bayer8(a)   (bayer4(0.5 * (a)) * 0.25 + bayer2(a))
-#define bayer16(a)  (bayer8(0.5 * (a)) * 0.25 + bayer2(a))
-#define bayer32(a)  (bayer16(0.5 * (a)) * 0.25 + bayer2(a))
-#define bayer64(a)  (bayer32(0.5 * (a)) * 0.25 + bayer2(a))
-float dither64 = bayer64(gl_FragCoord.xy);
 
 vec4 ShadowSpace(vec3 worldPos) {
     vec4 ShadowSpace = shadowProjection * shadowModelView * vec4(worldPos, 1.0);
@@ -103,56 +90,128 @@ float IGN(vec2 coord) {
     return fract(52.9829189 * fract(dot(coord, vec2(0.06711056, 0.00583715))));
 }
 
-float ambientOcclusion(sampler2D depthTexture) {
-    float ambientOcclusion = 0.0;
+// depth using projection matrix
+float aoGetLinearDepth(float depth) {
+    depth = depth * 2.0 - 1.0;
+    vec2 zw = depth * gbufferProjectionInverse[2].zw + gbufferProjectionInverse[3].zw;
+    return -zw.x / zw.y;
+}
 
-    int aoSamples = aoQuality + 1;
-    float depth = ld(texture2D(depthTexture, texcoord.xy).r);
-    const float piAngle = 0.0174532925;
+// view position reconstruction
+vec3 aoGetViewPos(vec3 screenPos) {
+    vec4 viewPos = gbufferProjectionInverse * (vec4(screenPos, 1.0) * 2.0 - 1.0);
+    return viewPos.xyz / viewPos.w;
+}
 
-    #ifdef TAA
-    float ditherValue = fract(IGN(gl_FragCoord.xy) + float(int(frameCounter) % 8) * 0.125);
-    #else
-    float ditherValue = dither64;
-    #endif
+// normal reconstruction from depth buffer
+vec3 aoGetReconstructedNormal(sampler2D depthTexture, float linZ, vec3 viewPos) {
+    float pw = 1.0 / viewWidth;
+    float ph = 1.0 / viewHeight;
 
-    float rotation = 360.0 / aoSamples * fract(ditherValue);
+    float eZ = texture2D(depthTexture, texcoord.xy + vec2(pw, 0.0)).r;
+    float wZ = texture2D(depthTexture, texcoord.xy - vec2(pw, 0.0)).r;
+    float nZ = texture2D(depthTexture, texcoord.xy + vec2(0.0, ph)).r;
+    float sZ = texture2D(depthTexture, texcoord.xy - vec2(0.0, ph)).r;
 
-    float sampleRadius = aoRadius * (0.5 + ditherValue * 0.5);
-    vec2 scale = vec2(1.0 / aspectRatio, 1.0) * gbufferProjection[1][1] / (2.74747742 * max(far * depth, 6.0));
+    float eLinZ = aoGetLinearDepth(eZ);
+    float wLinZ = aoGetLinearDepth(wZ);
+    float nLinZ = aoGetLinearDepth(nZ);
+    float sLinZ = aoGetLinearDepth(sZ);
 
-    // Precompute linearization constants for ld()
-    float linDepthA = 2.0 * near;
-    float linDepthB = far + near;
-    float linDepthC = far - near;
-
-    // Precompute the rotation step
-    float stepAngle = PI / float(aoSamples);
-    float cosStep = cos(stepAngle);
-    float sinStep = sin(stepAngle);
-    mat2 rotStep = mat2(cosStep, sinStep, -sinStep, cosStep);
-
-    // Initial direction
-    float startAngle = rotation * piAngle;
-    vec2 dir = vec2(cos(startAngle), sin(startAngle)) * sampleRadius * scale;
-
-    for (int j = 0; j < aoSamples; j++) {
-        // Inline linearized depth, using precomputed constants
-        float sampleDepth1 = linDepthA / (linDepthB - texture2D(depthTexture, texcoord.xy + dir).r * linDepthC);
-        float sampleDepth2 = linDepthA / (linDepthB - texture2D(depthTexture, texcoord.xy - dir).r * linDepthC);
-
-        float sampleOffset1 = far * (depth - sampleDepth1) / sampleRadius;
-        float sampleOffset2 = far * (depth - sampleDepth2) / sampleRadius;
-
-        float angle = clamp(0.5 - sampleOffset1, 0.0, 1.0) + clamp(0.5 - sampleOffset2, 0.0, 1.0);
-        float distance = clamp(0.0625 * sampleOffset1, 0.0, 1.0) + clamp(0.0625 * sampleOffset2, 0.0, 1.0);
-
-        ambientOcclusion += clamp(angle + distance, 0.0, 1.0);
-        dir = rotStep * dir;
+    vec3 hDeriv = vec3(0.0);
+    bool useE = abs(eLinZ - linZ) < abs(wLinZ - linZ);
+    if (useE) {
+        vec3 hScreenPos = vec3(texcoord.xy + vec2(pw, 0.0), eZ);
+        vec3 hViewPos = aoGetViewPos(hScreenPos);
+        hDeriv = hViewPos - viewPos;
+    } else {
+        vec3 hScreenPos = vec3(texcoord.xy - vec2(pw, 0.0), wZ);
+        vec3 hViewPos = aoGetViewPos(hScreenPos);
+        hDeriv = viewPos - hViewPos;
     }
 
-    ambientOcclusion /= float(aoSamples);
-    return pow(ambientOcclusion, aoStrength);
+    vec3 vDeriv = vec3(0.0);
+    bool useN = abs(nLinZ - linZ) < abs(sLinZ - linZ);
+    if (useN) {
+        vec3 vScreenPos = vec3(texcoord.xy + vec2(0.0, ph), nZ);
+        vec3 vViewPos = aoGetViewPos(vScreenPos);
+        vDeriv = vViewPos - viewPos;
+    } else {
+        vec3 vScreenPos = vec3(texcoord.xy - vec2(0.0, ph), sZ);
+        vec3 vViewPos = aoGetViewPos(vScreenPos);
+        vDeriv = viewPos - vViewPos;
+    }
+
+    return normalize(cross(hDeriv, vDeriv));
+}
+
+float ambientOcclusion(sampler2D depthTexture) {
+    float ao = 0.0;
+    float pointiness = 0.0;
+
+    float z = texture2D(depthTexture, texcoord.xy).r;
+    if (z >= 1.0) return 1.0;
+
+    float hand = float(z < 0.56);
+    float linZ = aoGetLinearDepth(z);
+
+    // Interleaved Gradient Noise for TAA *the thumbs up emoji*
+    float IGN = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
+
+    #ifdef TAA
+        float temporalOffset = float(frameCounter % 8) / 8.0;
+        IGN = fract(IGN + temporalOffset);
+    #endif
+
+    float currentStep = 0.2475 * IGN + 0.01;
+
+    float radius = 0.25;
+    float uncappedDist = linZ;
+    float distanceScale = max(uncappedDist, 2.5);
+    float fovScale = gbufferProjection[1][1] / 1.37;
+    vec2 scale = radius * aoRadius * vec2(1.0 / aspectRatio, 1.0) * fovScale / distanceScale;
+    float differenceScale = uncappedDist / distanceScale;
+
+    vec2 baseOffset = vec2(cos(IGN * 6.28), sin(IGN * 6.28));
+
+    vec3 viewPos = aoGetViewPos(vec3(texcoord.xy, z));
+    vec3 normal = aoGetReconstructedNormal(depthTexture, linZ, viewPos);
+    float angleThreshold = 0.15 + linZ * 0.01;
+    
+    for (int i = 0; i < aoQuality; i++) {
+        vec2 offset = baseOffset * currentStep * scale;
+        float visibility = 0.0;
+
+        for (int j = 0; j < 2; j++) {
+            vec2 sampleCoord = texcoord + offset;
+            float sampleZ = texture2D(depthTexture, sampleCoord).r;
+            vec3 sampleViewPos = aoGetViewPos(vec3(sampleCoord, sampleZ));
+            vec3 difference = (sampleViewPos.xyz - viewPos.xyz) / (radius * currentStep * differenceScale);
+            float attenuation = clamp(1.0 + 0.5 / currentStep - 0.25 * length(difference), 0.0, 1.0);
+
+            if (hand > 0.5) {
+                visibility += clamp(0.5 - difference.z * 4096.0, 0.0, 1.0);
+            } else {
+                float angle = dot(normal, normalize(difference)) * (1.0 + angleThreshold);
+                visibility += 0.5 - max(angle - angleThreshold, 0.0) * attenuation;
+                pointiness += max(-angle - angleThreshold, 0.0);
+            }
+
+            offset = -offset;
+        }
+
+        ao += clamp(visibility, 0.0, 1.0);
+
+        currentStep += 0.2475;
+        baseOffset = vec2(baseOffset.x - baseOffset.y, baseOffset.x + baseOffset.y) * 0.7071;
+    }
+
+    ao *= 1.0 / float(aoQuality);
+    pointiness *= 1.0 / float(aoQuality);
+
+    ao = mix(ao, 1.0, pointiness);
+
+    return ao;
 }
 
 ////SSS////

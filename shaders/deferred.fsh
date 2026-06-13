@@ -190,6 +190,7 @@ void main() {
     float ao = 1.0;
     #ifdef AO
         ao = ambientOcclusion(depthtex1);
+        ao = pow(ao, aoStrength);
     #endif
 
     float heldLightValue = max(float(heldBlockLightValue), float(heldBlockLightValue2));
@@ -417,7 +418,7 @@ void main() {
         vec3 baseAmbient = mix(flatAmbient, shadowAmbient, transitionFade);
         vec3 bounceAmbient = ambientStrength * ambientCol * ambientShadowFactorFixed * (1.0 - rainStrength * 0.14) * bounceMask;
 
-        vec3 finalAmbient = (baseAmbient + bounceAmbient) * 0.25 * pow(ao, 0.2) * textureAO;
+        vec3 finalAmbient = (baseAmbient + bounceAmbient) * 0.25 * pow(ao, 0.5) * textureAO;
 
         // Distance shadow transition (fade out of fake bouncelighting)
         float distShadowDiffuse = mix(Diffuse, 1.0, isGrass); //Remove diffuse on grass with distance, not 'correct' but looks like artifacting otherwise
