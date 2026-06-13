@@ -214,7 +214,7 @@ void main() {
     float ph_torchTimeBlend = mix(1.0, photonicsTorchFactor, rawSkyLight);
     float torchmapLight = max(lightMap.s, handlight) * lightMap.t * torchTimeBlend;
     float torchmapCovered = max(lightMap.s, handlight) * (1.0 - lightMap.t);
-    lightMap.s = (torchmapLight * pow(ao, 0.24) * 0.5) + torchmapCovered;
+    lightMap.s = (torchmapLight * pow(ao, 0.3) * 0.5) + torchmapCovered;
     
     // Torch intensity
     float torchIntensity = lightMap.s * lightMap.s * 3.2;
@@ -397,7 +397,7 @@ void main() {
     //// Apply Lighting ////
     #ifdef shadowMap 
         vec3 ambientCol = bounceLight * (1.0 - rainStrength * rainShadowStr);
-        float lightStrength = lightStr * 11.2 * (1.0 - darknessFactor * 0.9) * fakeCloudShadow * transitionFade * pow(ao, 0.21);
+        float lightStrength = lightStr * 11.2 * (1.0 - darknessFactor * 0.9) * fakeCloudShadow * transitionFade * pow(ao, 0.2);
 
         // Material flags
         float isGrass = float(material > 0.025 && material < 0.04);
@@ -418,7 +418,7 @@ void main() {
         vec3 baseAmbient = mix(flatAmbient, shadowAmbient, transitionFade);
         vec3 bounceAmbient = ambientStrength * ambientCol * ambientShadowFactorFixed * (1.0 - rainStrength * 0.14) * bounceMask;
 
-        vec3 finalAmbient = (baseAmbient + bounceAmbient) * 0.25 * pow(ao, 0.5) * textureAO;
+        vec3 finalAmbient = (baseAmbient + bounceAmbient) * 0.25 * pow(ao, 0.42) * textureAO;
 
         // Distance shadow transition (fade out of fake bouncelighting)
         float distShadowDiffuse = mix(Diffuse, 1.0, isGrass); //Remove diffuse on grass with distance, not 'correct' but looks like artifacting otherwise
@@ -427,7 +427,7 @@ void main() {
         finalAmbient = mix(finalAmbient, mix(finalAmbient, warmShadowDist * 2.5, distShadowMask), distFactor * undergroundBlend);
 
         // Underground ambient
-        finalAmbient += vec3(0.025, 0.028, 0.035) * (1.0 - undergroundBlend) * pow(ao, 0.42) * textureAO * 5.0;
+        finalAmbient += vec3(0.025, 0.028, 0.035) * (1.0 - undergroundBlend) * pow(ao, 0.2) * textureAO * 5.0;
 
         // Subsurface scattering
         #ifdef shadowMap
