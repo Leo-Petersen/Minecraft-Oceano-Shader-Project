@@ -1,7 +1,3 @@
-
-//Photonics//
-//#define PHOTONICS_ENABLED
-
 //ShadowMap//
     const int shadowMapResolution = 2048; // [512 768 1024 1256 1536 2048 3072 4096 6144 8192] Resolution of shadows
     const int noiseTextureResolution = 2048;
@@ -30,6 +26,7 @@
         #define aoRadius 2.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0 3.1 3.2 3.3 3.4 3.5 3.6 3.7 3.8 3.9 4.0]
         #define aoStrength 2.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0 3.1 3.2 3.3 3.4 3.5 3.6 3.7 3.8 3.9 4.0]
     #define SubsurfaceScattering
+        #define SSS_Quality 8 // [1 2 3 4 5 6 7 8 9 10 11 12]
 
 //Water//
     #define Reflections
@@ -138,10 +135,13 @@
     #define GUST_FLOOR     0.25  // [0.0 0.1 0.15 0.2 0.25 0.3 0.4 0.5 0.6]
     #define FLUTTER_SPEED  2.2   // [0.5 1.0 1.5 2.0 2.2 2.5 3.0 4.0 5.0]
     #define FLUTTER_SCALE  0.9   // [0.2 0.4 0.6 0.8 0.9 1.2 1.5 2.0]
-    
+
+//Mods//
+    //#define PHOTONICS_ENABLED
+
 //misc//
-//#define defaultClouds
-//#define VHS
-//#define whiteWorld
-//#define alwaysPuddles
-#define grassHeight 0 //[0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1 1.05 1.1 1.15 1.2 1.25 1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.75 1.8 1.85 1.9 1.95 2 2.05 2.1 2.15 2.2 2.25 2.3 2.35 2.4 2.45 2.5 2.55 2.6 2.65 2.7 2.75 2.8 2.85 2.9 2.95 3]
+    //#define defaultClouds
+    //#define VHS
+    //#define whiteWorld
+    //#define alwaysPuddles
+    #define grassHeight 0 //[0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1 1.05 1.1 1.15 1.2 1.25 1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.75 1.8 1.85 1.9 1.95 2 2.05 2.1 2.15 2.2 2.25 2.3 2.35 2.4 2.45 2.5 2.55 2.6 2.65 2.7 2.75 2.8 2.85 2.9 2.95 3]

@@ -157,47 +157,67 @@ float ambientOcclusion(sampler2D depthTexture) {
 
 ////SSS////
 vec3 calculateSSS(
-    vec3 shadowCoord,
+    vec3 worldPos,
     vec3 albedo,
     vec3 lightColor,
     float sssAmount,
     float VdotL,
     float NdotL,
     float skyLight,
-    float distFactor,
     float IGN
 ) {
     if (sssAmount < 0.01) return vec3(0.0);
-    
-    // Sample shadow for occlusion
-    const float sssRadius = 0.002;
-    float screenNoise = fract(IGN + (texcoord.x + texcoord.y) * 64.0);
-    vec2 offset = vec2(cos(screenNoise * 6.28318), sin(screenNoise * 6.28318)) * sssRadius;
-    
-    float sssShadow = shadow2D(shadowtex1, vec3(shadowCoord.xy, shadowCoord.z - 0.00007)).r;
-    sssShadow += shadow2D(shadowtex1, vec3(shadowCoord.xy + offset, shadowCoord.z)).r;
-    sssShadow *= 0.5;
 
-    vec3 sssColor = texture2D(shadowcolor0, shadowCoord.xy).rgb;
-    sssColor = mix(vec3(1.0), sssColor, 0.5);
+    vec4 rawShadowPos = shadowProjection * shadowModelView * vec4(worldPos, 1.0);
 
-    // SSS needs light to transmit through, backfacing AND in light path
-    float transmission = sssShadow;
-    
-    // Kill SSS on front lit surfaces
-    float frontlit = max(0.0, NdotL);
-    transmission *= 1.0 - frontlit;
-    
+    float distb = length(rawShadowPos.xy);
+    float distortFactor = (1.0 - shadowDistortion) + distb * shadowDistortion;
+
+    vec3 shadowPos;
+    shadowPos.xy = rawShadowPos.xy / distortFactor;
+    shadowPos.z  = rawShadowPos.z / 6.0;
+    shadowPos    = shadowPos * 0.5 + 0.5;
+
+    // Offset scale, divide XY by distortFactor for consistent world-space radius.
+    vec3 offsetScale = vec3(
+        0.002 / distortFactor,
+        0.002 / distortFactor,
+        0.001
+    ) * (sssAmount * 0.75 + 0.25);
+
+    // Thickness estimation, golden-ratio spiral with depth probing.
+    float gradNoise = fract(IGN + 1.618);
+    float sssOcclusion = 0.0;
+
+    for (int i = 0; i < SSS_Quality; i++) {
+        gradNoise = fract(gradNoise + 1.618);
+        float rot  = gradNoise * 6.283;
+        float dist = (float(i) + gradNoise) / 12.0;
+
+        vec2  offset2D = vec2(cos(rot), sin(rot)) * dist;
+        float offsetZ  = -(dist * dist + 0.025);
+
+        vec3 samplePos = shadowPos + vec3(offset2D, offsetZ) * offsetScale;
+
+        sssOcclusion += shadow2D(shadowtex0, samplePos).r;
+    }
+    sssOcclusion /= SSS_Quality;
+    sssOcclusion *= sssOcclusion;
+
+    // backface factor
+    float backface = clamp(1.0 - NdotL * 2.0, 0.0, 1.0);
+    float transmission = sssOcclusion * backface;
+
     if (transmission < 0.01) return vec3(0.0);
-    
+
     // Forward scattering phase
-    float phase = pow(max(0.0, -VdotL) * 0.5 + 0.5, 2.0);
-    
+    float phase = pow(clamp(-VdotL * 0.5 + 0.5, 0.0, 1.0), 2.0);
+
     vec3 sssAlbedo = mix(lightColor, sqrt(albedo), 0.2);
-    vec3 sssContribution = lightColor * sssAlbedo * sssColor;
-    
+    vec3 sssContribution = lightColor * sssAlbedo;
+
     sssContribution *= phase * sssAmount * transmission * skyLight * 0.8;
     sssContribution *= (1.0 - rainStrength * 0.5);
-    
+
     return sssContribution;
 }

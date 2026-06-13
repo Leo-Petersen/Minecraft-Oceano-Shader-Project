@@ -438,10 +438,10 @@ void main() {
                     float NdotL = dot(normal, lightDir);
 
                     vec3 sssContribution = calculateSSS(
-                        SampleCoords, color, sunlightCol,
+                        worldPos, color, sunlightCol,
                         sssAmount,
                         VdotL, NdotL, lightMap.t,
-                        distFactor, IGN
+                        IGN
                     );
                     
                     finalShadow += sssContribution * lightStrength * undergroundFix * (1.0 - time[5] * 0.5);
