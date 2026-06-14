@@ -2,6 +2,7 @@
     const int shadowMapResolution = 2048; // [512 768 1024 1256 1536 2048 3072 4096 6144 8192] Resolution of shadows
     const int noiseTextureResolution = 2048;
     const float sunPathRotation = -30.0f; // [-50.0f -40.0f -30.0f -20.0f -10.0f 0.0f 10.0f 20.0f 30.0f 40.0f 50.0f]
+    const float ambientOcclusionLevel = 0.0;
     #define shadowMap // WIP, broke this at one point, will re-visit
     //#define disableRainShadows
     const float shadowDistance = 256;  // [64 96 128 160 192 224 256 320 384 448 512] enabled or disabled? differs between versions of iris, will test later
@@ -24,9 +25,16 @@
     #define AO
         #define aoQuality 2   // [2 3 4 5 6 7 8 9 10 11 12] 
         #define aoRadius 2.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0 3.1 3.2 3.3 3.4 3.5 3.6 3.7 3.8 3.9 4.0]
-        #define aoStrength 1.1 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0]
+        #define aoStrength 1.1 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0 3.1 3.2 3.3 3.4 3.5 3.6 3.7 3.8 3.9 4.0]
     #define SubsurfaceScattering
         #define SSS_Quality 8 // [1 2 3 4 5 6 7 8 9 10 11 12]
+        
+//BounceLight//
+    #define BounceLight
+    #define BounceColoredLight
+        #define bounceQuality 4 //[2 3 4 5 6]
+        #define BounceAmbient 1.00 //[0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.25 1.50 1.75 2.00 2.25 2.40 2.75 3.00 3.25 3.50 3.75 4.00 4.25 4.50 4.75 5.00 5.50 6.00 6.50 7.00 7.50 8.00 8.50 9.00 9.50 10.00]
+        #define BounceLightStr 1.00 //[0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.25 1.50 1.75 2.00 2.25 2.50 2.75 3.00 3.25 3.50 3.75 4.00 4.25 4.50 4.75 5.00 5.50 6.00 6.50 7.00 7.50 8.00 8.50 9.00 9.50 10.00]
 
 //Water//
     #define Reflections
@@ -62,13 +70,6 @@
         #define parallaxShadowStrength 12 // [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
     #define materialEmission 
         #define emissionStrength 15 // [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50]
-
-//BounceLight//
-    #define BounceLight
-    #define BounceColoredLight
-        #define bounceQuality 4 //[2 3 4 5 6]
-        #define BounceAmbient 1.00 //[0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.25 1.50 1.75 2.00 2.25 2.40 2.75 3.00 3.25 3.50 3.75 4.00 4.25 4.50 4.75 5.00 5.50 6.00 6.50 7.00 7.50 8.00 8.50 9.00 9.50 10.00]
-        #define BounceLightStr 1.00 //[0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.25 1.50 1.75 2.00 2.25 2.50 2.75 3.00 3.25 3.50 3.75 4.00 4.25 4.50 4.75 5.00 5.50 6.00 6.50 7.00 7.50 8.00 8.50 9.00 9.50 10.00]
 
 //BRDF//
     #define CookTorranceGGXBRDF
