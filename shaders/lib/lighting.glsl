@@ -169,7 +169,7 @@ float ambientOcclusion(sampler2D depthTexture) {
     float uncappedDist = linZ;
     float distanceScale = max(uncappedDist, 2.5);
     float fovScale = gbufferProjection[1][1] / 1.37;
-    vec2 scale = radius * aoRadius * vec2(1.0 / aspectRatio, 1.0) * fovScale / distanceScale;
+    vec2 scale = radius * aoRadius * 2 * vec2(1.0 / aspectRatio, 1.0) * fovScale / distanceScale;
     float differenceScale = uncappedDist / distanceScale;
 
     vec2 baseOffset = vec2(cos(IGN * 6.28), sin(IGN * 6.28));
