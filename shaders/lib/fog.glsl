@@ -108,7 +108,12 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
     closeFactor *= 0.2;
     #endif
 
-    float timeFactor = 0.06; // made redundant, clean later
+    float timeFactor = 0.04 * (time[0]) +  
+                       0.06 * (time[1]) +
+                       0.06 * (time[2]) + 
+                       0.06 * (time[3]) + 
+                       0.04 * (time[4]) + 
+                       0.06 * (time[5]);
 
     if (isEyeInWater > 0.9){
         glare = 1.0;

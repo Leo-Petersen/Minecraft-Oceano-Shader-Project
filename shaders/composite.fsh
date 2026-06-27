@@ -267,7 +267,7 @@ void main() {
 
 	#ifdef Fog
 	if (Depth < 1.0){
-		color.rgb = getFog(color.rgb, cameraPosition, worldPos, pow(fogColor, vec3(0.7))*1.5, iswater, glare, sunCol, transitionFade, skyColor, sunAngleCosine);
+		color.rgb = getFog(color.rgb, cameraPosition, worldPos, fogColor*1.2, iswater, glare, sunCol, transitionFade, skyColor, sunAngleCosine);
 	}
 	#endif
 
