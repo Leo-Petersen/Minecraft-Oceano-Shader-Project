@@ -74,9 +74,9 @@ vec3 cloudFogCol = (mix(
 				vec3(40, 50, 115)/255     * 0.23 * time[5] 
 			) + ((1.0 - time[5]) * (vec3(skyColor) * (rainStrength * 0.2)))
 			+ ((time[5]) * (vec3(0.1 + skyColor) * (rainStrength * 2.5))),
-			vec3(0.55, 0.57, 0.6)*1.6 * (1.0 - time[5] * 0.9),
+			vec3(0.52, 0.55, 0.62) * 2.0 * (1.0 - time[5] * 0.9),
 			rainStrength * 0.85
-		) + vec3(0.03, 0.06, 0.2) * 1.5 * rainStrength * time[5]);
+		) + vec3(0.03, 0.06, 0.2) * rainStrength * time[5]);
 
 float fogStrength = 0.3;
 

@@ -227,7 +227,7 @@ void main() {
 	}
 	vec3 skybox = getSkyTextureFromSequence(position.xyz + reflectedVector);
 		 skybox += vec3(skyColor * 0.5) * (rainStrength * 0.5);
-	     skybox = pow(skybox, vec3(3.2)) * 2.0;
+	     skybox = pow(skybox, vec3(3.2)) * 2.5;
 		 skybox = luminance(skybox, 1.14);
 	     skybox = clamp(skybox*(1-rainStrength*0.3), vec3(0.0), vec3(1.0));
 	#endif

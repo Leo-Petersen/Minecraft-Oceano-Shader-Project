@@ -367,8 +367,7 @@ void main() {
 				// Rain fog
 				float rainFogDist = pow(length(worldPos.xz) / 20.0, 1.2);
 				float rainFogDepth = clamp(1.0 - exp(-0.2 * rainFogDist), 0.0, 0.9);
-				float cLum = dot(cloudFogCol, vec3(0.2126, 0.7152, 0.0722));
-				vec3 rainFogColor = mix(pow(cloudFogCol * 0.35, vec3(1.2)), vec3(cLum * 0.35), 0.55);
+				vec3 rainFogColor = cloudFogCol * 0.25;
 
 				// Match the sky fog at the horizon so there's no seam
 				float horizonFog = (1.0 - smoothstep(0.0, 0.45, elevation)) * rainStrength * 0.85;
@@ -382,8 +381,7 @@ void main() {
 
 			} else {
 				// Soften the horizon in all weather
-				float cLum = dot(cloudFogCol, vec3(0.2126, 0.7152, 0.0722));
-				vec3 rainFogColor = mix(cloudFogCol * 0.35, vec3(cLum * 0.35), 0.55);
+				vec3 rainFogColor = cloudFogCol * 0.35;
 
 				// Subtle atmospheric haze at the horizon during clear weather
 				float skyAtmoFog = (1.0 - smoothstep(0.0, 0.3, elevation)) * (1.0 - rainStrength);
