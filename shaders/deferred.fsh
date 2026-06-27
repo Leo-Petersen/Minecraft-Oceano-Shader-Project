@@ -374,11 +374,10 @@ void main() {
     #endif
 
     //// Rain Shadow Strength ////
-    // Currently redundant legacy code
     #ifdef disableRainShadows
         float rainShadowStr = 24.0;
     #else
-        float rainShadowStr = 0.2;
+        float rainShadowStr = 0.55;
     #endif
 
     //// Setup Ambient ////
