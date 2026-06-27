@@ -227,6 +227,10 @@ void main() {
 			#endif
 
 		if (isEyeInWater < 0.5){
+			#ifdef BorderFog
+				// Border fog for the water surface itself
+				refractedColor = mix(refractedColor, skyBoxCol * (1.0 - effects * 0.95), borderFog);
+			#endif
 			color.rgb = mix(refractedColor, reflectionCol, fresnel);
 			color.rgb += reflectedSun;
 			color.rgb += (vec3(shallowwaterR, shallowwaterG, shallowwaterB)/255) * waterSSS * 0.6; 
