@@ -204,7 +204,7 @@ vec4 getVolumetricCloudFog(vec3 camPos, vec3 fogCol) {
         float distXZ = length(wpos.xz - camPos.xz);
         if (distXZ > renderDist) break;
 
-        // --- Sample density ---
+        // Sample density
         float density = cfGetDensity(wpos);
         if (density < 0.001) continue;
 

@@ -7,7 +7,7 @@ float getTransparencyFactor() {
            0.6  * time[2] +   // noon
            0.6  * time[3] +   // day
            0.5  * time[4] +   // sunset
-           0.3 * time[5];    // night
+           0.3 * time[5];     // night
 }
 
 float getShadowFactor() {

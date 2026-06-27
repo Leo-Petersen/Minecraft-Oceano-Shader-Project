@@ -6,7 +6,7 @@ option.PHOTONICS_ENABLED.comment=Enable Photonics raytracing. Requires the Photo
 value.ToneMap.0=Minecraft
 value.ToneMap.1=ACES
 value.ToneMap.2=Filmic_Hejl2015
-value.ToneMap.3=Oceano
+value.ToneMap.3=Oceano (Legacy ToneMap)
 value.ToneMap.4=AgX
 
 option.exposure=Exposure

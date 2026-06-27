@@ -12,11 +12,11 @@ vec3 waterCaustics(vec3 worldpos, float shadowVisibility){
 
 
 vec3 reflectedWaterCaustics(
-    vec3 worldPos, vec3 worldNormal, vec3 sunDirWorld,
-    float skyLight, float iswater,
-    float fragmentSunVisibility,
-    float causticTimeFactor
-) {
+        vec3 worldPos, vec3 worldNormal, vec3 sunDirWorld,
+        float skyLight, float iswater,
+        float fragmentSunVisibility,
+        float causticTimeFactor
+    ) {
     if (iswater > 0.5)        return vec3(0.0);
     if (sunDirWorld.y < 0.05) return vec3(0.0);
     if (skyLight < 0.1)       return vec3(0.0);
@@ -33,8 +33,8 @@ vec3 reflectedWaterCaustics(
     // March from fragment toward the water surface along the reverse reflection path.
     vec3 toWaterDir = normalize(vec3(sunDirWorld.x, -sunDirWorld.y, sunDirWorld.z));
 
-    const int STEPS = 16;
-    const float MAX_DIST = 24.0;
+    const int STEPS = 4;
+    const float MAX_DIST = 4.0;
     float stepSize = MAX_DIST / float(STEPS);
 
     vec3 lastAbovePos = worldPos;
@@ -82,7 +82,7 @@ vec3 reflectedWaterCaustics(
 
     if (waterY >= worldPos.y) return vec3(0.0);
 
-    // Compute reflection point 'W' on the water surface (W sounds like a good name)
+    // Compute reflection point 'W' on the water surface ('W' for water!!)
     float heightAboveWater = worldPos.y - waterY;
     float t = heightAboveWater / sunDirWorld.y;
     if (t <= 0.0 || t > 64.0) return vec3(0.0);

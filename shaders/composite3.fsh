@@ -106,12 +106,19 @@ void main() {
 	vec3 reflectedskyBoxCol = texture2D(colortex8, texcoord).rgb;
 	vec3 skyBoxCol = texture2D(colortex9, texcoord).rgb;
 
-	//// Compute cloud fog ////
+	//// Compute cloud fog (WIP) ////
 	#ifdef volumetricCloudFog
-	vec4 cloudFog = vec4(0.0, 0.0, 0.0, 1.0);
-	if (isEyeInWater < 0.5){
-		cloudFog = getVolumetricCloudFog(cameraPosition, cloudFogCol);
-	}
+		vec4 cloudFog = vec4(0.0, 0.0, 0.0, 1.0);
+		if (isEyeInWater < 0.5){
+			cloudFog = getVolumetricCloudFog(cameraPosition, cloudFogCol);
+		}
+	#endif
+
+	//// Border Fog ////
+	#ifdef BorderFog
+		float effects = blindness + darknessFactor;
+		float borderFog = clamp(pow(length(worldPos.xz) / far, 14.0) * 0.7, 0.0, 1.0);
+		borderFog *= (1.0 - rainStrength);
 	#endif
 
 	// Water Refraction and Reflection //
@@ -189,13 +196,35 @@ void main() {
 			  fresnel = mix(0.2, 1.0, fresnel);
 
 		vec4 waterreflection;
+		vec2 reflHitUV = vec2(0.5);
+		float reflHitDepth = -1.0;
 		if (fresnel > 0.05) {
-			waterreflection = raytrace(reflectedskyBoxCol*lightMap.t, viewPos.xyz, waterNormal, 6);
+			waterreflection = raytrace(reflectedskyBoxCol*lightMap.t, viewPos.xyz, waterNormal, 6, reflHitUV, reflHitDepth);
 		} else {
 			waterreflection = vec4(reflectedskyBoxCol*lightMap.t, 0.0);
 		}
 		
 		vec3 reflectionCol = mix(reflectedskyBoxCol*lightMap.t, waterreflection.rgb, waterreflection.a);
+			#ifdef BorderFog
+				// Fog the reflection by the distance to what it REFLECTS, not the
+				// water surface!! Reflecting across the (horizontal) water plane leaves
+				// x/z unchanged, so the reflected object's horizontal distance equals
+				// the real object's, and the same fog formula matches the terrain pass.
+				// Without this fix, the water surface fogs the reflection too much, making it look like a gray mirror.
+				float reflBorderFog;
+				if (reflHitDepth >= 0.0) {
+					// Reflection hit, reconstruct the hit's world position and fog by its distance
+					vec4 hClip  = vec4(reflHitUV, reflHitDepth, 1.0) * 2.0 - 1.0;
+					vec4 hView  = gbufferProjectionInverse * hClip; hView /= hView.w;
+					vec3 hWorld = mat3(gbufferModelViewInverse) * hView.xyz + gbufferModelViewInverse[3].xyz;
+					reflBorderFog = clamp(pow(length(hWorld.xz) / far, 14.0) * 0.7, 0.0, 0.5) * (1.0 - rainStrength);
+				} else {
+					// Miss, reflecting the sky, which is already sky-colored (yay).
+					// No border fog here, otherwise open water flattens to gray.
+					reflBorderFog = 0.0;
+				}
+				reflectionCol = mix(reflectionCol, skyBoxCol * (1.0 - effects * 0.95), reflBorderFog);
+			#endif
 
 		if (isEyeInWater < 0.5){
 			color.rgb = mix(refractedColor, reflectionCol, fresnel);
@@ -230,6 +259,9 @@ void main() {
 		// Calculate reflection 
 		vec4 glassreflection = raytrace(reflectedskyBoxCol*lightMap.t, viewPos.xyz, viewNormal, 4);
 		vec3 reflectionCol = mix(reflectedskyBoxCol*lightMap.t, glassreflection.rgb, glassreflection.a);
+			#ifdef BorderFog
+				reflectionCol = mix(reflectionCol, skyBoxCol * (1.0 - effects * 0.95), borderFog);
+			#endif
 
 		color.rgb = mix(color.rgb, reflectionCol, fresnel);
 		
@@ -251,143 +283,140 @@ void main() {
 
 	//// PBR Reflections (opaque surfaces) ////
 	#ifdef materialReflections
-	if (iswater < 0.5 && isglass < 0.5 && Depth < 1.0) {
-		float perceptualSmoothness = specularMap.r;
-		float metalness = specularMap.g;
-		
-		// Only reflect if there's PBR data worth reflecting
-		if (perceptualSmoothness > 0.1) {
-			float roughness = 1.0 - perceptualSmoothness;
+		if (iswater < 0.5 && isglass < 0.5 && Depth < 1.0) {
+			float perceptualSmoothness = specularMap.r;
+			float metalness = specularMap.g;
 			
-			vec3 viewDir = normalize(viewPos.xyz);
-			float NdotV = max(dot(viewNormal, -viewDir), 0.001);
-			
-			vec3 F0;
-			float f0Raw = specularMap.g * 255.0;
+			// Only reflect if there's PBR data worth reflecting
+			if (perceptualSmoothness > 0.1) {
+				float roughness = 1.0 - perceptualSmoothness;
+				
+				vec3 viewDir = normalize(viewPos.xyz);
+				float NdotV = max(dot(viewNormal, -viewDir), 0.001);
+				
+				vec3 F0;
+				float f0Raw = specularMap.g * 255.0;
 
-			if (f0Raw >= 229.5) {
-				F0 = color.rgb; // Metal
-			} else if (f0Raw > 0.5) {
-				// Dielectric, cap f0 to realistic range (max ~0.17 = diamond)
-				F0 = vec3(min(specularMap.g, 0.17));
-			} else {
-				F0 = vec3(0.04); // Default dielectric
+				if (f0Raw >= 229.5) {
+					F0 = color.rgb; // Metal
+				} else if (f0Raw > 0.5) {
+					// Dielectric, cap f0 to realistic range (max ~0.17 = diamond)
+					F0 = vec3(min(specularMap.g, 0.17));
+				} else {
+					F0 = vec3(0.04); // Default dielectric
+				}
+				float metalness = float(f0Raw >= 229.5);
+				
+				// Fresnel with roughness consideration
+				vec3 fresnel = F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - NdotV, 5.0);
+				
+				float reflectionFade = (metalness > 0.5) ? 1.0 : smoothstep(0.1, 0.5, perceptualSmoothness);
+				fresnel *= reflectionFade;
+				//fresnel *= 1.0 - roughness * roughness * 0.7;
+
+				// Roughness-jittered reflection normal for blurry SSR (TAA resolves the noise)
+				vec3 reflNormal = viewNormal;
+				#ifdef TAA
+				float h1 = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
+				float h2 = fract(h1 * 3.321 + 0.7123);
+				h1 = fract(h1 + float(frameCounter % 8) * 0.125);
+				h2 = fract(h2 + float(frameCounter % 8) * 0.125);
+				vec3 tangent = normalize(cross(reflNormal, abs(reflNormal.y) > 0.99 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0)));
+				vec3 bitangent = cross(reflNormal, tangent);
+				float jitterStrength = roughness * roughness * 0.4;
+				reflNormal = normalize(reflNormal
+					+ tangent   * (h1 - 0.5) * jitterStrength
+					+ bitangent * (h2 - 0.5) * jitterStrength);
+				#endif
+
+				// SSR with sky fallback
+				vec4 pbrReflection = raytrace(reflectedskyBoxCol * lightMap.t, viewPos.xyz, reflNormal, 4);
+				vec3 reflectionCol = mix(reflectedskyBoxCol * lightMap.t, pbrReflection.rgb, pbrReflection.a);
+				
+				// Metals tint their reflection by their albedo
+				reflectionCol = mix(reflectionCol, reflectionCol * color.rgb, metalness);
+				
+				// Blend, metals replace diffuse, dielectrics add subtly
+				color.rgb += reflectionCol * fresnel;
 			}
-			float metalness = float(f0Raw >= 229.5);
-			
-			// Fresnel with roughness consideration
-			vec3 fresnel = F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - NdotV, 5.0);
-			
-			float reflectionFade = (metalness > 0.5) ? 1.0 : smoothstep(0.1, 0.5, perceptualSmoothness);
-			fresnel *= reflectionFade;
-			//fresnel *= 1.0 - roughness * roughness * 0.7;
-
-			// Roughness-jittered reflection normal for blurry SSR (TAA resolves the noise)
-			vec3 reflNormal = viewNormal;
-			#ifdef TAA
-			float h1 = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
-			float h2 = fract(h1 * 3.321 + 0.7123);
-			h1 = fract(h1 + float(frameCounter % 8) * 0.125);
-			h2 = fract(h2 + float(frameCounter % 8) * 0.125);
-			vec3 tangent = normalize(cross(reflNormal, abs(reflNormal.y) > 0.99 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0)));
-			vec3 bitangent = cross(reflNormal, tangent);
-			float jitterStrength = roughness * roughness * 0.4;
-			reflNormal = normalize(reflNormal
-				+ tangent   * (h1 - 0.5) * jitterStrength
-				+ bitangent * (h2 - 0.5) * jitterStrength);
-			#endif
-
-			// SSR with sky fallback
-			vec4 pbrReflection = raytrace(reflectedskyBoxCol * lightMap.t, viewPos.xyz, reflNormal, 4);
-			vec3 reflectionCol = mix(reflectedskyBoxCol * lightMap.t, pbrReflection.rgb, pbrReflection.a);
-			
-			// Metals tint their reflection by their albedo
-			reflectionCol = mix(reflectionCol, reflectionCol * color.rgb, metalness);
-			
-			// Blend, metals replace diffuse, dielectrics add subtly
-			color.rgb += reflectionCol * fresnel;
 		}
-	}
 	#endif
 
 	//// Atmosphere Fog ////
 	#ifdef atmosphereFog
-	if (isEyeInWater < 0.9) {
-		vec3 viewDir = normalize(viewPos.xyz);
+		if (isEyeInWater < 0.9) {
+			vec3 viewDir = normalize(viewPos.xyz);
 
-		vec3 worldViewDir = mat3(gbufferModelViewInverse) * viewDir;
-		float elevation = abs(worldViewDir.y); // 0 = horizon, 1 = straight up/down
+			vec3 worldViewDir = mat3(gbufferModelViewInverse) * viewDir;
+			float elevation = abs(worldViewDir.y); // 0 = horizon, 1 = straight up/down
 
-		if (Depth < 1.0) {
-			// Terrain fog
-			float sunAngleCosine = 1.0 - clamp(dot(viewDir, shadowLightPosition * 0.01), 0.0, 1.0);
-			sunAngleCosine = pow(sunAngleCosine, 2.0) * (3.0 - 2.0 * sunAngleCosine);
-			sunAngleCosine = 1.0 / sunAngleCosine - 1.0;
-			sunAngleCosine = 1.0 - exp(-sunAngleCosine / 12.0);
-			sunAngleCosine = clamp(sunAngleCosine, 0.01, 2.0) * (1.0 - rainStrength * 0.999);
+			if (Depth < 1.0) {
+				// Terrain fog
+				float sunAngleCosine = 1.0 - clamp(dot(viewDir, shadowLightPosition * 0.01), 0.0, 1.0);
+				sunAngleCosine = pow(sunAngleCosine, 2.0) * (3.0 - 2.0 * sunAngleCosine);
+				sunAngleCosine = 1.0 / sunAngleCosine - 1.0;
+				sunAngleCosine = 1.0 - exp(-sunAngleCosine / 12.0);
+				sunAngleCosine = clamp(sunAngleCosine, 0.01, 2.0) * (1.0 - rainStrength * 0.999);
 
-			// Normal atmospheric fog
-			float normalFogDist = pow(length(worldPos.xz) / 60.0, 1.2);
-			//float fogCap = (iswater == 1.0) ? 0.35 : 0.85; // Temp fix for the grey line of fog on the horizon of water. Decent compromise for now.
-			float normalFogDepth = clamp(1.0 - exp(-0.15 * normalFogDist), 0.0, 0.85);
-			vec3 normalFog = mix(color.rgb, atmoColor * 2, normalFogDepth * pow(sunAngleCosine, 0.2));
+				// Normal atmospheric fog
+				float normalFogDist = pow(length(worldPos.xz) / 60.0, 1.2);
+				//float fogCap = (iswater == 1.0) ? 0.35 : 0.85; // Temp fix for the grey line of fog on the horizon of water. Decent compromise for now.
+				float normalFogDepth = clamp(1.0 - exp(-0.15 * normalFogDist), 0.0, 0.85);
+				vec3 normalFog = mix(color.rgb, atmoColor * 2, normalFogDepth * pow(sunAngleCosine, 0.2));
 
-			// Rain fog
-			float rainFogDist = pow(length(worldPos.xz) / 20.0, 1.2);
-			float rainFogDepth = clamp(1.0 - exp(-0.2 * rainFogDist), 0.0, 0.9);
-			float cLum = dot(cloudFogCol, vec3(0.2126, 0.7152, 0.0722));
-			vec3 rainFogColor = mix(pow(cloudFogCol * 0.35, vec3(1.2)), vec3(cLum * 0.35), 0.55);
+				// Rain fog
+				float rainFogDist = pow(length(worldPos.xz) / 20.0, 1.2);
+				float rainFogDepth = clamp(1.0 - exp(-0.2 * rainFogDist), 0.0, 0.9);
+				float cLum = dot(cloudFogCol, vec3(0.2126, 0.7152, 0.0722));
+				vec3 rainFogColor = mix(pow(cloudFogCol * 0.35, vec3(1.2)), vec3(cLum * 0.35), 0.55);
 
-	        // Match the sky fog at the horizon so there's no seam
-			float horizonFog = (1.0 - smoothstep(0.0, 0.45, elevation)) * rainStrength * 0.85;
-			float distToEdge = smoothstep(0.5, 1.0, length(worldPos.xz) / far);
-			rainFogDepth = mix(rainFogDepth, max(rainFogDepth, horizonFog), distToEdge);
+				// Match the sky fog at the horizon so there's no seam
+				float horizonFog = (1.0 - smoothstep(0.0, 0.45, elevation)) * rainStrength * 0.85;
+				float distToEdge = smoothstep(0.5, 1.0, length(worldPos.xz) / far);
+				rainFogDepth = mix(rainFogDepth, max(rainFogDepth, horizonFog), distToEdge);
 
-			vec3 rainFog = mix(color.rgb, rainFogColor, rainFogDepth);
+				vec3 rainFog = mix(color.rgb, rainFogColor, rainFogDepth);
 
-			// Blend between normal and rain fog
-			color.rgb = mix(normalFog, rainFog, rainStrength);
+				// Blend between normal and rain fog
+				color.rgb = mix(normalFog, rainFog, rainStrength);
 
-		} else {
-			// Soften the horizon in all weather
-			float cLum = dot(cloudFogCol, vec3(0.2126, 0.7152, 0.0722));
-			vec3 rainFogColor = mix(cloudFogCol * 0.35, vec3(cLum * 0.35), 0.55);
+			} else {
+				// Soften the horizon in all weather
+				float cLum = dot(cloudFogCol, vec3(0.2126, 0.7152, 0.0722));
+				vec3 rainFogColor = mix(cloudFogCol * 0.35, vec3(cLum * 0.35), 0.55);
 
-			// Subtle atmospheric haze at the horizon during clear weather
-			float skyAtmoFog = (1.0 - smoothstep(0.0, 0.3, elevation)) * (1.0 - rainStrength);
-			color.rgb = mix(color.rgb, atmoColor * 2, skyAtmoFog * 0.15);
+				// Subtle atmospheric haze at the horizon during clear weather
+				float skyAtmoFog = (1.0 - smoothstep(0.0, 0.3, elevation)) * (1.0 - rainStrength);
+				color.rgb = mix(color.rgb, atmoColor * 2, skyAtmoFog * 0.15);
 
-			// Stronger fog at the horizon during rainy weather, to blend with the ground fog and prevent a harsh 'line'
-			float skyRainFog = (1.0 - smoothstep(0.0, 0.45, elevation)) * rainStrength;
-			color.rgb = mix(color.rgb, rainFogColor, skyRainFog); // This is a hard blend to ensure the sky fog completely overrides the ground fog at the horizon, preventing any visible seams
+				// Stronger fog at the horizon during rainy weather, to blend with the ground fog and prevent a harsh 'line'
+				float skyRainFog = (1.0 - smoothstep(0.0, 0.45, elevation)) * rainStrength;
+				color.rgb = mix(color.rgb, rainFogColor, skyRainFog); // This is a hard blend to ensure the sky fog completely overrides the ground fog at the horizon, preventing any visible seams
+			}
 		}
-	}
 	#endif
 
 	//// Cave Fog ////
 	#ifdef caveFog
-	if (Depth < 1.0 && isEyeInWater < 0.9) {
-		float heldLight = max(float(heldBlockLightValue), float(heldBlockLightValue2));
-		color.rgb = CaveFog(color.rgb, worldPos, colortex2Data.t, heldLight, 0.5*(1 - undergroundFix), colortex2Data.s);
-	}
+		if (Depth < 1.0 && isEyeInWater < 0.9) {
+			float heldLight = max(float(heldBlockLightValue), float(heldBlockLightValue2));
+			color.rgb = CaveFog(color.rgb, worldPos, colortex2Data.t, heldLight, 0.5*(1 - undergroundFix), colortex2Data.s);
+		}
 	#endif
 
 	//// Border Fog ////
 	#ifdef BorderFog
-	float effects = blindness + darknessFactor;
-	float borderFog = clamp(pow(length(worldPos.xz) / far, 14.0) * 0.7, 0.0, 1.0);
-	borderFog *= (1.0 - rainStrength);
-	if (Depth < 1.0 && isEyeInWater < 0.9) {
-		color.rgb = mix(color.rgb, skyBoxCol * (1.0 - effects * 0.95), borderFog);
-	}
+		if (Depth < 1.0 && isEyeInWater < 0.9 && iswater < 0.5) {
+			color.rgb = mix(color.rgb, skyBoxCol * (1.0 - effects * 0.95), borderFog);
+		}
 	#endif
 
-	//// Volumetric Cloud Fog (applied over everything including reflections) ////
+	//// Volumetric Cloud Fog ////
 	#ifdef volumetricCloudFog
-	if (isEyeInWater < 0.5){
-		float fogVisibility = (Depth >= 1.0) ? 1.0 : smoothstep(0.1, 0.5, colortex2Data.t);
-		color.rgb = color.rgb * mix(1.0, cloudFog.a, fogVisibility) + cloudFog.rgb * fogVisibility;
-	}
+		if (isEyeInWater < 0.5){
+			float fogVisibility = (Depth >= 1.0) ? 1.0 : smoothstep(0.1, 0.5, colortex2Data.t);
+			color.rgb = color.rgb * mix(1.0, cloudFog.a, fogVisibility) + cloudFog.rgb * fogVisibility;
+		}
 	#endif
 
 /* DRAWBUFFERS:0 */

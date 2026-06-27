@@ -80,7 +80,7 @@ void main() {
 		color = min(color, shoulder) + range * (1.0 - exp(-over / range));
 
 	#elif ToneMap == 1 //ACES//
-		color = ACES(color * 0.85 * exposure); // Exposure adjustment
+		color = ACES(color * 0.8 * exposure); // Exposure adjustment (the way lighting is done leaves the scene overexposed, adjusting this looks better than adjusting the lighting itself)
 		//color = ACES(color);
 		color = luminance(color, saturation);
 
@@ -91,7 +91,7 @@ void main() {
 		color = luminance(color, saturation);
 
 	#elif ToneMap == 3 //Oceano (wip)//
- 		color = pow(color, vec3(1/1.45));
+ 		color = pow(color, vec3(1/1.0));
 		color = ACES(color * exposure);
 		color = luminance(color, saturation);
 
