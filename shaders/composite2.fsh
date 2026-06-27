@@ -82,7 +82,7 @@ void main() {
 
 	#ifdef rainfogBlur
 	//Rain Blur
-	//if (Depth < 1.0) {
+	if (Depth < 1.0) {
 		if (rainStrength > 0.0){
 			float fogDepth = length(worldPos.xz) / 120.0;
 				  fogDepth = pow(fogDepth, 1.5);
@@ -99,7 +99,7 @@ void main() {
 			// Output to screen
 			color /= Quality * Directions + 1.0;
 		}
-	//}
+	}
 	#endif
 
 	//Underwater//

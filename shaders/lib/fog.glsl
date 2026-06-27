@@ -1,5 +1,3 @@
-
-#ifdef volumetricFog
 float bayer2(vec2 a){
     a = floor(a);
     return fract( dot(a, vec2(.5, a.y * .75)) );
@@ -110,12 +108,7 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
     closeFactor *= 0.2;
     #endif
 
-    float timeFactor = 0.06 * (time[0]) +  
-                       0.11 * (time[1]) +
-                       0.11 * (time[2]) + 
-                       0.11 * (time[3]) + 
-                       0.06 * (time[4]) + 
-                       0.02 * (time[5]);
+    float timeFactor = 0.06; // made redundant, clean later
 
     if (isEyeInWater > 0.9){
         glare = 1.0;
@@ -153,7 +146,7 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
                rainFogDepth *= (1.0 - rainAltFactor * 0.7); // keep 30% fog even at height so it doesn't vanish
                rainFogDepth *= rainStrength*3;
 
-         float rayweight = ray * weight * 1.5 * pow(glare, 0.5) * timeFactor;
+         float rayweight = ray * weight * 8.5 * pow(glare, 0.5) * timeFactor;
                rayweight *= clamp(altitudeFog, 0.025, 1.9) * 100.0;
                rayweight += clamp(altitudeFog * 5010.0 * timeFactor * ray * weight, 0.0, 1.9);
                rayweight *= transitionFade;
@@ -206,4 +199,3 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
     
     return color;
 }
-#endif
