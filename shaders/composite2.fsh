@@ -42,7 +42,6 @@ vec4 nvec4(vec3 pos){
 #include "/lib/settings.glsl"
 #include "/lib/time.glsl"
 #include "/lib/lightCol.glsl"
-#include "/lib/cloudFog.glsl"
 
 void main() {
 	vec4 color = texture2D(colortex0, texcoord);
@@ -124,14 +123,6 @@ void main() {
 		color /= Quality * Directions + 1.0;
 	}
 
-	#endif
-
-	//// Volumetric Cloud Fog (bake into scene so reflections pick it up) ////
-	#ifdef volumetricCloudFog
-	if (isEyeInWater < 1) {
-		vec4 cloudFog = getVolumetricCloudFog(cameraPosition, cloudFogCol);
-		color.rgb = color.rgb * cloudFog.a + cloudFog.rgb;
-	}
 	#endif
 
 /* DRAWBUFFERS:0 */

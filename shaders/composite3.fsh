@@ -9,6 +9,8 @@ uniform sampler2D colortex4;
 uniform sampler2D colortex5;
 uniform sampler2D colortex8;
 uniform sampler2D colortex9;
+uniform sampler2D colortex11;
+uniform sampler2D colortex12;
 uniform sampler2D colortex13;
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
@@ -25,6 +27,9 @@ const int colortex8Format = R11F_G11F_B10F;
 
 uniform mat4 gbufferProjection, gbufferProjectionInverse;
 uniform mat4 gbufferModelViewInverse;
+uniform mat4 gbufferPreviousModelView;
+uniform mat4 gbufferPreviousProjection;
+uniform vec3 previousCameraPosition;
 uniform mat4 shadowModelView;
 uniform mat4 shadowProjection;
 
@@ -73,8 +78,8 @@ float undergroundFix = clamp(mix(max(lmcoord.t-2.0/16.0,0.0)*1.14285714286,1.0,c
 #include "/lib/raytrace.glsl"
 #include "/lib/waterBump.glsl"
 #include "/lib/puddles.glsl"
-#include "/lib/cloudFog.glsl"
 #include "/lib/caveFog.glsl"
+#include "/lib/clouds.glsl"
 
 float getDepth(float depth) {
     return 2.0 * near * far / (far + near - (2.0 * depth - 1.0) * (far - near));
@@ -106,11 +111,23 @@ void main() {
 	vec3 reflectedskyBoxCol = texture2D(colortex8, texcoord).rgb;
 	vec3 skyBoxCol = texture2D(colortex9, texcoord).rgb;
 
-	//// Compute cloud fog (WIP) ////
-	#ifdef volumetricCloudFog
-		vec4 cloudFog = vec4(0.0, 0.0, 0.0, 1.0);
-		if (isEyeInWater < 0.5){
-			cloudFog = getVolumetricCloudFog(cameraPosition, cloudFogCol);
+	float vcDither = vcBayer8(gl_FragCoord.xy);
+	#ifdef TAA
+		vcDither = fract(vcDither + float(frameCounter & 15) * 0.0625);
+	#endif
+
+	// Reflected sky with clouds, for horizontal reflectors. Gated to water by
+	// default so rain does not march it across the whole screen.
+	// Will consider puddles etc. later.
+	vec3 reflectedskyClouds = reflectedskyBoxCol;
+	#if defined(VolumetricClouds) && defined(VC_REFLECTIONS)
+		if (isEyeInWater < 0.9 && Depth < 1.0 && iswater > 0.5) {
+			// Mirror the view ray about the actual wave normal so reflected
+			// clouds ripple with the water surface instead of being flat.
+			// this is a bit expensive, but the effect is worth it I reckon, looks stupid otherwise lol
+			vec3 reflViewDir = reflect(normalize(viewPos.xyz), waterNormal);
+			vec3 reflWDir = normalize(mat3(gbufferModelViewInverse) * reflViewDir);
+			reflectedskyClouds = vcReflectClouds(reflectedskyBoxCol, reflWDir, vcDither);
 		}
 	#endif
 
@@ -199,12 +216,12 @@ void main() {
 		vec2 reflHitUV = vec2(0.5);
 		float reflHitDepth = -1.0;
 		if (fresnel > 0.05) {
-			waterreflection = raytrace(reflectedskyBoxCol*lightMap.t, viewPos.xyz, waterNormal, 6, reflHitUV, reflHitDepth);
+			waterreflection = raytrace(reflectedskyClouds*lightMap.t, viewPos.xyz, waterNormal, 6, reflHitUV, reflHitDepth);
 		} else {
-			waterreflection = vec4(reflectedskyBoxCol*lightMap.t, 0.0);
+			waterreflection = vec4(reflectedskyClouds*lightMap.t, 0.0);
 		}
 		
-		vec3 reflectionCol = mix(reflectedskyBoxCol*lightMap.t, waterreflection.rgb, waterreflection.a);
+		vec3 reflectionCol = mix(reflectedskyClouds*lightMap.t, waterreflection.rgb, waterreflection.a);
 			#ifdef BorderFog
 				// Fog the reflection by the distance to what it REFLECTS, not the
 				// water surface!! Reflecting across the (horizontal) water plane leaves
@@ -280,7 +297,7 @@ void main() {
 	      iswet = 1.0;
 		  #endif
 		if (iswet > 0 && iswater != 1.0 && isglass != 1.0 && isParticle != 1.0 && Depth > 0.56) {
-			color.rgb = puddles(color.rgb, worldPos, reflectedskyBoxCol, viewPos.xyz, lightMap, iswet, surfaceHeight);
+			color.rgb = puddles(color.rgb, worldPos, reflectedskyClouds, viewPos.xyz, lightMap, iswet, surfaceHeight);
 		}
 	#endif
 	
@@ -365,7 +382,7 @@ void main() {
 				// Normal atmospheric fog
 				float normalFogDist = pow(length(worldPos.xz) / 60.0, 1.2);
 				//float fogCap = (iswater == 1.0) ? 0.35 : 0.85; // Temp fix for the grey line of fog on the horizon of water. Decent compromise for now.
-				float normalFogDepth = clamp(1.0 - exp(-0.15 * normalFogDist), 0.0, 0.85);
+				float normalFogDepth = clamp(1.0 - exp(-0.15 * normalFogDist), 0.0, 0.85 * transitionFade);
 				vec3 normalFog = mix(color.rgb, atmoColor * 2, normalFogDepth * pow(sunAngleCosine, 0.2));
 
 				// Rain fog
@@ -398,6 +415,27 @@ void main() {
 		}
 	#endif
 
+	//// Volumetric Clouds ////
+	vec4 cloudAccum = vec4(0.0, 0.0, 0.0, 1.0);
+	#ifdef VolumetricClouds
+	{
+		vec2 texelSize = 1.0 / vec2(viewWidth, viewHeight);
+		vec2 O = vcOffset8(frameCounter);
+		vec2 fUV = clamp(texcoord * CLOUDS_QUALITY - O * texelSize, texelSize, vec2(CLOUDS_QUALITY) - texelSize);
+		vec4 fresh = texture2D(colortex12, fUV);
+
+		vec3 worldDir = normalize(mat3(gbufferModelViewInverse) * viewPos.xyz);
+		vec3 rp = vcReprojectCloud(worldDir, gbufferPreviousModelView, gbufferPreviousProjection, previousCameraPosition);
+		vec4 history = texture2D(colortex11, rp.xy);
+		float blend = (rp.z > 0.5) ? 0.1 : 1.0;   // ~90% history when reprojection is valid
+		cloudAccum = mix(history, fresh, blend);
+
+		if (isEyeInWater < 0.9 && Depth >= 1.0) {
+			color.rgb = color.rgb * cloudAccum.a + cloudAccum.rgb;
+		}
+	}
+	#endif
+
 	//// Cave Fog ////
 	#ifdef caveFog
 		if (Depth < 1.0 && isEyeInWater < 0.9) {
@@ -413,15 +451,13 @@ void main() {
 		}
 	#endif
 
-	//// Volumetric Cloud Fog ////
-	#ifdef volumetricCloudFog
-		if (isEyeInWater < 0.5){
-			float fogVisibility = (Depth >= 1.0) ? 1.0 : smoothstep(0.1, 0.5, colortex2Data.t);
-			color.rgb = color.rgb * mix(1.0, cloudFog.a, fogVisibility) + cloudFog.rgb * fogVisibility;
-		}
-	#endif
-
-/* DRAWBUFFERS:0 */
-	gl_FragData[0] = vec4(color, 1.0); //gcolor
+#ifdef VolumetricClouds
+/* RENDERTARGETS: 0,11 */
+	gl_FragData[0] = vec4(color, 1.0);
+	gl_FragData[1] = cloudAccum;       // The full-res cloud history
+#else
+/* RENDERTARGETS: 0 */
+	gl_FragData[0] = vec4(color, 1.0);
+#endif
 
 }

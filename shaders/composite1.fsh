@@ -19,13 +19,27 @@ uniform sampler2D colortex0;
 uniform sampler2D colortex2;
 uniform sampler2D colortex9;
 uniform sampler2D depthtex0;
+uniform sampler2D noisetex;
+
+uniform float frameTimeCounter;
+uniform int frameCounter;
+uniform vec3 cameraPosition;
+uniform vec3 shadowLightPosition;
 
 uniform mat4 gbufferProjection, gbufferProjectionInverse;
 uniform mat4 gbufferModelViewInverse;
 
+/*
+const int colortex12Format = RGBA16F;
+const bool colortex12Clear = false;
+const int colortex11Format = RGBA16F;
+const bool colortex11Clear = false;
+*/
+
 #include "/lib/settings.glsl"
 #include "/lib/time.glsl"
 #include "/lib/lightCol.glsl"
+#include "/lib/clouds.glsl"
 
 float undergroundFix = clamp(mix(max(lmcoord.t-2.0/16.0,0.0)*1.14285714286,1.0,clamp((eyeBrightnessSmooth.y/255.0-2.0/16.)*4.0,0.0,1.0)), 0.0, 1.0);
 
@@ -60,7 +74,36 @@ void main(){
 		if (isEyeInWater < 0.9) color.rgb = skyBoxCol*(1-effects*0.95);
 	}
 
-/*DRAWBUFFERS:0*/
+	//// Half-res volumetric cloud corner ////
+	// Only the bottom-left CLOUDS_QUALITY rectangle marches. It packs the whole
+	// sky's clouds at reduced resolution; composite3 reads and upscales it.
+	// The rectangle is contiguous, so warps outside it skip the march entirely.
+	vec4 cloudLowRes = vec4(0.0, 0.0, 0.0, 1.0);
+	#ifdef VolumetricClouds
+	{
+		vec2 cornerSize = vec2(viewWidth, viewHeight) * CLOUDS_QUALITY;
+		if (gl_FragCoord.x < cornerSize.x && gl_FragCoord.y < cornerSize.y) {
+			// Jitter the sampled direction by this frame's sub-cell offset.
+			// composite3 compensates for the same offset when it reconstructs,
+			// so the eight-frame pattern rebuilds full resolution.
+			vec2 dirUV = (floor(gl_FragCoord.xy) + 0.5 + vcOffset8(frameCounter)) / cornerSize;
+			dirUV = clamp(dirUV, 0.0, 1.0);
+
+			vec4 dClip = vec4(dirUV, 1.0, 1.0) * 2.0 - 1.0;   // far plane direction
+			vec4 dView = gbufferProjectionInverse * dClip; dView /= dView.w;
+			vec3 worldDir = normalize(mat3(gbufferModelViewInverse) * dView.xyz);
+
+			float dith = vcBayer8(gl_FragCoord.xy);
+			#ifdef TAA
+				dith = fract(dith + float(frameCounter & 15) * 0.0625);
+			#endif
+			cloudLowRes = computeVolumetricClouds(worldDir, 1e9, dith, VC_STEPS);
+		}
+	}
+	#endif
+
+/* RENDERTARGETS: 0,12 */
 	gl_FragData[0] = vec4(color,1.0);
-	
+	gl_FragData[1] = cloudLowRes;
+
 }

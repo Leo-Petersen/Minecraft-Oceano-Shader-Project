@@ -155,7 +155,7 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
                rayweight *= clamp(altitudeFog, 0.025, 1.9) * 100.0;
                rayweight += clamp(altitudeFog * 5010.0 * timeFactor * ray * weight, 0.0, 1.9);
                rayweight *= transitionFade;
-               rayweight *= 0.25 * (1.0 + isEyeInWater * 8.0);
+               rayweight *= 0.25 * FogStrength * (1.0 + isEyeInWater * 8.0);
           if (isEyeInWater > 0.9){
             rayweight = clamp(rayweight, 0.0, 1.0);
           } else {
