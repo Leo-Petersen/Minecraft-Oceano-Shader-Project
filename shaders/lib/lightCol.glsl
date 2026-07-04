@@ -24,9 +24,9 @@ vec3 sunCol = (vec3(255, 140, 50)/255 * (time2[0].x) +
 ////Sunlight Colour////
 vec3 sunlightCol = (
 				vec3(255, 175, 100)/255  * 0.45 * time[0] +   // sunrise
-				vec3(255, 250, 248)/255 * 0.55  * time[1] +   // morning
-				vec3(255, 250, 248)/255 * 0.55  * time[2] +   // noon
-				vec3(255, 250, 248)/255 * 0.55  * time[3] +   // evening
+				vec3(255, 250, 248)/255  * 0.58  * time[1] +   // morning
+				vec3(255, 250, 248)/255  * 0.58  * time[2] +   // noon
+				vec3(255, 250, 248)/255  * 0.58  * time[3] +   // evening
 				vec3(255, 175, 100)/255  * 0.45 * time[4] +   // sunset
 				vec3(40, 70, 120)/255    * 0.75  * time[5]     // night
 				) + ((1.0 - time[5]) * (vec3(skyColor) * (rainStrength * 0.2))) 
