@@ -30,7 +30,7 @@ vec3 applyPurkinjeShift(vec3 color, float adaptationLuminance) {
     vec3 dimmedColor = color * mix(vec3(1.0), wavelengthDim, scotopicBlend * 0.7);
     
     float desatAmount = scotopicBlend * scotopicBlend; // Squared for more gradual color loss
-    vec3 result = mix(dimmedColor, scotopicColor, desatAmount * 0.25);
+    vec3 result = mix(dimmedColor, scotopicColor, desatAmount * 0.10);
     
     float brightnessBoost = 1.0 + scotopicBlend * 0.3;
     result *= brightnessBoost;

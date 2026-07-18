@@ -62,7 +62,7 @@ vec3 puddles(in vec3 color, in vec3 worldPos, in vec3 reflectedskyBoxCol, in vec
 
     float puddle = getRainPuddles(dropPos, iswet);
     
-    // Height masking: raised parallax areas stay dry (Disabled for now)
+    // Height masking, parallax areas have no puddles (Disabled for now, I broke it :( )
     //float heightMask = smoothstep(1.0, 0.85, surfaceHeight);
     float heightMask = 1.0;
     #ifndef Parallax
@@ -86,7 +86,7 @@ vec3 puddles(in vec3 color, in vec3 worldPos, in vec3 reflectedskyBoxCol, in vec
     rainDropNormal = normalize(rainDropNormal);
 
     // Reflections
-    reflectedskyBoxCol *= 1.5;
+    reflectedskyBoxCol *= 0.5;
     vec4 rainreflection = raytracePuddles(reflectedskyBoxCol, viewPos.xyz, rainDropNormal, 6);
     float normalDotEyeRain = dot(viewNormal, -normalize(viewPos.xyz));
     vec3 reflectionCol = mix(reflectedskyBoxCol, rainreflection.rgb, rainreflection.a);

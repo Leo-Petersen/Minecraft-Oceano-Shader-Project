@@ -24,6 +24,8 @@ uniform int heldBlockLightValue2;
 uniform ivec2 atlasSize;
 
 uniform vec3 shadowLightPosition;
+uniform vec3 sunPosition;
+uniform sampler2D colortex15;   // physical sky-view LUT
 uniform vec3 skyColor;
 
 uniform mat4 gbufferModelViewInverse;
@@ -50,10 +52,23 @@ varying mat3 tbnMatrix;
 #include "/lib/waterBump.glsl"
 #include "/lib/time.glsl"
 #include "/lib/lightCol.glsl"
-#include "/lib/skyboxreflected.glsl"
+#include "/lib/atmosphereLUT.glsl"
 #include "/lib/encode.glsl"
 #include "/lib/sharedLighting.glsl"
 
+vec3 getSkyDir() {
+    vec2 ndc = gl_FragCoord.xy / vec2(viewWidth, viewHeight) * 2.0 - 1.0;
+    vec4 viewPos = gbufferProjectionInverse * vec4(ndc, 1.0, 1.0);
+    viewPos /= viewPos.w;
+    return normalize(mat3(gbufferModelViewInverse) * viewPos.xyz);
+}
+
+vec3 toNDC(vec3 pos){
+	vec4 iProjDiag = vec4(gbufferProjectionInverse[0].x, gbufferProjectionInverse[1].y, gbufferProjectionInverse[2].zw);
+    vec3 p3 = pos * 2. - 1.;
+    vec4 fragpos = iProjDiag * p3.xyzz + gbufferProjectionInverse[3];
+    return fragpos.xyz / fragpos.w;
+}
 
 void main() {
 	float iswater = float(material > 0.08 && material < 0.10);
@@ -104,7 +119,7 @@ void main() {
 	// Transparent Lighting //
 	else {
 		float NdotL = max(dot(viewNormal, normalize(shadowLightPosition)), 0.0);
-		float diffuse = NdotL * 0.7 + 0.3; // Softer falloff
+		float diffuse = NdotL * 0.7 + 0.3;
 		
 		float transparencyFactor = getTransparencyFactor();
 		float shadowFactor = getShadowFactor();
@@ -158,7 +173,6 @@ void main() {
 			vec2 layerUV = tileMin + mod(texcoord - tileMin + offset, tileSize);
 			vec3 layerColor = texture2D(colortex0, layerUV).rgb * glcolor.rgb;
 			
-			// Boost contrast per layer
 			layerColor = pow(layerColor, vec3(1.4));
 			
 			float fade = 1.0 - depth * 0.85;
@@ -175,14 +189,12 @@ void main() {
 		
 		portalColor /= totalWeight;
 		
-		// Contrast boost on final result
 		float luma = dot(portalColor, vec3(0.3, 0.1, 0.6));
 		portalColor = mix(portalColor * 0.5, portalColor * 1.42, smoothstep(0.1, 0.4, luma));
 		
 		float pulse = sin(t * 2.0) * 0.1 + 0.9;
 		portalColor *= pulse * 0.85;
 		
-		// Glow only on the brightest spots
 		float brightness = dot(portalColor, vec3(0.3, 0.1, 0.6));
 		portalColor += vec3(0.2, 0.06, 0.35) * smoothstep(0.25, 0.55, brightness) * pulse * 0.4;
 		
@@ -220,16 +232,20 @@ void main() {
 		normalTangentSpace = vec4(normalize(bump * tbnMatrix) * 0.5 + 0.5, 1.0);
 	}
 	
-	// Reflected skybox
-	vec3 reflectedVector = reflect(fragpos, normalize(bump * tbnMatrix).xyz) * 300.0;
+	// Reflected sky
+	vec3 reflNormalView = normalize(bump * tbnMatrix).xyz;
 	if (isglass > 0.5 || isice > 0.5 || ishoney > 0.5) {
-		reflectedVector = reflect(fragpos, glassNormal) * 300.0;
+		reflNormalView = glassNormal;
 	}
-	vec3 skybox = getSkyTextureFromSequence(position.xyz + reflectedVector);
+	vec3 reflViewDir  = reflect(normalize(fragpos), reflNormalView);
+	vec3 reflWorldDir = normalize(mat3(gbufferModelViewInverse) * reflViewDir);
+	vec3 sunDirWorld  = normalize(mat3(gbufferModelViewInverse) * sunPosition);
+	vec3 skybox = atmSky(colortex15, vec2(viewWidth, viewHeight), reflWorldDir, sunDirWorld);
+		 skybox = atmSunsetTint(skybox, reflWorldDir, sunDirWorld, 1.0 - rainStrength);
+		 skybox = luminance(skybox, 1.12);
 		 skybox += vec3(skyColor * 0.5) * (rainStrength * 0.5);
-	     skybox = pow(skybox, vec3(3.2)) * 2.5;
-		 skybox = luminance(skybox, 1.14);
-	     skybox = clamp(skybox*(1-rainStrength*0.3), vec3(0.0), vec3(1.0));
+		 skybox *= 1.2;
+	     //skybox *= (1.0 - rainStrength * 0.3);
 	#endif
 
 	// Water SSS //

@@ -1,4 +1,4 @@
-#version 130
+#version 430 compatibility
 
 #include "/lib/settings.glsl"
 
@@ -46,12 +46,18 @@ varying mat3 tbnMatrix;
 #include "/lib/parallax.glsl"
 #include "/lib/encode.glsl"
 #include "/lib/time.glsl"
-#include "/lib/skyboxreflected.glsl"
 
 vec3 luminance(vec3 color, float strength) {
 	float luma = dot(color, vec3(0.3086, 0.6094, 0.0820));
   	color = mix(color, vec3(luma), vec3(1.0 - strength));
 	return color;
+}
+
+vec3 toNDC(vec3 pos){
+	vec4 iProjDiag = vec4(gbufferProjectionInverse[0].x, gbufferProjectionInverse[1].y, gbufferProjectionInverse[2].zw);
+    vec3 p3 = pos * 2. - 1.;
+    vec4 fragpos = iProjDiag * p3.xyzz + gbufferProjectionInverse[3];
+    return fragpos.xyz / fragpos.w;
 }
 
 // This is here to make it appear in the settings menu, dont ask me why it doesn't appear otherwise
@@ -120,14 +126,6 @@ void main() {
         terrainColor.rgb = vec3(1.0);
     #endif	
 
-	// Reflected skybox
-	vec3 reflectedVector = reflect(fragpos, normalize(normalData)) * 300.0;
-	vec3 skybox = getSkyTextureFromSequence(position.xyz+reflectedVector);
-		 skybox += vec3(skyColor*0.5) * (rainStrength * 0.5);
-	     skybox = pow(skybox, vec3(3.2))*2;
-	     skybox = luminance(skybox, 1.15);
-	     skybox = clamp(skybox*(1-rainStrength*0.6), vec3(0.0), vec3(1.0));
-
 #ifdef PHOTONICS_ENABLED
 /* RENDERTARGETS: 0,1,2,8,13,14,15 */
 #else
@@ -136,9 +134,6 @@ void main() {
 	gl_FragData[0] = terrainColor;
 	gl_FragData[1] = vec4(encodeNormal(normalData), specularMap);
 	gl_FragData[2] = vec4(lightMap, material, shadowFactor);
-	#ifdef Reflections
-	gl_FragData[3] = vec4(skybox, 1.0);
-	#endif
 	gl_FragData[4] = vec4(emission, surfaceHeight, textureAO, labSSS);
 #ifdef PHOTONICS_ENABLED
 	gl_FragData[5] = vec4(terrainColor.rgb, 1.0);

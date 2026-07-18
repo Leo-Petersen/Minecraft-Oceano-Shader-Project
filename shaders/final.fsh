@@ -5,8 +5,6 @@
 /*
 const int colortex0Format = R11F_G11F_B10F;
 #ifdef PHOTONICS_ENABLED
-const int colortex14Format = RGBA8;     // Photonics: unlit albedo
-const int colortex15Format = RGBA8;     // Photonics: flat normals
 const int colortex12Format = RGBA16F;   // Photonics: indirect GI
 #endif
 */
@@ -98,7 +96,7 @@ void main() {
 	#elif ToneMap == 4 //AgX//
 		//color *= 2;  // Exposure adjustment
 		color = agxCdl(color * exposure, vec3(1.0), vec3(0.0), vec3(1.75), 1.2);
-		color = vec3(1.0) - exp(-color * 4.0);
+		color = vec3(1.0) - exp(-color * 3.0);
 		//color = luminance(color, saturation);
 	#endif
 

@@ -18,6 +18,9 @@ uniform vec3 skyColor;
 uniform sampler2D colortex0;
 uniform sampler2D colortex2;
 uniform sampler2D colortex9;
+uniform sampler2D colortex10;
+uniform sampler2D colortex14;  // transmittance + multiscatter LUT
+uniform sampler2D colortex15;  // sky-view LUT
 uniform sampler2D depthtex0;
 uniform sampler2D noisetex;
 
@@ -34,10 +37,17 @@ const int colortex12Format = RGBA16F;
 const bool colortex12Clear = false;
 const int colortex11Format = RGBA16F;
 const bool colortex11Clear = false;
+const int colortex10Format = RGBA16F;
+const bool colortex10Clear = false;
 */
 
 #include "/lib/settings.glsl"
 #include "/lib/time.glsl"
+#include "/lib/atmosphereLUT.glsl"
+vec3 atmSunDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunDir);
+vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunDir);
+#define ATM_SUN_DEFINED
 #include "/lib/lightCol.glsl"
 #include "/lib/clouds.glsl"
 
@@ -74,36 +84,33 @@ void main(){
 		if (isEyeInWater < 0.9) color.rgb = skyBoxCol*(1-effects*0.95);
 	}
 
-	//// Half-res volumetric cloud corner ////
-	// Only the bottom-left CLOUDS_QUALITY rectangle marches. It packs the whole
-	// sky's clouds at reduced resolution; composite3 reads and upscales it.
-	// The rectangle is contiguous, so warps outside it skip the march entirely.
-	vec4 cloudLowRes = vec4(0.0, 0.0, 0.0, 1.0);
+	vec4  cloudLowRes = vec4(0.0, 0.0, 0.0, 1.0);
+	float cloudDist   = 1e6;
 	#ifdef VolumetricClouds
 	{
-		vec2 cornerSize = vec2(viewWidth, viewHeight) * CLOUDS_QUALITY;
+		const int area = VC_UPSCALE * VC_UPSCALE;
+		vec2 cornerSize = floor(vec2(viewWidth, viewHeight) / float(VC_UPSCALE));
 		if (gl_FragCoord.x < cornerSize.x && gl_FragCoord.y < cornerSize.y) {
-			// Jitter the sampled direction by this frame's sub-cell offset.
-			// composite3 compensates for the same offset when it reconstructs,
-			// so the eight-frame pattern rebuilds full resolution.
-			vec2 dirUV = (floor(gl_FragCoord.xy) + 0.5 + vcOffset8(frameCounter)) / cornerSize;
-			dirUV = clamp(dirUV, 0.0, 1.0);
+			ivec2 texel = ivec2(gl_FragCoord.xy);                 // low-res texel
+			ivec2 checkerPos = VC_UPSCALE * texel
+			                 + vcCheckerOffset(frameCounter % area);
+			vec2  fullUV = (vec2(checkerPos) + 0.5) / vec2(viewWidth, viewHeight);
 
-			vec4 dClip = vec4(dirUV, 1.0, 1.0) * 2.0 - 1.0;   // far plane direction
+			vec4 dClip = vec4(fullUV, 1.0, 1.0) * 2.0 - 1.0;
 			vec4 dView = gbufferProjectionInverse * dClip; dView /= dView.w;
 			vec3 worldDir = normalize(mat3(gbufferModelViewInverse) * dView.xyz);
 
-			float dith = vcBayer8(gl_FragCoord.xy);
-			#ifdef TAA
-				dith = fract(dith + float(frameCounter & 15) * 0.0625);
-			#endif
-			cloudLowRes = computeVolumetricClouds(worldDir, 1e9, dith, VC_STEPS);
+			float dith = vcBayer8(vec2(checkerPos));
+			dith = fract(dith + float(frameCounter / area) * 0.61803399);
+
+			cloudLowRes = computeVolumetricClouds(worldDir, 1e9, dith, VC_STEPS, cloudDist);
 		}
 	}
 	#endif
 
-/* RENDERTARGETS: 0,12 */
-	gl_FragData[0] = vec4(color,1.0);
+/* RENDERTARGETS: 0,12,10 */
+	gl_FragData[0] = vec4(color, 1.0);
 	gl_FragData[1] = cloudLowRes;
+	gl_FragData[2] = vec4(texelFetch(colortex10, ivec2(gl_FragCoord.xy), 0).rg, cloudDist, 0.0);
 
 }

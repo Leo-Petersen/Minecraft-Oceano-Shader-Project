@@ -11,6 +11,9 @@ uniform sampler2D colortex3;
 uniform sampler2D colortex8;
 uniform sampler2D colortex9;
 uniform sampler2D colortex13;
+uniform sampler2D colortex14;  // transmittance + multiscatter LUT
+uniform sampler2D colortex15;  // sky-view LUT
+
 uniform sampler2D shadowcolor0;
 uniform sampler2D shadowcolor1;
 uniform sampler2D depthtex0;
@@ -67,7 +70,13 @@ varying vec3 Normal;
 
 
 #include "/lib/time.glsl"
+#include "/lib/atmosphereLUT.glsl"
+vec3 atmSunDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunDir);
+vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunDir);
+#define ATM_SUN_DEFINED
 #include "/lib/lightCol.glsl"
+#include "/lib/clouds.glsl"
 #include "/lib/lighting.glsl"
 #include "/lib/brdf.glsl"
 #include "/lib/raytrace.glsl"
@@ -382,11 +391,6 @@ void main() {
 
     //// Setup Ambient ////
     #ifdef shadowMap
-        #ifdef fakecloudshadow
-            float fakeCloudShadow = mix(1.0, fakeCloudShadow(worldPos), distFactor * (1.0 - rainStrength));
-        #else
-            float fakeCloudShadow = 1.0;
-        #endif
         float ambientStrength = ambientStr * 0.09;
     #else
         float ambientStrength = 0.03;
@@ -396,7 +400,7 @@ void main() {
     //// Apply Lighting ////
     #ifdef shadowMap 
         vec3 ambientCol = bounceLight * (1.0 - rainStrength * rainShadowStr);
-        float lightStrength = lightStr * 11.2 * (1.0 - darknessFactor * 0.9) * fakeCloudShadow * transitionFade * pow(ao, 0.2);
+        float lightStrength = lightStr * 11.2 * (1.0 - darknessFactor * 0.9) * transitionFade * pow(ao, 0.3);
 
         // Material flags
         float isGrass = float(material > 0.025 && material < 0.04);
@@ -404,7 +408,7 @@ void main() {
 
         // Direct sunlight
         vec3 finalShadow = sunlightCol * Diffuse * ShadowAccum * lightMap.t * lightStrength * (1.0 - rainStrength * 0.7);
-        finalShadow *= mix(1.0, 0.65, distFactor); // Reduce direct light on distant terrain to balance with fog and prevent harsh edges
+        finalShadow *= mix(1.0, 0.75, distFactor); // Reduce direct light on distant terrain to balance with fog and prevent harsh edges
 
         // Bounce mask, restrict bounce light to shadowed areas
         float bounceMask = 1.0 - smoothstep(0.0, 0.25, shadowLum * max(Diffuse, 0.0));

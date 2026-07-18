@@ -270,12 +270,10 @@ vec3 calculateSSS(
     if (transmission < 0.01) return vec3(0.0);
 
     // Forward scattering phase
-    float phase = pow(clamp(-VdotL * 0.5 + 0.5, 0.0, 1.0), 2.0);
+    float phase = clamp(-VdotL * 0.5 + 0.5, 0.0, 1.0);
+          phase = mix(0.35, 1.0, phase);    
 
-    vec3 sssAlbedo = mix(lightColor, sqrt(albedo), 0.2);
-    vec3 sssContribution = lightColor * sssAlbedo;
-
-    sssContribution *= phase * sssAmount * transmission * skyLight * 0.8;
+    vec3 sssContribution = lightColor * lightColor * phase * sssAmount * transmission * skyLight * 0.42;
     sssContribution *= (1.0 - rainStrength * 0.5);
 
     return sssContribution;

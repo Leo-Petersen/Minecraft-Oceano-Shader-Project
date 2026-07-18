@@ -12,8 +12,10 @@ uniform sampler2D colortex1; //.st = viewNormal
 uniform sampler2D colortex2; //.s = torchLightMap, .t = skyLightMap, .p = material
 uniform sampler2D colortex3;
 uniform sampler2D colortex5; 
+uniform sampler2D colortex14; // transmittance + multiscatter LUT
 uniform sampler2D colortex8; 
 uniform sampler2D colortex9; 
+uniform sampler2D colortex15; // skyview LUT
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 uniform sampler2DShadow shadowtex0;
@@ -54,6 +56,10 @@ varying vec3 viewVector;
 const bool colortex7Clear = false;
 const int colortex7Format = RGBA16F;
 const int colortex9Format = R11F_G11F_B10F;
+const int colortex14Format = RGBA16F;
+const int colortex15Format = RGBA16F;
+const bool colortex14Clear = false;
+const bool colortex15Clear = false;
 */
 
 float Depth = texture2D(depthtex0, texcoord).r;
@@ -75,6 +81,11 @@ float Diffuse = max(0.0, dot(viewNormal, shadowLightPosition * 0.01));
 
 ////#includes////
 #include "/lib/time.glsl"
+#include "/lib/atmosphereLUT.glsl"
+vec3 atmSunDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunDir);
+vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunDir);
+#define ATM_SUN_DEFINED
 #include "/lib/lightCol.glsl"
 #include "/lib/raytrace.glsl"
 #include "/lib/waterShadow.glsl"

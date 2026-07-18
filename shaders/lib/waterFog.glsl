@@ -78,7 +78,7 @@ vec3 getWaterDepthFog(vec3 color, vec3 fragpos, vec3 fragpos2, float iswater, fl
     
     float fogStr = 0.7 * time[0] + 1.0 * time[1] + 1.0 * time[2] + 
                    1.0 * time[3] + 0.7 * time[4] + 0.4 * time[5];
-    fogStr *= lightMap * (0.3 + 0.7 * transitionFade) * 1.15;
+    fogStr *= lightMap * (0.3 + 0.7 * transitionFade) * 1.8;
     
     #ifdef volumetricFog
     #ifdef volumetricLight
@@ -192,7 +192,7 @@ vec3 getUnderwaterFog(vec3 color, vec3 viewPos, float lightMapSky) {
     
     vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos + gbufferModelViewInverse[3].xyz;
     
-    // eyeBrightnessSmooth.y: 255 at surface, decreases with depth
+    // eyeBrightnessSmooth.y, 255 at surface, decreases with depth
     float skyExposure = float(eyeBrightnessSmooth.y) / 255.0;
     
     float estimatedDepth = (1.0 - skyExposure) * 28.0;

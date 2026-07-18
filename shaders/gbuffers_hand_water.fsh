@@ -46,10 +46,15 @@ varying mat3 tbnMatrix;
 #include "/lib/waterBump.glsl"
 #include "/lib/time.glsl"
 #include "/lib/lightCol.glsl"
-#include "/lib/skyboxreflected.glsl"
 #include "/lib/encode.glsl"
 #include "/lib/sharedLighting.glsl"
 
+vec3 toNDC(vec3 pos){
+	vec4 iProjDiag = vec4(gbufferProjectionInverse[0].x, gbufferProjectionInverse[1].y, gbufferProjectionInverse[2].zw);
+    vec3 p3 = pos * 2. - 1.;
+    vec4 fragpos = iProjDiag * p3.xyzz + gbufferProjectionInverse[3];
+    return fragpos.xyz / fragpos.w;
+}
 
 void main() {
 	float iswater = float(material > 0.08 && material < 0.10);
@@ -105,7 +110,7 @@ void main() {
 	else {
 		// Diffuse term
 		float NdotL = max(dot(viewNormal, normalize(shadowLightPosition)), 0.0);
-		float diffuse = NdotL * 0.7 + 0.3; // Softer falloff
+		float diffuse = NdotL * 0.7 + 0.3;
 		
 		// Time factors
 		float transparencyFactor = getTransparencyFactor();
@@ -120,7 +125,7 @@ void main() {
 		vec3 undergroundAmbient = vec3(0.025, 0.028, 0.035) * (1.0 - undergroundBlend) * 5.0;
 		vec3 ambient = (flatAmbient * 0.25 + undergroundAmbient);
 		
-		// Sun contribution (no shadow map, so use diffuse as soft shadow approximation)
+		// Sun contribution
 		float lightStrength = lightStr * 4.0 * transparencyFactor * transitionFade;
 		vec3 sunLight = sunlightCol * diffuse * processedSkyLight * lightStrength * (1.0 - rainStrength * 0.65);
 		
@@ -168,15 +173,6 @@ void main() {
 		normalTangentSpace = vec4(normalize(bump * tbnMatrix) * 0.5 + 0.5, 1.0);
 	}
 	
-	// Reflected skybox
-	vec3 reflectedVector = reflect(fragpos, normalize(bump * tbnMatrix).xyz) * 300.0;
-	if (isglass > 0.5 || isice > 0.5 || ishoney > 0.5) {
-		reflectedVector = reflect(fragpos, viewNormal) * 300.0;
-	}
-	vec3 skybox = getSkyTextureFromSequence(position.xyz + reflectedVector);
-		 skybox += vec3(skyColor * 0.5) * (rainStrength * 0.5);
-	     skybox = pow(skybox, vec3(3.2)) * 2.0;
-	     skybox = clamp(skybox * (1.0 - rainStrength * 0.6), vec3(0.0), vec3(1.0));
 	#endif
 
 	// Water SSS //
@@ -213,6 +209,5 @@ void main() {
 	gl_FragData[1] = vec4(encodeNormal((isglass > 0.5 || isice > 0.5 || ishoney > 0.5) ? glassNormal : viewNormal), 1, 1);
 	gl_FragData[2] = vec4(lmcoord, material, 1.0f);
 	gl_FragData[3] = normalTangentSpace;
-	gl_FragData[4] = vec4(skybox, 1.0);
 	gl_FragData[5] = vec4(vec3(0.0), packedWaveLight);
 }

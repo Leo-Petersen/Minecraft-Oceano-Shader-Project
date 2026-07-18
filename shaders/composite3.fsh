@@ -7,11 +7,15 @@ uniform sampler2D colortex6;
 uniform sampler2D colortex3;
 uniform sampler2D colortex4;
 uniform sampler2D colortex5;
+uniform sampler2D colortex7;
 uniform sampler2D colortex8;
 uniform sampler2D colortex9;
+uniform sampler2D colortex10;
 uniform sampler2D colortex11;
 uniform sampler2D colortex12;
 uniform sampler2D colortex13;
+uniform sampler2D colortex14;  // transmittance + multiscatter LUT
+uniform sampler2D colortex15;  // sky-view LUT
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 uniform sampler2D noisetex;
@@ -35,6 +39,7 @@ uniform mat4 shadowProjection;
 
 uniform ivec2 eyeBrightnessSmooth;
 
+uniform float frameTime;
 uniform float frameTimeCounter;
 uniform float rainStrength;
 uniform float viewWidth;
@@ -53,6 +58,7 @@ uniform int frameCounter;
 uniform vec3 cameraPosition;
 uniform vec3 skyColor;
 uniform vec3 shadowLightPosition;
+uniform vec3 sunPosition;
 
 varying float dist;
 
@@ -74,6 +80,12 @@ float undergroundFix = clamp(mix(max(lmcoord.t-2.0/16.0,0.0)*1.14285714286,1.0,c
 
 #include "/lib/settings.glsl"
 #include "/lib/time.glsl"
+#include "/lib/atmosphereLUT.glsl"
+vec3 atmSunDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
+vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunDir);
+vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunDir);
+#define ATM_SUN_DEFINED
 #include "/lib/lightCol.glsl"
 #include "/lib/raytrace.glsl"
 #include "/lib/waterBump.glsl"
@@ -108,7 +120,9 @@ void main() {
 	float packedWaveLight = texture2D(colortex3, texcoord).a;
 	float waterSSS = max(0.0, (0.5 - packedWaveLight) * 2.0);   
 	float frontGlow = max(0.0, (packedWaveLight - 0.5) * 2.0);  
-	vec3 reflectedskyBoxCol = texture2D(colortex8, texcoord).rgb;
+	vec3 reflViewDir  = reflect(normalize(viewPos.xyz), viewNormal);
+	vec3 reflWorldDir = normalize(mat3(gbufferModelViewInverse) * reflViewDir);
+	vec3 reflectedskyBoxCol = atmSky(colortex15, vec2(viewWidth, viewHeight), reflWorldDir, atmSunDir);
 	vec3 skyBoxCol = texture2D(colortex9, texcoord).rgb;
 
 	float vcDither = vcBayer8(gl_FragCoord.xy);
@@ -116,15 +130,11 @@ void main() {
 		vcDither = fract(vcDither + float(frameCounter & 15) * 0.0625);
 	#endif
 
-	// Reflected sky with clouds, for horizontal reflectors. Gated to water by
-	// default so rain does not march it across the whole screen.
-	// Will consider puddles etc. later.
 	vec3 reflectedskyClouds = reflectedskyBoxCol;
 	#if defined(VolumetricClouds) && defined(VC_REFLECTIONS)
 		if (isEyeInWater < 0.9 && Depth < 1.0 && iswater > 0.5) {
-			// Mirror the view ray about the actual wave normal so reflected
-			// clouds ripple with the water surface instead of being flat.
-			// this is a bit expensive, but the effect is worth it I reckon, looks stupid otherwise lol
+			// Mirror the view ray about the actual wave normal
+			// This is a bit expensive, but the effect is worth it I reckon, looks stupid otherwise lol
 			vec3 reflViewDir = reflect(normalize(viewPos.xyz), waterNormal);
 			vec3 reflWDir = normalize(mat3(gbufferModelViewInverse) * reflViewDir);
 			reflectedskyClouds = vcReflectClouds(reflectedskyBoxCol, reflWDir, vcDither);
@@ -249,7 +259,7 @@ void main() {
 				refractedColor = mix(refractedColor, skyBoxCol * (1.0 - effects * 0.95), borderFog);
 			#endif
 			color.rgb = mix(refractedColor, reflectionCol, fresnel);
-			color.rgb += reflectedSun;
+			color.rgb += reflectedSun * vcReflectTrans;
 			color.rgb += (vec3(shallowwaterR, shallowwaterG, shallowwaterB)/255) * waterSSS * 0.6; 
 			color.rgb += (vec3(deepwaterR, deepwaterG, deepwaterB)/255) * frontGlow * 0.4;           
 		} else {
@@ -363,80 +373,111 @@ void main() {
 		}
 	#endif
 
-	//// Atmosphere Fog ////
-	#ifdef atmosphereFog
-		if (isEyeInWater < 0.9) {
-			vec3 viewDir = normalize(viewPos.xyz);
-
-			vec3 worldViewDir = mat3(gbufferModelViewInverse) * viewDir;
-			float elevation = abs(worldViewDir.y); // 0 = horizon, 1 = straight up/down
-
-			if (Depth < 1.0) {
-				// Terrain fog
-				float sunAngleCosine = 1.0 - clamp(dot(viewDir, shadowLightPosition * 0.01), 0.0, 1.0);
-				sunAngleCosine = pow(sunAngleCosine, 2.0) * (3.0 - 2.0 * sunAngleCosine);
-				sunAngleCosine = 1.0 / sunAngleCosine - 1.0;
-				sunAngleCosine = 1.0 - exp(-sunAngleCosine / 12.0);
-				sunAngleCosine = clamp(sunAngleCosine, 0.01, 2.0) * (1.0 - rainStrength * 0.999);
-
-				// Normal atmospheric fog
-				float normalFogDist = pow(length(worldPos.xz) / 60.0, 1.2);
-				//float fogCap = (iswater == 1.0) ? 0.35 : 0.85; // Temp fix for the grey line of fog on the horizon of water. Decent compromise for now.
-				float normalFogDepth = clamp(1.0 - exp(-0.15 * normalFogDist), 0.0, 0.85 * transitionFade);
-				vec3 normalFog = mix(color.rgb, atmoColor * 2, normalFogDepth * pow(sunAngleCosine, 0.2));
-
-				// Rain fog
-				float rainFogDist = pow(length(worldPos.xz) / 20.0, 1.2);
-				float rainFogDepth = clamp(1.0 - exp(-0.2 * rainFogDist), 0.0, 0.9);
-				vec3 rainFogColor = cloudFogCol * 0.25;
-
-				// Match the sky fog at the horizon so there's no seam
-				float horizonFog = (1.0 - smoothstep(0.0, 0.45, elevation)) * rainStrength * 0.85;
-				float distToEdge = smoothstep(0.5, 1.0, length(worldPos.xz) / far);
-				rainFogDepth = mix(rainFogDepth, max(rainFogDepth, horizonFog), distToEdge);
-
-				vec3 rainFog = mix(color.rgb, rainFogColor, rainFogDepth);
-
-				// Blend between normal and rain fog
-				color.rgb = mix(normalFog, rainFog, rainStrength);
-
-			} else {
-				// Soften the horizon in all weather
-				vec3 rainFogColor = cloudFogCol * 0.35;
-
-				// Subtle atmospheric haze at the horizon during clear weather
-				float skyAtmoFog = (1.0 - smoothstep(0.0, 0.3, elevation)) * (1.0 - rainStrength);
-				color.rgb = mix(color.rgb, atmoColor * 2, skyAtmoFog * 0.15);
-
-				// Stronger fog at the horizon during rainy weather, to blend with the ground fog and prevent a harsh 'line'
-				float skyRainFog = (1.0 - smoothstep(0.0, 0.45, elevation)) * rainStrength;
-				color.rgb = mix(color.rgb, rainFogColor, skyRainFog); // This is a hard blend to ensure the sky fog completely overrides the ground fog at the horizon, preventing any visible seams
-			}
-		}
-	#endif
 
 	//// Volumetric Clouds ////
-	vec4 cloudAccum = vec4(0.0, 0.0, 0.0, 1.0);
+	vec4 cloudAccum   = vec4(0.0, 0.0, 0.0, 1.0);
+	vec4 cloudDataOut = vec4(1e6, 0.0, 0.0, 0.0);   // .x apparent dist, .y age
 	#ifdef VolumetricClouds
 	{
-		vec2 texelSize = 1.0 / vec2(viewWidth, viewHeight);
-		vec2 O = vcOffset8(frameCounter);
-		vec2 fUV = clamp(texcoord * CLOUDS_QUALITY - O * texelSize, texelSize, vec2(CLOUDS_QUALITY) - texelSize);
-		vec4 fresh = texture2D(colortex12, fUV);
+		const int UP   = VC_UPSCALE;
+		const int area = VC_UPSCALE * VC_UPSCALE;
+
+		ivec2 corner = ivec2(floor(vec2(viewWidth, viewHeight) / float(UP)));
+		ivec2 dst = ivec2(gl_FragCoord.xy);
+		ivec2 src = clamp(dst / UP, ivec2(0), corner - 1);     // corner low res texel
+
+		vec4  current   = texelFetch(colortex12, src, 0);      // fresh color+transmittancve
+		float freshDist = texelFetch(colortex10, src, 0).b;    // fresh apparent dist
 
 		vec3 worldDir = normalize(mat3(gbufferModelViewInverse) * viewPos.xyz);
-		vec3 rp = vcReprojectCloud(worldDir, gbufferPreviousModelView, gbufferPreviousProjection, previousCameraPosition);
-		vec4 history = texture2D(colortex11, rp.xy);
-		float blend = (rp.z > 0.5) ? 0.1 : 1.0;   // ~90% history when reprojection is valid
-		cloudAccum = mix(history, fresh, blend);
+
+		// fresh vs last frame's history at this pixel
+		vec4  hd0     = texture2D(colortex10, texcoord);
+		float closest = min(freshDist, hd0.r);
+
+		// Reproject at the cloud's real distance
+		vec3 rp = vcReprojectCloudAt(worldDir, closest, frameTime,
+		            gbufferPreviousModelView, gbufferPreviousProjection,
+		            previousCameraPosition);
+		vec2 prevUV = rp.xy;
+
+		vec4 history     = texture2D(colortex11, prevUV);
+		vec4 historyData = texture2D(colortex10,  prevUV);
+
+		bool disocclusion = rp.z < 0.5 || any(isnan(history));
+		// Velocity gated neighbourhood clamp
+		float camVel = length(cameraPosition - previousCameraPosition) / max(frameTime, 1e-4);
+		float velFactor = 75.0 * (camVel * camVel) / max(closest * closest, 1e-6);
+		velFactor = velFactor / (velFactor + 1.0);
+		if (velFactor > 0.1) {
+			vec4 e1 = current;	// centre fresh sample
+			vec4 b1 = texelFetch(colortex12, src + ivec2( 0,-1), 0);
+			vec4 d1 = texelFetch(colortex12, src + ivec2(-1, 0), 0);
+			vec4 f1 = texelFetch(colortex12, src + ivec2( 1, 0), 0);
+			vec4 h1 = texelFetch(colortex12, src + ivec2( 0, 1), 0);
+			vec4 a1 = texelFetch(colortex12, src + ivec2(-1,-1), 0);
+			vec4 c1 = texelFetch(colortex12, src + ivec2( 1,-1), 0);
+			vec4 g1 = texelFetch(colortex12, src + ivec2(-1, 1), 0);
+			vec4 i1 = texelFetch(colortex12, src + ivec2( 1, 1), 0);
+			vec4 lo = min(min(min(b1,d1), min(e1,f1)), h1);
+			lo = 0.5 * (lo + min(min(min(lo,a1), min(c1,g1)), i1));
+			vec4 hi = max(max(max(b1,d1), max(e1,f1)), h1);
+			hi = 0.5 * (hi + max(max(max(hi,a1), max(c1,g1)), i1));
+			history = mix(history, clamp(history, lo, hi), velFactor);
+		}
+
+		// Checkerboard
+		ivec2 off0 = dst - src * UP;
+		bool freshHere = (off0 == vcCheckerOffset(frameCounter % area));
+		if (!freshHere && !disocclusion) {
+			current   = history;
+			freshDist = min(freshDist, historyData.x);
+		}
+
+		// Age weighted blend
+		float age = max(historyData.g, 0.0) * float(!disocclusion);
+		float historyWeight = 1.0 - 1.0 / max(age - float(area), 1.0);
+
+		cloudAccum     = max(mix(current, history, historyWeight), 0.0);
+		cloudDataOut.r = mix(freshDist, historyData.x, historyWeight);
+		cloudDataOut.g = min(age + 1.0, float(VC_ACCUM_LIMIT));
 
 		if (isEyeInWater < 0.9 && Depth >= 1.0) {
-			color.rgb = color.rgb * cloudAccum.a + cloudAccum.rgb;
+			float ca = clamp((cloudAccum.a - 0.05) / 0.95, 0.0, 1.0);
+			color.rgb = color.rgb * ca + cloudAccum.rgb;
 		}
 	}
 	#endif
 
-	//// Cave Fog ////
+	//// Atmosphere Fog ////
+	#ifndef ATMOS_FOG_DENSITY
+	#define ATMOS_FOG_DENSITY 0.0011
+	#endif
+	#ifdef atmosphereFog
+		if (isEyeInWater < 0.9) {
+			vec3 rd = normalize(mat3(gbufferModelViewInverse) * viewPos.xyz);
+
+			if (Depth < 1.0) {
+				float dist = length(worldPos.xz);	// horizontal distance, blocks
+				float dayF = smoothstep(-0.12, 0.02, atmSunTrue.y);
+
+				vec3 fogged = atmAerialPBR(color.rgb, colortex15, vec2(viewWidth, viewHeight),
+				                           rd, dist, atmSunTrue, 1.0 - rainStrength,
+				                           cameraPosition.y, cameraPosition.y + worldPos.y);
+				color.rgb = mix(color.rgb, fogged, dayF);
+
+				// rain thickens and greys the near fog, need to adjust
+				if (rainStrength > 0.001) {
+					float rainFog = 1.0 - exp(-dist * ATMOS_FOG_DENSITY * 3.0);
+					color.rgb = mix(color.rgb, cloudFogCol * 0.35, clamp(rainFog, 0.0, 0.9) * rainStrength);
+				}
+			}
+
+			if (Depth >= 1.0) {
+				color.rgb = atmSunsetTint(color.rgb, rd, atmSunTrue, 1.0 - rainStrength);
+			}
+		}
+	#endif
 	#ifdef caveFog
 		if (Depth < 1.0 && isEyeInWater < 0.9) {
 			float heldLight = max(float(heldBlockLightValue), float(heldBlockLightValue2));
@@ -452,9 +493,10 @@ void main() {
 	#endif
 
 #ifdef VolumetricClouds
-/* RENDERTARGETS: 0,11 */
+/* RENDERTARGETS: 0,11,10 */
 	gl_FragData[0] = vec4(color, 1.0);
-	gl_FragData[1] = cloudAccum;       // The full-res cloud history
+	gl_FragData[1] = cloudAccum;
+	gl_FragData[2] = cloudDataOut;
 #else
 /* RENDERTARGETS: 0 */
 	gl_FragData[0] = vec4(color, 1.0);
