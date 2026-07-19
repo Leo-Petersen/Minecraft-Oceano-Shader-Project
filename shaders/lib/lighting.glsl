@@ -237,6 +237,15 @@ vec3 calculateSSS(
     shadowPos.z  = rawShadowPos.z / 6.0;
     shadowPos    = shadowPos * 0.5 + 0.5;
 
+    // Reject geometry outside the shadow frustum,
+    // fixes foliage beyond the shadow render dist getting the max possible term / being fully lit by sunlight
+    float edgeXY = max(abs(shadowPos.x * 2.0 - 1.0), abs(shadowPos.y * 2.0 - 1.0));
+    float edgeZ  = abs(shadowPos.z * 2.0 - 1.0);
+    float sssValid = (1.0 - smoothstep(0.70, 0.95, edgeXY))
+                   * (1.0 - smoothstep(0.85, 0.99, edgeZ));
+
+    if (sssValid < 0.001) return vec3(0.0);
+
     // Offset scale, divide XY by distortFactor for consistent world-space radius.
     vec3 offsetScale = vec3(
         0.002 / distortFactor,
@@ -257,6 +266,7 @@ vec3 calculateSSS(
         float offsetZ  = -(dist * dist + 0.025);
 
         vec3 samplePos = shadowPos + vec3(offset2D, offsetZ) * offsetScale;
+             samplePos.xy = clamp(samplePos.xy, 0.0, 1.0);
 
         sssOcclusion += shadow2D(shadowtex0, samplePos).r;
     }
@@ -273,8 +283,9 @@ vec3 calculateSSS(
     float phase = clamp(-VdotL * 0.5 + 0.5, 0.0, 1.0);
           phase = mix(0.35, 1.0, phase);    
 
-    vec3 sssContribution = lightColor * lightColor * phase * sssAmount * transmission * skyLight * 0.42;
+    vec3 sssContribution = lightColor * lightColor * phase * sssAmount * transmission * skyLight * 0.62;
     sssContribution *= (1.0 - rainStrength * 0.5);
-
+    sssContribution *= sssValid;
+    
     return sssContribution;
 }

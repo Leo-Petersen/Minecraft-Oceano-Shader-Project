@@ -142,6 +142,18 @@ void main() {
     if (mc_Entity.x == 13000) {
         iswater = 1.00;
     }
+    	
+    if (mc_Entity.x == 11000 ||
+        mc_Entity.x == 11010 ||
+        mc_Entity.x == 11020 ||
+        mc_Entity.x == 11030 ||
+        mc_Entity.x == 11040 ||
+        mc_Entity.x == 11050 ||
+        mc_Entity.x == 11060 ||
+        mc_Entity.x == 11070 ||
+        mc_Entity.x == 11080 ) {
+        gl_Position.z -= 0.0002;
+    }
 
     texcoord = gl_MultiTexCoord0.st;
     color = gl_Color;
