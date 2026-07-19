@@ -5,7 +5,8 @@
     const float ambientOcclusionLevel = 0.0;
     const float shadowDistance = 256;  // [64 96 128 160 192 224 256 320 384 448 512] enabled or disabled? differs between versions of iris, will test later
     const float shadowDistortion = 0.85; // [0.70 0.75 0.80 0.85 0.90 0.95] Distortion of shadow map
-
+    const float shadowDistanceRenderMul = 1.0;
+    
 //Lighting//
     #define shadowMap // WIP, broke this at one point, will re-visit
         //#define disableRainShadows // Broke this at one point, will re-visit
