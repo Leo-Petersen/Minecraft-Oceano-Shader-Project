@@ -400,7 +400,7 @@ void main() {
     //// Apply Lighting ////
     #ifdef shadowMap 
         vec3 ambientCol = bounceLight * (1.0 - rainStrength * rainShadowStr);
-        float lightStrength = lightStr * 11.2 * (1.0 - darknessFactor * 0.9) * transitionFade * pow(ao, 0.3);
+        float lightStrength = lightStr * 11.2 * (1.0 - darknessFactor * 0.9) * transitionFade * pow(ao, 0.2);
 
         // Material flags
         float isGrass = float(material > 0.025 && material < 0.04);
