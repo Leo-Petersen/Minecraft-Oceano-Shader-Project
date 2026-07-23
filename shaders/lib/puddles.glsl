@@ -86,7 +86,7 @@ vec3 puddles(in vec3 color, in vec3 worldPos, in vec3 reflectedskyBoxCol, in vec
     rainDropNormal = normalize(rainDropNormal);
 
     // Reflections
-    reflectedskyBoxCol *= 0.5;
+    reflectedskyBoxCol *= 0.5 * (1.0 - time[5] * 0.84);
     vec4 rainreflection = raytracePuddles(reflectedskyBoxCol, viewPos.xyz, rainDropNormal, 6);
     float normalDotEyeRain = dot(viewNormal, -normalize(viewPos.xyz));
     vec3 reflectionCol = mix(reflectedskyBoxCol, rainreflection.rgb, rainreflection.a);

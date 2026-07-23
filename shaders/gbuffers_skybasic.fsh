@@ -59,10 +59,7 @@ void main() {
     vec3 sky = atmSky(colortex15, res, rd, sunDir);
 
     float night = smoothstep(0.02, -0.10, sunDir.y);
-    sky += moonSky(rd, moonDir) * night;
-
-    sky += skyColor * 0.5 * (rainStrength * 0.5);
-    sky *= (1.0 - rainStrength * 0.3);
+    sky += moonSky(rd, moonDir) * night * (1.0 - rainStrength * 0.95);
 
     sky = luminance(sky, 1.12);
 

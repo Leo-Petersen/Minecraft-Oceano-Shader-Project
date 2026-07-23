@@ -75,6 +75,16 @@ ivec2 vcCheckerOffset(int i) { return vcCheckerTable[i]; }
 #define VC_SKIP_MULT 3.5
 #endif
 
+#ifndef VC_RAIN_DROP
+#define VC_RAIN_DROP 130.0
+#endif
+#ifndef VC_RAIN_SLAB
+#define VC_RAIN_SLAB 0.88
+#endif
+#ifndef VC_RAIN_OPACITY
+#define VC_RAIN_OPACITY 2.6
+#endif
+
 vec2 vcOffset8(int frame) {
 	int i = frame & 7;
 	if (i == 0) return vec2( 1.0, -3.0) / 8.0 * 0.5;
@@ -223,6 +233,9 @@ vec2 vcOffset16(int frame) {
 #endif
 #define VC_ISO 0.0795775   // isotropic phase value, 1/(4*pi)
 
+float vcBase = VC_CLOUD_BOTTOM - VC_RAIN_DROP * rainStrength;
+float vcTopCu = VC_CUMULUS_TOP - 90.0 * rainStrength;
+
 const float VC_SCALE_COVERAGE = 0.0000060;
 
 float vcBayer2(vec2 a) { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75))); }
@@ -231,7 +244,7 @@ float vcBayer2(vec2 a) { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75)
 
 float vcNoise(vec2 uv) { return texture2D(noisetex, uv).x; }
 
-float vcRelH(float y) { return (y - VC_CLOUD_BOTTOM) / (VC_CLOUD_TOP - VC_CLOUD_BOTTOM); }
+float vcRelH(float y) { return (y - vcBase) / (VC_CLOUD_TOP - vcBase); }
 
 float vcValNoise(vec3 pos) {
 	vec3 pi = floor(pos);
@@ -269,11 +282,15 @@ float vcCoverage(vec2 p) {
 	vec2 warp = vec2(sin(dot(p, vec2(0.6, 0.4)) * 0.0009 + t * 0.02),
 	                 cos(dot(p, vec2(-0.4, 0.6)) * 0.0009 + t * 0.02)) * 900.0;
 	float n = vcNoise((p + warp) * (VC_SCALE_COVERAGE / VC_SIZE));
-	float cover = VC_COVERAGE * (1 + rainStrength * 5.5) + 0.10 * sin(t * 0.006);
-	float th = 0.5 - cover * 0.5; // higher coverage == lower threshold
-	float c = clamp((n - th) / max(1.0 - th, 0.001), 0.0, 1.0);
-	// Thin the bridges between masses so clouds separate; cores stay near full.
-	return pow(c, VC_SEPARATION);
+	float cover = mix(VC_COVERAGE, 0.97, rainStrength) + 0.10 * sin(t * 0.006);
+    float th = 0.5 - cover * 0.5;
+    float c = clamp((n - th) / max(1.0 - th, 0.001), 0.0, 1.0);
+
+    float sep = mix(VC_SEPARATION, 0.55, rainStrength);
+    c = pow(c, sep);
+	float broad = vcNoise((p + warp) * (VC_SCALE_COVERAGE * 0.18 / VC_SIZE) + 0.71);
+    c *= mix(1.0, 0.55 + broad * 0.9, rainStrength * 0.8);
+    return max(c, rainStrength * 0.42);
 }
 
 float vcCloudType(vec2 p) {
@@ -311,6 +328,14 @@ float vcEnvelope(float coverage, float relH, float storm) {
 
 	env *= 1.0 - storm * relH * VC_CB_THIN;
 	env *= smoothstep(0.0, VC_BASE_FLAT, relH);
+	
+	if (rainStrength > 0.001) {
+		float slab = coverage
+		           * smoothstep(0.00, 0.20, relH)
+		           * (1.0 - smoothstep(0.42, 0.96, relH));
+		env = mix(env, slab * 1.7, rainStrength * 0.70);
+	}
+
 	return env;
 }
 
@@ -319,7 +344,7 @@ float vcDensity(vec3 wpos) {
 	float coverage = vcCoverage(vcScrollXZ(wpos));
 
 #if VC_CUMULONIMBUS == 1
-	float storm = vcCloudType(wpos.xz);
+	float storm = vcCloudType(wpos.xz) * (1.0 - rainStrength * 0.92);
 	vcStormOut = storm;
 	coverage = max(coverage, storm * 0.9);
 	vcCoverageOut = coverage;
@@ -329,8 +354,8 @@ float vcDensity(vec3 wpos) {
 #endif
 	if (coverage <= 0.0) return 0.0;
 
-	float localTop = mix(VC_CUMULUS_TOP, VC_CB_TOP, pow(storm, 0.45));
-	float relH = (wpos.y - VC_CLOUD_BOTTOM) / (localTop - VC_CLOUD_BOTTOM);
+	float localTop = mix(vcTopCu, VC_CB_TOP, pow(storm, 0.45));
+	float relH = (wpos.y - vcBase) / (localTop - vcBase);
 	if (relH <= 0.0 || relH >= 1.0) return 0.0;
 
 	float env = vcEnvelope(coverage, relH, storm);
@@ -344,15 +369,15 @@ float vcDensity(vec3 wpos) {
 	n /= 1.5;
 	n = n * n;
 	// Erosion "based on height"* for cumulonimbus, so cumulonimbus clouds are not just a big ol' smooth bricks
-	float carve = VC_DETAIL * (0.2 + relH * (1.0 + storm * VC_CB_ROUGH));
+	float carve = VC_DETAIL * (0.2 + relH * (1.0 + storm * VC_CB_ROUGH)) * (1.0 - rainStrength * 0.22);
 	float d = env - n * n * carve; // noise^4 carve
 	return clamp(d, 0.0, 1.0);
 }
 
 float vcDensityShadowFast(vec3 wpos, float coverage, float storm) {
     if (coverage <= 0.0) return 0.0;
-    float localTop = mix(VC_CUMULUS_TOP, VC_CB_TOP, pow(storm, 0.45));
-    float relH = (wpos.y - VC_CLOUD_BOTTOM) / (localTop - VC_CLOUD_BOTTOM);
+    float localTop = mix(vcTopCu, VC_CB_TOP, pow(storm, 0.45));
+    float relH = (wpos.y - vcBase) / (localTop - vcBase);
     if (relH <= 0.0 || relH >= 1.0) return 0.0;
     float env = vcEnvelope(coverage, relH, storm);
     if (env <= 0.0) return 0.0;
@@ -386,8 +411,13 @@ float vcPhase(float cosT) {
 
 // Depth toward the sun through the eroded density
 float vcLightMarch(vec3 pos, vec3 sunDir, float coverage, float storm) {
+	if (rainStrength > 0.6) {
+        float localTop = mix(vcTopCu, VC_CB_TOP, pow(storm, 0.45));
+        float toTop = max(localTop - pos.y, 0.0) / max(abs(sunDir.y), 0.15);
+        return toTop * coverage * VC_DENSITY * VC_SELFSHADOW * 0.11 * (1.0 + rainStrength * VC_RAIN_OPACITY);
+    }
     float od = 0.0;
-    float stepSize = (VC_CUMULUS_TOP - VC_CLOUD_BOTTOM) / float(VC_LIGHT_STEPS) * 0.6;
+    float stepSize = (vcTopCu - vcBase) / float(VC_LIGHT_STEPS) * 0.6;
     for (int i = 0; i < VC_LIGHT_STEPS; i++) {
         pos += sunDir * stepSize;
         od += vcDensityShadowFast(pos, coverage, storm) * stepSize;
@@ -396,7 +426,7 @@ float vcLightMarch(vec3 pos, vec3 sunDir, float coverage, float storm) {
     return od * VC_DENSITY * VC_SELFSHADOW;
 }
 
-vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int steps, out float apparentDist) {
+vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int steps, float sunElevY, out float apparentDist) {
 
     apparentDist = 1e6;
 
@@ -410,11 +440,11 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 
 	float entryT, exitT;
 	if (abs(dy) < 1e-4) {
-		if (camY <= VC_CLOUD_BOTTOM || camY >= VC_CLOUD_TOP) return vec4(backScatter, backTrans);
+		if (camY <= vcBase || camY >= VC_CLOUD_TOP) return vec4(backScatter, backTrans);
 		entryT = 0.0;
 		exitT  = 100000.0;
 	} else {
-		float t0 = (VC_CLOUD_BOTTOM - camY) / dy;
+		float t0 = (vcBase - camY) / dy;
 		float t1 = (VC_CLOUD_TOP    - camY) / dy;
 		entryT = min(t0, t1);
 		exitT  = max(t0, t1);
@@ -427,19 +457,18 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 	if (horizon <= 0.001) return vec4(backScatter, backTrans);
 
 	float cosT  = dot(worldDir, sunDir);
-	float phase = vcPhase(cosT);
+	float phase = mix(vcPhase(cosT), VC_ISO, rainStrength * 0.9);
 
-	vec3 sunColor = sunlightCol * VC_SUN_BRIGHTNESS * transitionFade * (1.0 - time[5] * 0.8) * (1 - rainStrength * 0.8);
-	vec3 ambBot = mix(atmoColor, cloudFogCol, 0.5) * VC_AMBIENT * 0.42;
-	vec3 ambTop = mix(cloudFogCol, atmoColor, 0.20) * VC_AMBIENT * 1.3 * (1.0 - time[5] * 0.5);
-	// float duskFix = (1.0 - transitionFade) * 0.5;
-	// vec3  coolGrey = vec3(0.82, 0.92, 1.15);
-	// ambBot = mix(ambBot, vec3(dot(ambBot, vec3(0.2126, 0.7152, 0.0722))) * coolGrey, duskFix);
-	// ambTop = mix(ambTop, vec3(dot(ambTop, vec3(0.2126, 0.7152, 0.0722))) * coolGrey, duskFix);
-	// float dimSignal = max(time[5], 1.0 - transitionFade);
-	// float nightDim  = 1.0 - dimSignal * 0.7;
-	// ambBot *= nightDim;
-	// ambTop *= nightDim;
+	vec3 sunColor = sunlightCol * VC_SUN_BRIGHTNESS * transitionFade * (1.0 - time[5] * 0.8) * (1.0 - rainStrength * 0.97);
+
+    vec3 ambBot = mix(atmoColor, cloudFogCol, 0.5) * VC_AMBIENT * 0.42;
+    vec3 ambTop = mix(cloudFogCol, atmoColor, 0.20) * VC_AMBIENT * 1.3 * (1.0 - time[5] * 0.5);
+    float oa = smoothstep(0.0, 0.55, rainStrength);
+    if (oa > 0.001) {
+        vec3 ocAmb = ATMOS_OVERCAST_TINT * atmOvercastLum(sunElevY);
+        ambBot = mix(ambBot, ocAmb * 0.38, oa);
+        ambTop = mix(ambTop, ocAmb * 1.45, oa);
+    }
 
 	float pathLen = exitT - entryT;
 	// Adaptive stepping
@@ -470,14 +499,11 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 			continue;
 		}
 		wasEmpty = false;
-
-		distSum    += t * density;
-        distWeight += density;
 		
-        float extinction = density * VC_DENSITY;
+        float extinction = density * VC_DENSITY * (1.0 + rainStrength * 1.1);
 
-		float ambTopY = mix(VC_CUMULUS_TOP, VC_CB_TOP, pow(vcStormOut, 0.45));
-		float relH = clamp((pos.y - VC_CLOUD_BOTTOM) / (ambTopY - VC_CLOUD_BOTTOM), 0.0, 1.0);
+		float ambTopY = mix(vcTopCu, VC_CB_TOP, pow(vcStormOut, 0.45));
+		float relH = clamp((pos.y - vcBase) / (ambTopY - vcBase), 0.0, 1.0);
 
 		float odSun = vcCheapLight ? density * VC_DENSITY * 24.0 : vcLightMarch(pos, sunDir, vcCoverageOut, vcStormOut);
 
@@ -491,18 +517,21 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
         float powder = density / (density + 0.15);
         float vh = cosT * 0.5 + 0.5;               // 0 away from sun, 1 toward it
         powder = mix(powder, 1.0, 0.8 * vh * vh);
-        scatterSun *= mix(1.0, powder, VC_POWDER);
+        scatterSun *= mix(1.0, powder, VC_POWDER * (1.0 - rainStrength));
 
 		vec3 ambient = mix(ambBot, ambTop, relH);
 		vec3 direct  = sunColor * scatterSun * 2.4;
 		vec3 luminance = ambient + direct;
 
 		float stepT = exp(-extinction * fine);
-		scatter += transmittance * luminance * (1.0 - stepT);
-		transmittance *= stepT;
-		if (transmittance < 0.02) break;
+		float vis   = transmittance * (1.0 - stepT);
+			  distSum    += t * vis;
+			  distWeight += vis;
+			  scatter += transmittance * luminance * (1.0 - stepT);
+			  transmittance *= stepT;
 
-		t += fine;
+		if (transmittance < 0.02) break;
+			t += fine;
 	}
 
 	float coveredDist = t - entryT;
@@ -515,7 +544,8 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 	vec3 cloudColor = scatter / cloudAlpha;
 
 	float distFade = smoothstep(3000.0, 13000.0, entryT + coveredDist);
-	cloudColor = mix(cloudColor, atmoColor * 1.6, distFade * 0.85);
+	vec3 farCol = mix(atmoColor * 1.6, ATMOS_OVERCAST_TINT * atmOvercastLum(sunElevY) * 0.333, rainStrength);
+    cloudColor = mix(cloudColor, farCol, distFade * 0.85);
 	cloudAlpha *= horizon * (1.0 - distFade * 0.75) * max(transitionFade, 0.85);
 
 	float cumT = 1.0 - cloudAlpha;
@@ -539,13 +569,13 @@ vec3 vcReprojectCloudAt(vec3 worldDir, float apparentDist, float dt,
     return vec3(uv, valid);
 }
 
-vec3 vcReflectClouds(vec3 baseReflSky, vec3 reflWorldDir, float dither) {
+vec3 vcReflectClouds(vec3 baseReflSky, vec3 reflWorldDir, float dither, float sunElevY) {
     if (reflWorldDir.y <= 0.0) return baseReflSky;
     vcCheapLight = true;
     float ignoredDist;
-    vec4 c = computeVolumetricClouds(reflWorldDir, 1e9, dither, VC_REFL_STEPS, ignoredDist);
+    vec4 c = computeVolumetricClouds(reflWorldDir, 1e9, dither, VC_REFL_STEPS, sunElevY, ignoredDist);
     vcCheapLight = false;
-	vcReflectTrans = c.a; 
+    vcReflectTrans = c.a;
     return baseReflSky * c.a + c.rgb;
 }
 

@@ -44,6 +44,7 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
         float startRay = 1.0;
         const float endRay = 128.0;
         float increment = 64.0/volumetricFogQuality;
+              increment *= (1.0 + rainStrength * 1.6);
         
         #ifdef TAA
         dither64 = fract(dither64 + frameTimeCounter * 8.0);
@@ -137,7 +138,7 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
     #ifdef volumetricLight
          float altitudeFog = (1.0 - (exp(-50.0 * pow(length(worldPos.xz) / pow(far, startFactor) * closeFactor * 0.155, 2.5 - (2.0 * rainStrength)))));
                altitudeFog *= (1.0 - altitudeFactor) * FogStrength;
-               altitudeFog *= timeFactor * 0.05 + sunAngleCosine * 0.1;
+               altitudeFog *= timeFactor * 0.05 + sunAngleCosine * 0.1 * (1 - rainStrength);
 
          float rainFogDepth = length(worldPos.xz) / 20.0;
              rainFogDepth = (1.0 - exp(-0.1 * pow(rainFogDepth, 0.75)));
@@ -170,12 +171,8 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
          float volLum = dot(volumeColor, vec3(0.2126, 0.7152, 0.0722));
          vec3 rainFogBase = mix(volumeColor * 0.35, vec3(volLum * 0.3), 0.6);
          rainFogBase += vec3(0.01, 0.011, 0.014) * time[5];
-
-         vec3 rainVolume = (rayweight * rainFogBase * 6.0 * rainFogDepth) + volumeColor * 0.08;
-         rainVolume += scatterColor * scatteredRain * rainFogDepth;
-         rainVolume = mix(color, rainVolume * 0.6, rainFogDepth);
         
-         volumeColor = mix(volumeColor, sunCol, pow(sunAngleCosine, 2.3) * 0.5);
+         volumeColor = mix(volumeColor, sunCol, pow(sunAngleCosine, 2.3) * 0.5 * (1 - rainStrength));
 
         if (isEyeInWater > 0.9) {
             vec3 finalFogCol = mix(color, volumeColor * vec3(0.72), rayweight);
@@ -187,8 +184,20 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
             shaftW  = clamp(shaftW, 0.0, 0.6 * (1.0 - rainStrength * 0.4));
 
             vec3 clearCol = color + sunCol * 0.72 * shaftW;
-                clearCol = mix(clearCol, rainVolume, smoothstep(0.0, 1.0, rainStrength));
-                
+
+            if (rainStrength > 0.001) {
+                float mistD = 1.0 - exp(-length(worldPos.xz) * 0.0016);
+                float mistH = exp(-max(worldPos.y + eyeAltitude - 70.0, 0.0) / 42.0);
+                float mist = clamp(mistD * mistH, 0.0, 0.85 * (1 - rainStrength * 0.6)) * rainStrength;
+
+                float vl = dot(volumeColor, vec3(0.2126, 0.7152, 0.0722));
+                vec3 mistCol = mix(volumeColor, vec3(vl) * vec3(0.95, 0.98, 1.03), 0.8) * 1.15;
+
+                mistCol += vec3(dot(sunCol, vec3(0.2126, 0.7152, 0.0722))) * 0.05 * ray * weight * timeFactor;
+
+                clearCol = mix(clearCol, mistCol, mist);
+            }
+
             color = clamp(clearCol, vec3(0.0), vec3(1.0));
         }
     #else

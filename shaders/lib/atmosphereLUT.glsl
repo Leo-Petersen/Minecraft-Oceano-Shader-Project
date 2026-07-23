@@ -3,6 +3,30 @@
 
 #define ATM_PI 3.14159265
 
+#ifndef ATMOS_RAIN_MIE
+#define ATMOS_RAIN_MIE 2.2
+#endif
+#ifndef ATMOS_RAIN_G
+#define ATMOS_RAIN_G 0.30
+#endif
+#ifndef ATMOS_OVERCAST
+#define ATMOS_OVERCAST
+#endif
+#ifndef ATMOS_OVERCAST_TINT
+#define ATMOS_OVERCAST_TINT vec3(0.94, 0.97, 1.03)
+#endif
+#ifndef ATMOS_OVERCAST_GAIN
+#define ATMOS_OVERCAST_GAIN 0.62
+#endif
+#ifndef ATMOS_OVERCAST_BLEND
+#define ATMOS_OVERCAST_BLEND 0.98
+#endif
+#ifndef ATMOS_OVERCAST_NIGHT
+#define ATMOS_OVERCAST_NIGHT 0.2
+#endif
+
+bool atmWantBand = true;
+
 #ifndef ATMOS_SKY_BRIGHTNESS
 #define ATMOS_SKY_BRIGHTNESS 20.0   // overall sky radiance
 #endif
@@ -35,12 +59,17 @@ const float ATM_Hm = 1.2;
 const float ATM_mieG = 0.80;
 
 void atmMedium(float h, out vec3 rayS, out float mieS, out vec3 extinction) {
+    h = max(h, 0.0);
     float dRay = exp(-h / ATM_Hr);
-    float dMie = exp(-h / ATM_Hm);
+
+    float dMie = exp(-h / ATM_Hm) + rainStrength * exp(-h / 0.6) * 0.35;
     float dOzo = max(0.0, 1.0 - abs(h - 25.0) / 15.0);
+
+    float mieMul = mix(1.0, ATMOS_RAIN_MIE, rainStrength);
+
     rayS = ATM_RayS * dRay;
-    mieS = ATM_MieS * dMie;
-    extinction = rayS + vec3(ATM_MieE * dMie) + ATM_OzoA * dOzo;
+    mieS = ATM_MieS * dMie * mieMul;
+    extinction = rayS + vec3(ATM_MieE * dMie * mieMul) + ATM_OzoA * dOzo * (1.0 - rainStrength * 0.8);
 }
 
 float atmRaySphere(vec3 ro, vec3 rd, float rad) {
@@ -231,7 +260,7 @@ vec3 atmGenSkyView(vec2 uv, vec3 sunDir, float camAltKm, sampler2D transTex, sam
     float seg = tEnd / float(STEPS);
     float mu = dot(rd, sunDir);
     float pr = atmPhaseR(mu);
-    float pm = atmPhaseM(mu, ATM_mieG);
+    float pm = atmPhaseM(mu, mix(ATM_mieG, ATMOS_RAIN_G, rainStrength));
 
     vec3 tr = vec3(1.0);
     vec3 L = vec3(0.0);
@@ -258,6 +287,12 @@ vec3 atmGenSkyView(vec2 uv, vec3 sunDir, float camAltKm, sampler2D transTex, sam
     return L * ATMOS_SKY_BRIGHTNESS;
 }
 
+float atmOvercastLum(float sunElevY) {
+    float day = smoothstep(-0.10, 0.18, sunElevY);
+    float lum = 0.10 + 2.30 * pow(max(sunElevY, 0.0), 0.62);
+    return (lum * day + ATMOS_OVERCAST_NIGHT) * ATMOS_OVERCAST_GAIN;
+}
+
 vec3 atmSky(sampler2D skyViewTex, vec2 res, vec3 rd, vec3 sunDir) {
     vec3 up = vec3(0.0, 1.0, 0.0);
     vec3 sunAz = normalize(vec3(sunDir.x, 0.0, sunDir.z));
@@ -271,21 +306,36 @@ vec3 atmSky(sampler2D skyViewTex, vec2 res, vec3 rd, vec3 sunDir) {
     vec3 horizonCol = texture2D(skyViewTex,
         atmLutCoord(atmSkyViewUv(vec3(local.x, 0.0, local.z)), ATM_SKY_ORG, ATM_SKY_SIZE, res)).rgb;
     float below = smoothstep(0.04, -0.0, rd.y);
-    return mix(sky, horizonCol, below);
+    vec3 col = mix(sky, horizonCol, below);
+
+    float oa = smoothstep(0.0, 0.55, rainStrength);
+    if (oa > 0.001) {
+        float ref = atmOvercastLum(sunDir.y);
+
+        float cosZ = clamp(rd.y, 0.0, 1.0);
+        float cie  = (1.0 + 2.0 * cosZ) / 3.0;
+        vec3 oc = ATMOS_OVERCAST_TINT * (ref * cie);
+
+        col = mix(col, oc, oa * ATMOS_OVERCAST_BLEND);
+    }
+
+    return col;
 }
 
 vec3 atmSunColor(sampler2D transTex, vec2 res, vec3 sunDir) {
     float below = smoothstep(-0.06, 0.02, sunDir.y);
     vec3 tr = atmFetchTrans(transTex, res, ATM_Rg + 0.0005, clamp(sunDir.y, -1.0, 1.0));
-    return tr * ATMOS_SUN_BRIGHTNESS * below;
+    return tr * ATMOS_SUN_BRIGHTNESS * below * (1.0 - rainStrength * 0.97);
 }
 
 vec3 atmSkyAmbient(sampler2D skyViewTex, vec2 res, vec3 sunDir) {
     vec3 acc = vec3(0.0);
+    atmWantBand = false;
     acc += atmSky(skyViewTex, res, vec3(0.0, 1.0, 0.0), sunDir);
     acc += atmSky(skyViewTex, res, normalize(vec3( 0.6, 0.4,  0.0)), sunDir);
     acc += atmSky(skyViewTex, res, normalize(vec3(-0.6, 0.4,  0.0)), sunDir);
     acc += atmSky(skyViewTex, res, normalize(vec3( 0.0, 0.4,  0.6)), sunDir);
+    atmWantBand = true;
     return acc * 0.25;
 }
 
@@ -297,7 +347,7 @@ vec3 atmAerial(sampler2D skyViewTex, sampler2D transTex, vec2 res,
     vec3 rdHaze = normalize(vec3(rd.x, max(rd.y, 0.03) * 0.35, rd.z));
     vec3 sky = atmSky(skyViewTex, res, rdHaze, sunDir);
     float mu = dot(rd, sunDir);
-    sky += atmSunColor(transTex, res, sunDir) * atmPhaseM(mu, ATM_mieG * 0.6) * 0.02 * fogAmt;
+    sky += atmSunColor(transTex, res, sunDir) * atmPhaseM(mu, mix(ATM_mieG * 0.6, ATMOS_RAIN_G, rainStrength)) * 0.02 * fogAmt;
     return sky * fogAmt;
 }
 
@@ -348,17 +398,30 @@ vec3 atmSunsetTint(vec3 col, vec3 rd, vec3 sunDir, float clearness) {
 vec3 atmAerialPBR(vec3 surfaceColor, sampler2D skyViewTex, vec2 res,
                   vec3 rd, float distBlocks, vec3 sunDir, float clearness,
                   float camY, float fragY) {
+    float rain = 1.0 - clearness;
+
+    float apH = ATMOS_AP_HEIGHT * mix(1.0, 0.45, rain);
     float avgY = 0.5 * (camY + fragY);
-    float heightFall = exp(-max(avgY - ATMOS_AP_BASE_Y, 0.0) / ATMOS_AP_HEIGHT);
+    float heightFall = exp(-max(avgY - ATMOS_AP_BASE_Y, 0.0) / apH);
 
-    float aero = mix(1.0e-3, 6.0e-3, 1.0 - clearness);
-    vec3 betaExt = ATM_RayS + vec3(aero);
-    vec3 tr = exp(-betaExt * (distBlocks * ATMOS_AP_DENSITY * heightFall));
+    float aero = mix(1.0e-3, 4.0e-3, rain);
+    vec3 betaExt = mix(ATM_RayS, vec3(0.010), rain * 0.9) + vec3(aero);
+    float nearGuard = smoothstep(0.0, 80.0, distBlocks);
+    nearGuard *= nearGuard;
+    vec3 tr = exp(-betaExt * (distBlocks * ATMOS_AP_DENSITY * heightFall * nearGuard));
+         tr = max(tr, vec3(0.30));
 
-    vec3 rdLift = normalize(vec3(rd.x, max(rd.y, 0.0) + ATMOS_AP_LIFT, rd.z));
+    float lift = ATMOS_AP_LIFT * (1.0 - rain * 0.92);
+    vec3 rdLift = normalize(vec3(rd.x, max(rd.y, 0.0) * (1.0 - rain * 0.8) + lift, rd.z));
+
+    atmWantBand = false;
     vec3 skyC = atmSky(skyViewTex, res, rdLift, sunDir) * ATMOS_AP_SOURCE_EXPOSURE;
+    atmWantBand = true;
 
-    skyC = atmSunsetTint(skyC, rd, sunDir, clearness);
+    float apNight = 1.0 - smoothstep(-0.10, 0.06, sunDir.y);
+    skyC *= mix(1 - rainStrength * 0.7, 1, apNight);
+
+    skyC = atmSunsetTint(skyC, rd, sunDir, clearness * clearness);
 
     return surfaceColor * tr + skyC * (1.0 - tr);
 }

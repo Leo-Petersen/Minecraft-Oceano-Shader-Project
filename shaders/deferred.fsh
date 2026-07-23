@@ -59,6 +59,7 @@ uniform float PI;
 uniform vec3 shadowLightPosition;
 uniform vec3 cameraPosition;
 uniform vec3 skyColor;
+uniform vec3 sunPosition;
 
 uniform ivec2 eyeBrightnessSmooth;
 
@@ -68,13 +69,15 @@ varying vec2 lmcoord;
 varying vec3 upVec;
 varying vec3 Normal;
 
+#define ATM_SUN_DEFINED
+
+vec3 atmSunDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
 
 #include "/lib/time.glsl"
 #include "/lib/atmosphereLUT.glsl"
-vec3 atmSunDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
 vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunDir);
-vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunDir);
-#define ATM_SUN_DEFINED
+vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue);
 #include "/lib/lightCol.glsl"
 #include "/lib/clouds.glsl"
 #include "/lib/lighting.glsl"
@@ -298,7 +301,7 @@ void main() {
     vec3 ShadowAccum = vec3(0.0);
 
     #ifdef shadowMap
-        float filterSize = 0.0025 * filterStr * (1.0 + rainStrength * 2.0);
+        float filterSize = 0.0025 * filterStr * (1.0 + rainStrength * 0.6);
 
         #ifdef BounceColoredLight
             vec3 flux = vec3(0.0);

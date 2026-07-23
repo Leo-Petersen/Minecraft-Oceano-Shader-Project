@@ -13,7 +13,9 @@ uniform float darknessFactor;
 uniform float rainStrength;
 uniform ivec2 eyeBrightnessSmooth;
 uniform int isEyeInWater;
+
 uniform vec3 skyColor;
+uniform vec3 sunPosition;
 
 uniform sampler2D colortex0;
 uniform sampler2D colortex2;
@@ -45,8 +47,9 @@ const bool colortex10Clear = false;
 #include "/lib/time.glsl"
 #include "/lib/atmosphereLUT.glsl"
 vec3 atmSunDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
 vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunDir);
-vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunDir);
+vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue);
 #define ATM_SUN_DEFINED
 #include "/lib/lightCol.glsl"
 #include "/lib/clouds.glsl"
@@ -103,7 +106,7 @@ void main(){
 			float dith = vcBayer8(vec2(checkerPos));
 			dith = fract(dith + float(frameCounter / area) * 0.61803399);
 
-			cloudLowRes = computeVolumetricClouds(worldDir, 1e9, dith, VC_STEPS, cloudDist);
+			cloudLowRes = computeVolumetricClouds(worldDir, 1e9, dith, VC_STEPS, atmSunTrue.y, cloudDist);
 		}
 	}
 	#endif

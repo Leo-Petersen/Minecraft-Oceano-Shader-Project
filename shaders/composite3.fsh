@@ -78,14 +78,16 @@ float Depth = texture2D(depthtex0, texcoord).r;
 float Depth1 = texture2D(depthtex1, texcoord).r;
 float undergroundFix = clamp(mix(max(lmcoord.t-2.0/16.0,0.0)*1.14285714286,1.0,clamp((eyeBrightnessSmooth.y/255.0-2.0/16.)*4.0,0.0,1.0)), 0.0, 1.0);
 
+#define ATM_SUN_DEFINED
+
+vec3 atmSunDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
+
 #include "/lib/settings.glsl"
 #include "/lib/time.glsl"
 #include "/lib/atmosphereLUT.glsl"
-vec3 atmSunDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
-vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
 vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunDir);
-vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunDir);
-#define ATM_SUN_DEFINED
+vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue);
 #include "/lib/lightCol.glsl"
 #include "/lib/raytrace.glsl"
 #include "/lib/waterBump.glsl"
@@ -122,7 +124,7 @@ void main() {
 	float frontGlow = max(0.0, (packedWaveLight - 0.5) * 2.0);  
 	vec3 reflViewDir  = reflect(normalize(viewPos.xyz), viewNormal);
 	vec3 reflWorldDir = normalize(mat3(gbufferModelViewInverse) * reflViewDir);
-	vec3 reflectedskyBoxCol = atmSky(colortex15, vec2(viewWidth, viewHeight), reflWorldDir, atmSunDir);
+	vec3 reflectedskyBoxCol = atmSky(colortex15, vec2(viewWidth, viewHeight), reflWorldDir, atmSunTrue);
 	vec3 skyBoxCol = texture2D(colortex9, texcoord).rgb;
 
 	float vcDither = vcBayer8(gl_FragCoord.xy);
@@ -137,7 +139,7 @@ void main() {
 			// This is a bit expensive, but the effect is worth it I reckon, looks stupid otherwise lol
 			vec3 reflViewDir = reflect(normalize(viewPos.xyz), waterNormal);
 			vec3 reflWDir = normalize(mat3(gbufferModelViewInverse) * reflViewDir);
-			reflectedskyClouds = vcReflectClouds(reflectedskyBoxCol, reflWDir, vcDither);
+			reflectedskyClouds = vcReflectClouds(reflectedskyBoxCol, reflWDir, vcDither, atmSunTrue.y);
 		}
 	#endif
 
@@ -407,9 +409,9 @@ void main() {
 		bool disocclusion = rp.z < 0.5 || any(isnan(history));
 		// Velocity gated neighbourhood clamp
 		float camVel = length(cameraPosition - previousCameraPosition) / max(frameTime, 1e-4);
-		float velFactor = 75.0 * (camVel * camVel) / max(closest * closest, 1e-6);
-		velFactor = velFactor / (velFactor + 1.0);
-		if (velFactor > 0.1) {
+		float uvVel = length(prevUV - texcoord) * max(viewWidth, viewHeight);
+		float velFactor = uvVel / (uvVel + 2.0);
+		if (velFactor > 0.02) {
 			vec4 e1 = current;	// centre fresh sample
 			vec4 b1 = texelFetch(colortex12, src + ivec2( 0,-1), 0);
 			vec4 d1 = texelFetch(colortex12, src + ivec2(-1, 0), 0);
@@ -437,6 +439,7 @@ void main() {
 		// Age weighted blend
 		float age = max(historyData.g, 0.0) * float(!disocclusion);
 		float historyWeight = 1.0 - 1.0 / max(age - float(area), 1.0);
+			  historyWeight = min(historyWeight, mix(0.97, 0.80, clamp(uvVel / 8.0, 0.0, 1.0)));
 
 		cloudAccum     = max(mix(current, history, historyWeight), 0.0);
 		cloudDataOut.r = mix(freshDist, historyData.x, historyWeight);
@@ -459,22 +462,17 @@ void main() {
 
 			if (Depth < 1.0) {
 				float dist = length(worldPos.xz);	// horizontal distance, blocks
-				float dayF = smoothstep(-0.12, 0.02, atmSunTrue.y);
+				float dayF = max(smoothstep(-0.12, 0.02, atmSunDir.y), rainStrength * 0.65);
 
 				vec3 fogged = atmAerialPBR(color.rgb, colortex15, vec2(viewWidth, viewHeight),
-				                           rd, dist, atmSunTrue, 1.0 - rainStrength,
+				                           rd, dist, atmSunDir, 1.0 - rainStrength,
 				                           cameraPosition.y, cameraPosition.y + worldPos.y);
 				color.rgb = mix(color.rgb, fogged, dayF);
-
-				// rain thickens and greys the near fog, need to adjust
-				if (rainStrength > 0.001) {
-					float rainFog = 1.0 - exp(-dist * ATMOS_FOG_DENSITY * 3.0);
-					color.rgb = mix(color.rgb, cloudFogCol * 0.35, clamp(rainFog, 0.0, 0.9) * rainStrength);
-				}
 			}
 
 			if (Depth >= 1.0) {
-				color.rgb = atmSunsetTint(color.rgb, rd, atmSunTrue, 1.0 - rainStrength);
+				float c = 1.0 - rainStrength;
+                color.rgb = atmSunsetTint(color.rgb, rd, atmSunDir, c * c);
 			}
 		}
 	#endif

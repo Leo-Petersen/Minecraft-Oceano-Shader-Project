@@ -1,5 +1,7 @@
 #version 430 compatibility
 
+uniform float rainStrength;
+
 layout(local_size_x = 16, local_size_y = 16) in;
 const ivec3 workGroups = ivec3(12, 7, 1);          // ceil(192/16) x ceil(108/16)
 

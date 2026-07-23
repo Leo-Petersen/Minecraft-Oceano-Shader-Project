@@ -24,6 +24,11 @@ vec3 luminance(vec3 color, float strength) {
 	return color;
 }
 
+vec3 rainGrey(vec3 c, float amt) {
+    float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+    return mix(c, vec3(l) * vec3(0.94, 0.97, 1.04), clamp(amt, 0.0, 1.0));
+}
+
 mat2 time2 = mat2(vec2(
 				((clamp(ticks, 23000.0f, 25000.0f) - 23000.0f) / 1000.0f) + (1.0f - (clamp(ticks, 0.0f, 2000.0f)/2000.0f)),
 				((clamp(ticks, 0.0f, 2000.0f)) / 2000.0f) - ((clamp(ticks, 9000.0f, 12000.0f) - 9000.0f) / 3000.0f)),
@@ -43,40 +48,39 @@ vec3 sunCol = atmHueMix(
 			  atmSunHue);
 
 //Sunlight Colour//
-vec3 sunlightCol = atmHueMix((
+vec3 sunlightCol = rainGrey(atmHueMix((
 				vec3(255, 198, 148)/255 * 0.42 * time[0] +   // sunrise
-				vec3(255, 240, 220)/255  * 0.58  * time[1] +   // morning
+				vec3(255, 250, 245)/255  * 0.58  * time[1] +   // morning
 				vec3(255, 250, 245)/255  * 0.58  * time[2] +   // noon
-				vec3(255, 240, 220)/255  * 0.58  * time[3] +   // evening
+				vec3(255, 250, 245)/255  * 0.58  * time[3] +   // evening
 				vec3(255, 198, 148)/255 * 0.42 * time[4] +   // sunset
 				vec3(40, 70, 120)/255    * 0.75  * time[5]     // night
 				) + ((1.0 - time[5]) * (vec3(skyColor) * (rainStrength * 0.2)))
-				+ ((time[5]) * (vec3(0.1 + skyColor) * (rainStrength * 1))),
-				atmSunHue);
+				+ (time[5] * rainStrength * (vec3(0.1) + skyColor * 0.6 + vec3(0.020, 0.023, 0.030))),
+				atmSunHue),
+                rainStrength * 0.88);
 
 //Ambient Shadow Colour//
 vec3 ambientShadowColor = vec3(20, 30, 55)/255;;
 
 //Shadow Distance Colour//
-vec3 shadowDistColor = (vec3(20, 30, 55)/255 * 0.7 * (time[0]) +
+vec3 shadowDistColor = rainGrey((vec3(20, 30, 55)/255 * 0.7 * (time[0]) +
                   vec3(20, 30, 55)/255  * 1  * (time[1]) +
                   vec3(20, 30, 55)/255 * 1  * (time[2]) +
                   vec3(20, 30, 55)/255  * 1 * (time[3]) +
                   vec3(20, 30, 55)/255 * 0.7  * (time[4]) +
                   vec3(20, 30, 80)/255    * 0.2 * (time[5])
-                 ) * clamp(transitionFade, 0.55, 1.0);
+                 ) * clamp(transitionFade, 0.55, 1.0),
+                rainStrength * 0.30) * (1 - rainStrength * 0.66);
 
 //Shadow Colour//
-vec3 shadowCol = (vec3(23, 49, 150)/255 * (time[0]) +
-                  vec3(23, 49, 150)/255 * (time[1]) +
-                  vec3(23, 49, 150)/255 * (time[2]) +
-                  vec3(23, 49, 150)/255 * (time[3]) +
-                  vec3(23, 49, 150)/255 * (time[4]) +
-                  vec3(6, 2, 69)/255 * (time[5])) *
-                  (1.0 + rainStrength * 0.5);
+vec3 shadowCol = rainGrey(
+                 (vec3(23, 49, 150)/255 * (time[0] + time[1] + time[2] + time[3] + time[4]) + //wrapped because these values are all the same
+                  vec3(6, 2, 69)/255 * (time[5])),
+                  rainStrength * 0.9) * (1.0 - rainStrength * 0.25);
 
 //Fog Color//
-vec3 fogCol = atmHueMix((
+vec3 fogCol = rainGrey(atmHueMix((
 				vec3(255, 100, 50)/255 * (time[0]) +
 				vec3(60, 100, 255)/255 * (time[1]) +
 				vec3(60, 100, 255)/255 * (time[2]) +
@@ -85,7 +89,8 @@ vec3 fogCol = atmHueMix((
 				(vec3(40, 90, 255)/255 * (time[5])) * (1.0 - rainStrength)) +
 						((1 - time[5])*(vec3(skyColor) * (rainStrength * 0.45))) +
 						((time[5])*(vec3(0.1+skyColor) * (rainStrength * 0.25))),
-				atmAmbHue);
+				atmAmbHue),
+                rainStrength * 0.30);
 
 //Cloud Fog Colour//
 vec3 cloudFogCol = atmHueMix((mix(
@@ -97,22 +102,22 @@ vec3 cloudFogCol = atmHueMix((mix(
 				vec3(255, 160, 100)/255  * 0.95 * time[4] +
 				vec3(40, 50, 170)/255     * 0.75 * time[5]
 			) + ((1.0 - time[5]) * (vec3(skyColor) * (rainStrength * 0.2)))
-			+ ((time[5]) * (vec3(0.1 + skyColor) * (rainStrength * 2.5))),
+			+ ((time[5]) * (vec3(0.1 + skyColor) * (rainStrength * 1.5))),
 			vec3(0.52, 0.55, 0.62) * 2.0 * (1.0 - time[5] * 0.9),
-			rainStrength * 0.85
-		) + vec3(0.03, 0.06, 0.2) * rainStrength * time[5]),
-		atmAmbHue);
+			rainStrength * 0.95
+			) + vec3(0.03, 0.06, 0.2) * rainStrength * time[5]),
+			atmAmbHue);
 
 float fogStrength = 0.3;
 
 vec3 fogColor = fogCol * (1 - time2[1].y * 0.6) + vec3(skyColor*0.2) * (1 - time2[1].y * 0.6) * (rainStrength);
 
 //Atmosphere Color//
-vec3 atmoColor = atmHueMix((vec3(255, 178, 120)/255 * 0.60 * (time[0]) +
+vec3 atmoColor = rainGrey(atmHueMix((vec3(255, 178, 120)/255 * 0.60 * (time[0]) +
                   vec3(85, 130, 200)/255  * 0.85  * (time[1]) +
                   vec3(110, 148, 210)/255 * 0.85  * (time[2]) +
                   vec3(95, 135, 195)/255  * 0.85 * (time[3]) +
                   vec3(255, 178, 120)/255 * 0.60  * (time[4]) +
                   vec3(20, 30, 70)/255    * 0.15 * (time[5])
-                 ) * clamp(transitionFade, 0.6, 1.0),
-                 atmAmbHue);
+                  ) * clamp(transitionFade, 0.6, 1.0), atmAmbHue),
+                  rainStrength * 0.30);

@@ -124,6 +124,12 @@ void main() {
 		vec3 noise = (texture2D(noisetex,texcoord*vec2(aspectRatio,1.0)+4.0*frameTimeCounter).rgb*2.0-1.0)*0.013*filmGrain*(1+blindness*5)*(1+darknessFactor*5+darknessLightFactor);
 			 color += noise;
 	#endif
+	
+	// TPDF dither, breaks up quantization in smooth dark gradients
+    vec2 dseed = gl_FragCoord.xy + frameTimeCounter * 17.0;
+    float r1 = fract(sin(dot(dseed, vec2(12.9898, 78.233))) * 43758.5453);
+    float r2 = fract(sin(dot(dseed + 1.7, vec2(12.9898, 78.233))) * 43758.5453);
+    color.rgb += (r1 + r2 - 1.0) / 255.0;
 
 /* DRAWBUFFERS:0 */
 	gl_FragData[0] = vec4(color, 1.0); //gcolor

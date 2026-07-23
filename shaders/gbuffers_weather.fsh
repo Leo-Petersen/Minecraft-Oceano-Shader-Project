@@ -15,7 +15,6 @@ void main() {
 	color.rgb *= 2;
 	color.a *= 0.4;
 
-/* DRAWBUFFERS:09 */
-	gl_FragData[0] = color; //gcolor
-	gl_FragData[1] = color;
+/* DRAWBUFFERS:0 */
+	gl_FragData[0] = color;
 }

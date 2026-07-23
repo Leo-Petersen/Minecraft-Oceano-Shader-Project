@@ -46,6 +46,7 @@ uniform float PI;
 uniform vec3 skyColor;
 uniform vec3 cameraPosition;
 uniform vec3 shadowLightPosition;
+uniform vec3 sunPosition;
 
 varying vec2 texcoord;
 varying vec2 lmcoord;
@@ -83,8 +84,9 @@ float Diffuse = max(0.0, dot(viewNormal, shadowLightPosition * 0.01));
 #include "/lib/time.glsl"
 #include "/lib/atmosphereLUT.glsl"
 vec3 atmSunDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
-vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunDir);
-vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunDir);
+vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
+vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunTrue);
+vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue);
 #define ATM_SUN_DEFINED
 #include "/lib/lightCol.glsl"
 #include "/lib/raytrace.glsl"
@@ -230,7 +232,7 @@ void main() {
 
     float glare = pow(sunDist*0.07, 2.0);
 		  glare = 1.0 - exp( -glare );
-		  glare *= 150.0 * (1.0 - time2[1].y);
+		  glare *= 150.0 * (1.0 - rainStrength) * (1.0 - time2[1].y);
 		  glare = clamp(glare, 0.0, 2.0);
 
 	float sunAngleCosine = 1.0 - clamp(dot(normalize(viewPos.rgb), shadowLightPosition * 0.01), 0.0, 1.0);
