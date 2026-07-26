@@ -216,9 +216,9 @@ vec2 vcOffset16(int frame) {
 #ifndef VC_WIND_SPEED
 #define VC_WIND_SPEED 5.0
 #endif
-// Shape change over time, off for now
+// Shape change over time
 #ifndef VC_EVOLVE
-#define VC_EVOLVE 0.0
+#define VC_EVOLVE 0.2
 #endif
 
 // Noise config //
@@ -279,11 +279,16 @@ vec2 vcScrollXZ(vec3 wpos) {
 	return wpos.xz + wind;
 }
 
+vec2 vcEvolveWarp(vec2 p) {
+	float t = frameTimeCounter * VC_EVOLVE;
+	return vec2(sin(dot(p, vec2(0.6, 0.4)) * 0.0009 + t * 0.02),
+	            cos(dot(p, vec2(-0.4, 0.6)) * 0.0009 + t * 0.02)) * 900.0;
+}
+
 float vcCoverage(vec2 p) {
 	// VC_EVOLVE controls how fast cloud shapes shift/change with time, bad approach to this but good enough for now
 	float t = frameTimeCounter * VC_EVOLVE;
-	vec2 warp = vec2(sin(dot(p, vec2(0.6, 0.4)) * 0.0009 + t * 0.02),
-	                 cos(dot(p, vec2(-0.4, 0.6)) * 0.0009 + t * 0.02)) * 900.0;
+	vec2 warp = vcEvolveWarp(p);
 	float n = vcNoise((p + warp) * (VC_SCALE_COVERAGE / VC_SIZE));
 	float cover = mix(VC_COVERAGE, 0.97, rainStrength) + 0.10 * sin(t * 0.006);
     float th = 0.5 - cover * 0.5;
@@ -300,10 +305,10 @@ float vcCloudType(vec2 p) {
 #if VC_CUMULONIMBUS == 0
 	return 0.0;
 #else
-	vec2 wind = vec2(frameTimeCounter * VC_WIND_SPEED, 0.0);
-	float n = vcNoise((p + wind) * (VC_SCALE_COVERAGE * 0.25 / VC_SIZE) + 0.37);
-	float t = 1.0 - VC_CB_AMOUNT;
-	return smoothstep(t, min(t + 0.10, 0.999), n);
+	p += vcEvolveWarp(p);
+	float n = vcNoise(p * (VC_SCALE_COVERAGE * 0.25 / VC_SIZE) + 0.37);
+	float th = 1.0 - VC_CB_AMOUNT;
+	return smoothstep(th, min(th + 0.10, 0.999), n);
 #endif
 }
 
@@ -347,7 +352,7 @@ float vcDensity(vec3 wpos) {
 	float coverage = vcCoverage(vcScrollXZ(wpos));
 
 #if VC_CUMULONIMBUS == 1
-	float storm = vcCloudType(wpos.xz) * (1.0 - rainStrength * 0.92);
+	float storm = vcCloudType(vcScrollXZ(wpos)) * (1.0 - rainStrength * 0.92);
 	vcStormOut = storm;
 	coverage = max(coverage, storm * 0.9);
 	vcCoverageOut = coverage;
