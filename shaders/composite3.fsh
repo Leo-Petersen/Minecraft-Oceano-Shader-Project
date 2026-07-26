@@ -148,7 +148,7 @@ void main() {
 	#ifdef BorderFog
 		float effects = blindness + darknessFactor;
 		float borderFog = clamp(pow(length(worldPos.xz) / far, 14.0) * 0.7, 0.0, 1.0);
-		borderFog *= (1.0 - rainStrength);
+		//borderFog *= (1.0 - rainStrength);
 	#endif
 
 	// Water Refraction and Reflection //
@@ -253,10 +253,6 @@ void main() {
 			#endif
 
 		if (isEyeInWater < 0.5){
-			#ifdef BorderFog
-				// Border fog for the water surface itself
-				refractedColor = mix(refractedColor, skyBoxCol * (1.0 - effects * 0.95), borderFog);
-			#endif
 			color.rgb = mix(refractedColor, reflectionCol, fresnel);
 			color.rgb += reflectedSun * vcReflectTrans * reflSkyAccess;
 			color.rgb += (vec3(shallowwaterR, shallowwaterG, shallowwaterB)/255) * waterSSS * 0.6; 
@@ -479,7 +475,7 @@ void main() {
 
 	//// Border Fog ////
 	#ifdef BorderFog
-		if (Depth < 1.0 && isEyeInWater < 0.9 && iswater < 0.5) {
+		if (Depth < 1.0 && isEyeInWater < 0.9) {
 			color.rgb = mix(color.rgb, skyBoxCol * (1.0 - effects * 0.95), borderFog);
 		}
 	#endif
