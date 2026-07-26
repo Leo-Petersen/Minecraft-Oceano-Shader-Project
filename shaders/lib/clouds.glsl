@@ -210,6 +210,9 @@ vec2 vcOffset16(int frame) {
 #ifndef VC_AMBIENT
 #define VC_AMBIENT 0.55
 #endif
+#ifndef VC_TRANSITION_DIM
+#define VC_TRANSITION_DIM 0.15
+#endif
 #ifndef VC_WIND_SPEED
 #define VC_WIND_SPEED 5.0
 #endif
@@ -470,6 +473,10 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
         ambTop = mix(ambTop, ocAmb * 1.45, oa);
     }
 
+    float vcTransDim = mix(VC_TRANSITION_DIM, 1.0, transitionFade);
+    ambBot *= vcTransDim;
+    ambTop *= vcTransDim;
+
 	float pathLen = exitT - entryT;
 	// Adaptive stepping
 	float fine   = clamp(190.0 / float(steps), 5.0, VC_MAX_STEP);
@@ -544,7 +551,7 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 	vec3 cloudColor = scatter / cloudAlpha;
 
 	float distFade = smoothstep(3000.0, 13000.0, entryT + coveredDist);
-	vec3 farCol = mix(atmoColor * 1.6, ATMOS_OVERCAST_TINT * atmOvercastLum(sunElevY) * 0.333, rainStrength);
+	vec3 farCol = mix(atmoColor * 1.6, ATMOS_OVERCAST_TINT * atmOvercastLum(sunElevY) * 0.333, rainStrength) * vcTransDim;
     cloudColor = mix(cloudColor, farCol, distFade * 0.85);
 	cloudAlpha *= horizon * (1.0 - distFade * 0.75) * max(transitionFade, 0.85);
 

@@ -64,7 +64,7 @@ void main() {
     sky = luminance(sky, 1.12);
 
     if (starData.a > 0.5) {
-        sky += starData.rgb * 4.0 * night * (1.0 - rainStrength);
+        sky += starData.rgb * 4.0 * night * transitionFade * (1.0 - rainStrength);
     }
 
     sky = max(sky, vec3(0.0));
