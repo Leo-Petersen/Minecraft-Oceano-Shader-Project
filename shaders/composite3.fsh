@@ -450,9 +450,6 @@ void main() {
 	#endif
 
 	//// Atmosphere Fog ////
-	#ifndef ATMOS_FOG_DENSITY
-	#define ATMOS_FOG_DENSITY 0.0011
-	#endif
 	#ifdef atmosphereFog
 		if (isEyeInWater < 0.9) {
 			vec3 rd = normalize(mat3(gbufferModelViewInverse) * viewPos.xyz);
