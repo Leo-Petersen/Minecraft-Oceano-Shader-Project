@@ -114,14 +114,14 @@
 
 //Waving Foliage//
 #define wavingFoliage
-    #define WIND_DIR_X     0.78  // [-1.0 -0.8 -0.6 -0.4 -0.2 0.0 0.2 0.4 0.6 0.78 0.8 1.0]
-    #define WIND_DIR_Z     0.62  // [-1.0 -0.8 -0.6 -0.4 -0.2 0.0 0.2 0.4 0.62 0.6 0.8 1.0]
-    #define GUST_SPEED     0.55  // [0.1 0.2 0.3 0.4 0.55 0.7 0.9 1.2 1.5 2.0]
-    #define GUST_WAVELENGTH 0.035 // [0.005 0.01 0.02 0.035 0.05 0.075 0.1 0.15]
-    #define GUST_SHARPNESS 3.0   // [1.0 1.5 2.0 2.5 3.0 4.0 5.0 6.0 8.0]
-    #define GUST_FLOOR     0.25  // [0.0 0.1 0.15 0.2 0.25 0.3 0.4 0.5 0.6]
-    #define FLUTTER_SPEED  2.2   // [0.5 1.0 1.5 2.0 2.2 2.5 3.0 4.0 5.0]
-    #define FLUTTER_SCALE  0.9   // [0.2 0.4 0.6 0.8 0.9 1.2 1.5 2.0]
+    #define windDirectionX     0.78  // [-1.0 -0.8 -0.6 -0.4 -0.2 0.0 0.2 0.4 0.6 0.78 0.8 1.0]
+    #define windDirectionY     0.62  // [-1.0 -0.8 -0.6 -0.4 -0.2 0.0 0.2 0.4 0.62 0.6 0.8 1.0]
+    #define foliageWindSpeed     0.55  // [0.1 0.2 0.3 0.4 0.55 0.7 0.9 1.2 1.5 2.0]
+    #define foliageWindWaveLength 0.035 // [0.005 0.01 0.02 0.035 0.05 0.075 0.1 0.15]
+    #define foliageWindSharpness 3.0   // [1.0 1.5 2.0 2.5 3.0 4.0 5.0 6.0 8.0]
+    #define foliageWindFloor     0.25  // [0.0 0.1 0.15 0.2 0.25 0.3 0.4 0.5 0.6]
+    #define foliageFlutterSpeed  2.2   // [0.5 1.0 1.5 2.0 2.2 2.5 3.0 4.0 5.0]
+    #define foliageFlutterScale  0.9   // [0.2 0.4 0.6 0.8 0.9 1.2 1.5 2.0]
 
 //Mods//
     //#define PHOTONICS_ENABLED
