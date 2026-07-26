@@ -109,7 +109,7 @@ void main() {
 	// .st = lightMap, .p = material
 	vec4 colortex2Data = texture2D(colortex2, texcoord);
 	float material = colortex2Data.p;
-	float surfaceHeight = texture2D(colortex13, texcoord).g; // Height for puddle masking
+	//float surfaceHeight = texture2D(colortex13, texcoord).g; // Height for puddle masking
 	
 	float iswater = float(material > 0.08 && material < 0.10);
 	float isglass = float(material > 0.10 && material < 0.14 || material > 0.14 && material < 0.16)*undergroundFix;
@@ -309,7 +309,7 @@ void main() {
 	      iswet = 1.0;
 		  #endif
 		if (iswet > 0 && iswater != 1.0 && isglass != 1.0 && isParticle != 1.0 && Depth > 0.56) {
-			color.rgb = puddles(color.rgb, worldPos, reflectedskyClouds, viewPos.xyz, lightMap, iswet, surfaceHeight);
+			color.rgb = puddles(color.rgb, worldPos, reflectedskyClouds, viewPos.xyz, lightMap, iswet, 1); // last variable is for surfaceHeight, implementation was broken, will revisit.
 		}
 	#endif
 	

@@ -134,7 +134,7 @@ void main() {
 	gl_FragData[0] = terrainColor;
 	gl_FragData[1] = vec4(encodeNormal(normalData), specularMap);
 	gl_FragData[2] = vec4(lightMap, material, shadowFactor);
-	gl_FragData[4] = vec4(emission, surfaceHeight, textureAO, labSSS);
+	gl_FragData[4] = vec4(emission, 1, textureAO, labSSS);
 #ifdef PHOTONICS_ENABLED
 	gl_FragData[5] = vec4(terrainColor.rgb, 1.0);
 	gl_FragData[6] = vec4(0.5 * viewNormal + 0.5, 1.0);
