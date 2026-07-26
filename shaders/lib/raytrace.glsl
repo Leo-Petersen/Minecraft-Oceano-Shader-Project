@@ -46,7 +46,7 @@ vec4 raytrace(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnelView) {
         float hitMaterial = texture2D(colortex2, position.st).p;
         bool hitIsWater = (hitMaterial > 0.08 && hitMaterial < 0.10);
 
-        if (error < dynamicThreshold && texture2D(colortex2, position.st).g > 0.15 && !hitIsWater) {
+        if (error < dynamicThreshold && texture2D(depthtex1, position.st).r < 1.0 && !hitIsWater) {
             stepCount++;
             if (stepCount >= maxRefinements) {
                 color = texture2D(colortex0, position.st);
@@ -99,7 +99,7 @@ vec4 raytrace(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnelView, o
         float hitMaterial = texture2D(colortex2, position.st).p;
         bool hitIsWater = (hitMaterial > 0.08 && hitMaterial < 0.10);
 
-        if (error < dynamicThreshold && texture2D(colortex2, position.st).g > 0.15 && !hitIsWater) {
+        if (error < dynamicThreshold && texture2D(depthtex1, position.st).r < 1.0 && !hitIsWater) {
             stepCount++;
             if (stepCount >= maxRefinements) {
                 color = texture2D(colortex0, position.st);
@@ -138,7 +138,7 @@ vec4 raytracePuddles(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnel
         vec3 samplePosition = vec3(position.st, texture2D(depthtex1, position.st).r);
         samplePosition = normalizedVec3(gbufferProjectionInverse * normalizedVec4(samplePosition * 2.0 - 1.0));
         float error = abs(fragmentPos.z - samplePosition.z);
-        if (error < pow(length(stepVector), 1.35) && texture2D(colortex2, position.st).g > 0.15) {
+        if (error < pow(length(stepVector), 1.35) && texture2D(depthtex1, position.st).r < 1.0) {
             stepCount++;
             if (stepCount >= maxRefinements) {
                 color = texture2D(colortex0, position.st);
