@@ -78,7 +78,7 @@ float Depth = texture2D(depthtex0, texcoord).r;
 float Depth1 = texture2D(depthtex1, texcoord).r;
 float undergroundFix = clamp(mix(max(lmcoord.t-2.0/16.0,0.0)*1.14285714286,1.0,clamp((eyeBrightnessSmooth.y/255.0-2.0/16.)*4.0,0.0,1.0)), 0.0, 1.0);
 
-#define ATM_SUN_DEFINED
+#define atmosphereSun
 
 vec3 atmSunDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
 vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
@@ -133,7 +133,7 @@ void main() {
 	#endif
 
 	vec3 reflectedskyClouds = reflectedskyBoxCol;
-	#if defined(VolumetricClouds) && defined(VC_REFLECTIONS)
+	#if defined(VolumetricClouds) && defined(cloudReflections)
 		if (isEyeInWater < 0.9 && Depth < 1.0 && iswater > 0.5) {
 			// Mirror the view ray about the actual wave normal
 			// This is a bit expensive, but the effect is worth it I reckon, looks stupid otherwise lol

@@ -11,8 +11,8 @@ layout(rgba16f) uniform writeonly image2D colorimg14;
 
 void main() {
     ivec2 px = ivec2(gl_GlobalInvocationID.xy);
-    if (px.x >= int(ATM_TRANS_SIZE.x) || px.y >= int(ATM_TRANS_SIZE.y)) return;
+    if (px.x >= int(atmosTransSize.x) || px.y >= int(atmosTransSize.y)) return;
 
-    vec2 uv = (vec2(px) + 0.5) / ATM_TRANS_SIZE;
-    imageStore(colorimg14, px + ivec2(ATM_TRANS_ORG), vec4(atmGenTransmittance(uv), 1.0));
+    vec2 uv = (vec2(px) + 0.5) / atmosTransSize;
+    imageStore(colorimg14, px + ivec2(atmosTransOrg), vec4(atmGenTransmittance(uv), 1.0));
 }

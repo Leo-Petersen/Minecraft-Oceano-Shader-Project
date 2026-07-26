@@ -69,7 +69,7 @@ varying vec2 lmcoord;
 varying vec3 upVec;
 varying vec3 Normal;
 
-#define ATM_SUN_DEFINED
+#define atmosphereSun
 
 vec3 atmSunDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
 vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);

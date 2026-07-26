@@ -87,7 +87,7 @@ vec3 atmSunDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
 vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
 vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunTrue);
 vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue);
-#define ATM_SUN_DEFINED
+#define atmosphereSun
 #include "/lib/lightCol.glsl"
 #include "/lib/raytrace.glsl"
 #include "/lib/waterShadow.glsl"

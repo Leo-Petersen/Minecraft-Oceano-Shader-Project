@@ -1,8 +1,4 @@
-#ifndef ATM_HYBRID
-#define ATM_HYBRID 0.6      // 0 is the original colours, 1 is the PBR approach. This is a terrible temp fix. Not sure just yet how to stylise a 'pbr' atmosphere...
-#endif
-
-#ifndef ATM_SUN_DEFINED
+#ifndef atmosphereSun
 vec3 atmSun = vec3(1.0);
 vec3 atmAmb = vec3(1.0);
 #endif
@@ -15,7 +11,7 @@ vec3 atmAmbHue = (atmAmbLum > 1e-3) ? atmAmb / atmAmbLum : vec3(1.0);
 
 vec3 atmHueMix(vec3 orig, vec3 physHue) {
     float b = dot(orig, vec3(0.2126, 0.7152, 0.0722));
-    return mix(orig, physHue * b, ATM_HYBRID);
+    return mix(orig, physHue * b, 0.6); // 0 is the original colours, 1 is the PBR approach. This is a terrible temp fix. Not sure just yet how to stylise a 'pbr' atmosphere...
 }
 
 vec3 luminance(vec3 color, float strength) {

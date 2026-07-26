@@ -17,9 +17,9 @@ uniform mat4 gbufferModelViewInverse;
 
 void main() {
     ivec2 px = ivec2(gl_GlobalInvocationID.xy);
-    if (px.x >= int(ATM_SKY_SIZE.x) || px.y >= int(ATM_SKY_SIZE.y)) return;
+    if (px.x >= int(atmosSkySize.x) || px.y >= int(atmosSkySize.y)) return;
 
-    vec2 uv  = (vec2(px) + 0.5) / ATM_SKY_SIZE;
+    vec2 uv  = (vec2(px) + 0.5) / atmosSkySize;
     vec2 res = vec2(viewWidth, viewHeight);
 
     vec3 sunDirWorld = normalize(mat3(gbufferModelViewInverse) * sunPosition);
@@ -30,5 +30,5 @@ void main() {
 
     // both transmittance and multiscatter live in colortex14
     vec3 sky = atmGenSkyView(uv, sunLocal, camAltKm, colortex14, colortex14, res);
-    imageStore(colorimg15, px + ivec2(ATM_SKY_ORG), vec4(sky, 1.0));
+    imageStore(colorimg15, px + ivec2(atmosSkyOrg), vec4(sky, 1.0));
 }

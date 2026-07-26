@@ -382,7 +382,7 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
     vec3 ambTop = mix(cloudFogCol, atmoColor, 0.20) * cloudAmbient * 1.3 * (1.0 - time[5] * 0.5);
     float oa = smoothstep(0.0, 0.55, rainStrength);
     if (oa > 0.001) {
-        vec3 ocAmb = ATMOS_OVERCAST_TINT * atmOvercastLum(sunElevY);
+        vec3 ocAmb = atmosOvercastTint * atmOvercastLum(sunElevY);
         ambBot = mix(ambBot, ocAmb * 0.38, oa);
         ambTop = mix(ambTop, ocAmb * 1.45, oa);
     }
@@ -465,7 +465,7 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 	vec3 cloudColor = scatter / cloudAlpha;
 
 	float distFade = smoothstep(3000.0, 13000.0, entryT + coveredDist);
-	vec3 farCol = mix(atmoColor * 1.6, ATMOS_OVERCAST_TINT * atmOvercastLum(sunElevY) * 0.333, rainStrength) * vcTransDim;
+	vec3 farCol = mix(atmoColor * 1.6, atmosOvercastTint * atmOvercastLum(sunElevY) * 0.333, rainStrength) * vcTransDim;
     cloudColor = mix(cloudColor, farCol, distFade * 0.85);
 	cloudAlpha *= horizon * (1.0 - distFade * 0.75) * max(transitionFade, 0.85);
 
