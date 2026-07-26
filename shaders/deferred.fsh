@@ -411,7 +411,7 @@ void main() {
 
         // Direct sunlight
         vec3 finalShadow = sunlightCol * Diffuse * ShadowAccum * lightMap.t * lightStrength * (1.0 - rainStrength * 0.7);
-        finalShadow *= mix(1.0, 0.75, distFactor); // Reduce direct light on distant terrain to balance with fog and prevent harsh edges
+        finalShadow *= mix(1.0, 0.85, distFactor); // Reduce direct light on distant terrain to balance with fog and prevent harsh edges
 
         // Bounce mask, restrict bounce light to shadowed areas
         float bounceMask = 1.0 - smoothstep(0.0, 0.25, shadowLum * max(Diffuse, 0.0));
