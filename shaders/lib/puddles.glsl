@@ -57,7 +57,7 @@ float getRainPuddles(vec2 worldPos, float iswet){
 	return clamp((0.98 * iswet) + (noise - 2.4), 0.0, 1.0);
 }
 
-vec3 puddles(in vec3 color, in vec3 worldPos, in vec3 reflectedskyBoxCol, in vec3 viewPos, in vec2 lightMap, float iswet, float surfaceHeight) {
+vec3 puddles(in vec3 color, in vec3 worldPos, in vec3 reflectedskyBoxCol, in vec3 viewPos, in vec2 lightMap, float iswet, float distFactor, float surfaceHeight) {
     vec2 dropPos = worldPos.xz + cameraPosition.xz;
 
     float puddle = getRainPuddles(dropPos, iswet);
@@ -100,6 +100,7 @@ vec3 puddles(in vec3 color, in vec3 worldPos, in vec3 reflectedskyBoxCol, in vec
         if (isEyeInWater < 0.9) {
             float reflectionFactor = pow(1.0 - normalDotEyeRain, 2.5) * rainModifier;
                   reflectionFactor = mix(reflectionFactor * 0.65, reflectionFactor, heightMask);
+                  reflectionFactor *= distFactor;
             color = mix(color, reflectionCol, reflectionFactor);
         }
     }
