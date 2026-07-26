@@ -381,8 +381,8 @@ void main() {
 	vec4 cloudDataOut = vec4(1e6, 0.0, 0.0, 0.0);   // .x apparent dist, .y age
 	#ifdef VolumetricClouds
 	{
-		const int UP   = VC_UPSCALE;
-		const int area = VC_UPSCALE * VC_UPSCALE;
+		const int UP   = cloudUpscale;
+		const int area = cloudUpscale * cloudUpscale;
 
 		ivec2 corner = ivec2(floor(vec2(viewWidth, viewHeight) / float(UP)));
 		ivec2 dst = ivec2(gl_FragCoord.xy);
@@ -443,7 +443,7 @@ void main() {
 
 		cloudAccum     = max(mix(current, history, historyWeight), 0.0);
 		cloudDataOut.r = mix(freshDist, historyData.x, historyWeight);
-		cloudDataOut.g = min(age + 1.0, float(VC_ACCUM_LIMIT));
+		cloudDataOut.g = min(age + 1.0, float(cloudAccumLimit));
 
 		if (isEyeInWater < 0.9 && Depth >= 1.0) {
 			float ca = clamp((cloudAccum.a - 0.05) / 0.95, 0.0, 1.0);

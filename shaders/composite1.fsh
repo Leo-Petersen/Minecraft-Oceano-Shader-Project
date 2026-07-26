@@ -91,11 +91,11 @@ void main(){
 	float cloudDist   = 1e6;
 	#ifdef VolumetricClouds
 	{
-		const int area = VC_UPSCALE * VC_UPSCALE;
-		vec2 cornerSize = floor(vec2(viewWidth, viewHeight) / float(VC_UPSCALE));
+		const int area = cloudUpscale * cloudUpscale;
+		vec2 cornerSize = floor(vec2(viewWidth, viewHeight) / float(cloudUpscale));
 		if (gl_FragCoord.x < cornerSize.x && gl_FragCoord.y < cornerSize.y) {
 			ivec2 texel = ivec2(gl_FragCoord.xy);                 // low-res texel
-			ivec2 checkerPos = VC_UPSCALE * texel
+			ivec2 checkerPos = cloudUpscale * texel
 			                 + vcCheckerOffset(frameCounter % area);
 			vec2  fullUV = (vec2(checkerPos) + 0.5) / vec2(viewWidth, viewHeight);
 
@@ -106,7 +106,7 @@ void main(){
 			float dith = vcBayer8(vec2(checkerPos));
 			dith = fract(dith + float(frameCounter / area) * 0.61803399);
 
-			cloudLowRes = computeVolumetricClouds(worldDir, 1e9, dith, VC_STEPS, atmSunTrue.y, cloudDist);
+			cloudLowRes = computeVolumetricClouds(worldDir, 1e9, dith, cloudSteps, atmSunTrue.y, cloudDist);
 		}
 	}
 	#endif
