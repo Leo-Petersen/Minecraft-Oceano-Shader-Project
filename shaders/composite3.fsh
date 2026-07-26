@@ -106,10 +106,6 @@ void main() {
 		 viewPos /= viewPos.w;
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos.xyz + gbufferModelViewInverse[3].xyz;
 
-    float distFactor = length(worldPos.xz) / 120.0;
-          distFactor = pow(distFactor, 2.2);
-          distFactor = exp(-1.2 * distFactor);
-
 	// .st = lightMap, .p = material
 	vec4 colortex2Data = texture2D(colortex2, texcoord);
 	float material = colortex2Data.p;
@@ -306,6 +302,9 @@ void main() {
 	      iswet = 1.0;
 		  #endif
 		if (iswet > 0 && iswater != 1.0 && isglass != 1.0 && isParticle != 1.0 && Depth > 0.56) {
+			float distFactor = length(worldPos.xz) / 120.0;
+				distFactor = pow(distFactor, 2.2);
+				distFactor = exp(-1.2 * distFactor);
 			color.rgb = puddles(color.rgb, worldPos, reflectedskyClouds, viewPos.xyz, lightMap, iswet, distFactor, 1);
 		}
 	#endif
