@@ -114,6 +114,7 @@ void main() {
 	float iswater = float(material > 0.08 && material < 0.10);
 	float isglass = float(material > 0.10 && material < 0.14 || material > 0.14 && material < 0.16)*undergroundFix;
 	vec2 lightMap = colortex2Data.st;
+	float reflSkyAccess = clamp((lightMap.t - 2.0/16.0) * 1.14285714286, 0.0, 1.0);
 
 	vec3 reflectedSun = texture2D(colortex6, texcoord).rgb;
 
@@ -228,18 +229,14 @@ void main() {
 		vec2 reflHitUV = vec2(0.5);
 		float reflHitDepth = -1.0;
 		if (fresnel > 0.05) {
-			waterreflection = raytrace(reflectedskyClouds*lightMap.t, viewPos.xyz, waterNormal, 6, reflHitUV, reflHitDepth);
+			waterreflection = raytrace(reflectedskyClouds*reflSkyAccess, viewPos.xyz, waterNormal, 6, reflHitUV, reflHitDepth);
 		} else {
-			waterreflection = vec4(reflectedskyClouds*lightMap.t, 0.0);
+			waterreflection = vec4(reflectedskyClouds*reflSkyAccess, 0.0);
 		}
 		
-		vec3 reflectionCol = mix(reflectedskyClouds*lightMap.t, waterreflection.rgb, waterreflection.a);
+		vec3 reflectionCol = mix(reflectedskyClouds*reflSkyAccess, waterreflection.rgb, waterreflection.a);
 			#ifdef BorderFog
-				// Fog the reflection by the distance to what it REFLECTS, not the
-				// water surface!! Reflecting across the (horizontal) water plane leaves
-				// x/z unchanged, so the reflected object's horizontal distance equals
-				// the real object's, and the same fog formula matches the terrain pass.
-				// Without this fix, the water surface fogs the reflection too much, making it look like a gray mirror.
+				// Fog the reflection by the distance to what it REFLECTS, not the water surface!!
 				float reflBorderFog;
 				if (reflHitDepth >= 0.0) {
 					// Reflection hit, reconstruct the hit's world position and fog by its distance
@@ -261,7 +258,7 @@ void main() {
 				refractedColor = mix(refractedColor, skyBoxCol * (1.0 - effects * 0.95), borderFog);
 			#endif
 			color.rgb = mix(refractedColor, reflectionCol, fresnel);
-			color.rgb += reflectedSun * vcReflectTrans;
+			color.rgb += reflectedSun * vcReflectTrans * reflSkyAccess;
 			color.rgb += (vec3(shallowwaterR, shallowwaterG, shallowwaterB)/255) * waterSSS * 0.6; 
 			color.rgb += (vec3(deepwaterR, deepwaterG, deepwaterB)/255) * frontGlow * 0.4;           
 		} else {
@@ -309,7 +306,7 @@ void main() {
 	      iswet = 1.0;
 		  #endif
 		if (iswet > 0 && iswater != 1.0 && isglass != 1.0 && isParticle != 1.0 && Depth > 0.56) {
-			color.rgb = puddles(color.rgb, worldPos, reflectedskyClouds, viewPos.xyz, lightMap, iswet, 1); // last variable is for surfaceHeight, implementation was broken, will revisit.
+			color.rgb = puddles(color.rgb, worldPos, reflectedskyClouds, viewPos.xyz, lightMap, iswet, 1);
 		}
 	#endif
 	
