@@ -37,7 +37,6 @@ vec4 ShadowSpace(float depth0) {
     return ShadowSpace;
 }
 
-#define GodRayStrength 0.16
 vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, float iswater, float glare, vec3 sunCol, float transitionFade, vec3 skyCol, float sunAngleCosine){
     
     #ifdef volumetricLight
@@ -137,7 +136,7 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
 
     #ifdef volumetricLight
          float altitudeFog = (1.0 - (exp(-50.0 * pow(length(worldPos.xz) / pow(far, startFactor) * closeFactor * 0.155, 2.5 - (2.0 * rainStrength)))));
-               altitudeFog *= (1.0 - altitudeFactor) * FogStrength;
+               altitudeFog *= (1.0 - altitudeFactor);
                altitudeFog *= timeFactor * 0.05 + sunAngleCosine * 0.1 * (1 - rainStrength);
 
          float rainFogDepth = length(worldPos.xz) / 20.0;
@@ -155,7 +154,7 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
                rayweight *= clamp(altitudeFog, 0.025, 1.9) * 100.0;
                rayweight += clamp(altitudeFog * 5010.0 * timeFactor * ray * weight, 0.0, 1.9);
                rayweight *= transitionFade;
-               rayweight *= 0.25 * FogStrength * (1.0 + isEyeInWater * 8.0);
+               rayweight *= 0.25 * (1.0 + isEyeInWater * 8.0);
           if (isEyeInWater > 0.9){
             rayweight = clamp(rayweight, 0.0, 1.0);
           } else {
@@ -180,7 +179,7 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
         } else {
             float shaftW = ray * weight * 8.5 * pow(glare, 0.5) * timeFactor;
             shaftW *= 10.0;
-            shaftW *= transitionFade * 0.25 * GodRayStrength;
+            shaftW *= transitionFade * 0.25 * FogStrength;
             shaftW  = clamp(shaftW, 0.0, 0.6 * (1.0 - rainStrength * 0.4));
 
             vec3 clearCol = color + sunCol * 0.72 * shaftW;

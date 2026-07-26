@@ -21,7 +21,7 @@
   #define VC_ACCUM_LIMIT 44
 #elif VC_QUALITY == 2
   #define VC_UPSCALE 4
-  #define VC_STEPS 26
+  #define VC_STEPS 24
   #define VC_LIGHT_STEPS 5
   #define VC_STEPS_CEIL 96
   #define VC_ACCUM_LIMIT 20
@@ -106,6 +106,7 @@ vec2 vcOffset16(int frame) {
 }
 
 // look modifiers //
+#define VC_ALTITUDE 300             //[0 50 100 150 200 250 300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000] Additional altitude offset for the cloud layer, has a small performance impact
 #ifndef VC_CLOUD_BOTTOM
 #define VC_CLOUD_BOTTOM (300.0 + VC_ALTITUDE)
 #endif
@@ -154,19 +155,19 @@ vec2 vcOffset16(int frame) {
 #endif
 
 #ifndef VC_COVERAGE
-#define VC_COVERAGE 0.40
+#define VC_COVERAGE 0.30
 #endif
 #ifndef VC_SEPARATION
-#define VC_SEPARATION 1.80
+#define VC_SEPARATION 2.00
 #endif
 #ifndef VC_DENSITY
 #define VC_DENSITY 0.50      // opacity
 #endif
 #ifndef VC_DETAIL
-#define VC_DETAIL 1.00       // billow carve depth
+#define VC_DETAIL 2.00       // billow carve depth
 #endif
 #ifndef VC_SIZE
-#define VC_SIZE 3.0          // overall scale
+#define VC_SIZE 5.0          // overall scale
 #endif
 
 #ifndef VC_THICKNESS
@@ -205,16 +206,16 @@ vec2 vcOffset16(int frame) {
 #endif
 
 #ifndef VC_SUN_BRIGHTNESS
-#define VC_SUN_BRIGHTNESS 6.0
+#define VC_SUN_BRIGHTNESS 4.0
 #endif
 #ifndef VC_AMBIENT
-#define VC_AMBIENT 0.55
+#define VC_AMBIENT 1.6
 #endif
 #ifndef VC_TRANSITION_DIM
 #define VC_TRANSITION_DIM 0.15
 #endif
 #ifndef VC_WIND_SPEED
-#define VC_WIND_SPEED 5.0
+#define VC_WIND_SPEED 5
 #endif
 // Shape change over time
 #ifndef VC_EVOLVE
