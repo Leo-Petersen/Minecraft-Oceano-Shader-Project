@@ -190,6 +190,22 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
             shaftW *= transitionFade * 0.25 * FogStrength;
             shaftW  = clamp(shaftW, 0.0, 0.6 * (1.0 - rainStrength * 0.4));
 
+            vec3  sunDirW = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+            float VoL = clamp(dot(normalize(worldPos), sunDirW), -1.0, 1.0);
+
+            float gg   = shaftAnisotropy * shaftAnisotropy;
+            float hg   = (1.0 - gg) / pow(1.0 + gg - 2.0 * shaftAnisotropy * VoL, 1.5);
+            float hgHi = (1.0 - gg) / pow(1.0 + gg - 2.0 * shaftAnisotropy, 1.5);   // VoL = +1
+            float hgLo = (1.0 - gg) / pow(1.0 + gg + 2.0 * shaftAnisotropy, 1.5);   // VoL = -1
+            float forward = clamp((hg - hgLo) / (hgHi - hgLo), 0.0, 1.0);
+
+            float sunW = ray * weight * 8.5 * forward * timeFactor;
+            sunW *= 10.0 * shaftStrength;
+            sunW *= transitionFade * 0.25 * FogStrength;
+            sunW  = clamp(sunW, 0.0, shaftMax * (1.0 - rainStrength * 0.4));
+
+            shaftW += sunW;
+
             vec3 clearCol = color + sunCol * 0.72 * shaftW;
 
             if (rainStrength > 0.001) {
@@ -205,7 +221,7 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
                 clearCol = mix(clearCol, mistCol, mist);
             }
 
-            color = clamp(clearCol, vec3(0.0), vec3(1.0));
+            color = max(clearCol, vec3(0.0));
         }
     #else
         float altitudeFog = (1.0 - (exp(-50.0 * pow(length(worldPos.xz) / pow(far, startFactor) * closeFactor * 0.125, 3.25))));
