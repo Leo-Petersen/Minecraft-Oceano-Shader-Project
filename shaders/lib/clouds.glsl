@@ -122,7 +122,7 @@ vec2 vcOffset16(int frame) {
 #define cloudDetailCell 26.0
 #define cloudDetailVaspect 0.80
 
-#define cloudSelfshadow 3.20
+#define cloudSelfshadow 1
 
 // Multiple scattering fill
 #define cloudMs 0.80
@@ -378,8 +378,8 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 
 	vec3 sunColor = sunlightCol * cloudSunBrightness * transitionFade * (1.0 - time[5] * 0.8) * (1.0 - rainStrength * 0.97);
 
-    vec3 ambBot = mix(atmoColor, cloudFogCol, 0.5) * cloudAmbient * 0.42;
-    vec3 ambTop = mix(cloudFogCol, atmoColor, 0.20) * cloudAmbient * 1.3 * (1.0 - time[5] * 0.5);
+	vec3 ambBot = atmoColor * cloudAmbient * 0.62 + vec3(0.03, 0.045, 0.09) * time[5] * 0.86;
+	vec3 ambTop = mix(atmoColor, cloudFogCol, 0.15) * cloudAmbient * 1.3;
     float oa = smoothstep(0.0, 0.55, rainStrength);
     if (oa > 0.001) {
         vec3 ocAmb = atmosOvercastTint * atmOvercastLum(sunElevY);
