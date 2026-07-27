@@ -45,11 +45,11 @@ vec3 sunCol = atmHueMix(
 
 //Sunlight Colour//
 vec3 sunlightCol = rainGrey(atmHueMix((
-				vec3(255, 198, 148)/255 * 0.42 * time[0] +   // sunrise
+				vec3(255, 198, 148)/255 * 0.45 * time[0] +   // sunrise
 				vec3(255, 250, 245)/255  * 0.58  * time[1] +   // morning
 				vec3(255, 250, 245)/255  * 0.58  * time[2] +   // noon
 				vec3(255, 250, 245)/255  * 0.58  * time[3] +   // evening
-				vec3(255, 198, 148)/255 * 0.42 * time[4] +   // sunset
+				vec3(255, 198, 148)/255 * 0.45 * time[4] +   // sunset
 				vec3(40, 70, 120)/255    * 0.75  * time[5]     // night
 				) + ((1.0 - time[5]) * (vec3(skyColor) * (rainStrength * 0.2)))
 				+ (time[5] * rainStrength * (vec3(0.1) + skyColor * 0.6 + vec3(0.020, 0.023, 0.030))),

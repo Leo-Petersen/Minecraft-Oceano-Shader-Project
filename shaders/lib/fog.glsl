@@ -58,11 +58,23 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
         vec3 startWorldPos = mat3(gbufferModelViewInverse) * vec3(0.0) + gbufferModelViewInverse[3].xyz;
         
         float sceneDepthLinear = getDepthVol(Depth);
-        
+
+        vec3 clip0  = vec3(texcoord, expDepth(startRay)) * 2.0 - 1.0;
+        vec4 vw0    = gbufferProjectionInverse * vec4(clip0, 1.0);
+        vec3 view0  = vw0.xyz / vw0.w;
+        vec3 viewK  = view0 / startRay;
+
+        mat4 shadowMat = shadowProjection * shadowModelView * gbufferModelViewInverse;
+        vec4 shadowA   = shadowMat * vec4(viewK, 0.0);
+        vec4 shadowB   = shadowMat[3];
+
+        vec3 worldA = mat3(gbufferModelViewInverse) * viewK; 
+        vec3 worldB = gbufferModelViewInverse[3].xyz;
+
         for (; startRay < endRay; startRay += increment) {
             if (startRay > sceneDepthLinear) break;
 
-            vec4 shadowCoord = ShadowSpace(expDepth(startRay));
+            vec4 shadowCoord = shadowA * startRay + shadowB;
             shadowCoord.xy *= distort(shadowCoord.xy);
             shadowCoord.z /= 6.0;
             vec3 SampleCoords = shadowCoord.xyz * 0.5 + 0.5;
@@ -71,11 +83,7 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
             float shadowSampleBack = shadowStep(shadowtex1, SampleCoords);
 
             if (isEyeInWater > 0.9) {
-                vec3 ClipSpace = vec3(texcoord, expDepth(startRay)) * 2.0 - 1.0;
-                vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0);
-                vec3 View = ViewW.xyz / ViewW.w;
-                vec4 World = gbufferModelViewInverse * vec4(View, 1.0);
-                vec3 currentWorldPos = World.xyz;
+                vec3 currentWorldPos = worldA * startRay + worldB;
                 
                 vec3 lightRayDir = lightDir; 
                 
