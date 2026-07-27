@@ -77,12 +77,12 @@ vec3 shadowCol = rainGrey(
 
 //Fog Color//
 vec3 fogCol = rainGrey(atmHueMix((
-				vec3(255, 100, 50)/255 * (time[0]) +
-				vec3(60, 100, 255)/255 * (time[1]) +
-				vec3(60, 100, 255)/255 * (time[2]) +
-				vec3(60, 100, 255)/255 * (time[3]) +
-				vec3(255, 100, 50)/255 * (time[4])  +
-				(vec3(40, 90, 255)/255 * (time[5])) * (1.0 - rainStrength)) +
+				vec3(250, 160, 120)/255 * (time[0]) +
+				vec3(115, 150, 200)/255 * (time[1]) +
+				vec3(130, 165, 205)/255 * (time[2]) +
+				vec3(115, 150, 200)/255 * (time[3]) +
+				vec3(250, 160, 120)/255 * (time[4])  +
+				(vec3(55, 80, 130)/255 * (time[5])) * (1.0 - rainStrength)) +
 						((1 - time[5])*(vec3(skyColor) * (rainStrength * 0.45))) +
 						((time[5])*(vec3(0.1+skyColor) * (rainStrength * 0.25))),
 				atmAmbHue),
