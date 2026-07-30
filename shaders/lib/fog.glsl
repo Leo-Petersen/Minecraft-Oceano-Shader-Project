@@ -185,7 +185,10 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
             vec3 finalFogCol = mix(color, volumeColor * vec3(0.72), rayweight);
             color = clamp(finalFogCol, vec3(0.0), vec3(1.0));
         } else {
-            float shaftW = ray * weight * 8.5 * pow(glare, 0.5) * timeFactor;
+
+            float baseAngle = max(pow(glare, 0.5), 0.1 * time[5]);
+
+            float shaftW = ray * weight * 8.5 * baseAngle * timeFactor;
             shaftW *= 10.0;
             shaftW *= transitionFade * 0.25 * FogStrength;
             shaftW  = clamp(shaftW, 0.0, 0.6 * (1.0 - rainStrength * 0.4));
@@ -195,8 +198,8 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
 
             float gg   = shaftAnisotropy * shaftAnisotropy;
             float hg   = (1.0 - gg) / pow(1.0 + gg - 2.0 * shaftAnisotropy * VoL, 1.5);
-            float hgHi = (1.0 - gg) / pow(1.0 + gg - 2.0 * shaftAnisotropy, 1.5);   // VoL = +1
-            float hgLo = (1.0 - gg) / pow(1.0 + gg + 2.0 * shaftAnisotropy, 1.5);   // VoL = -1
+            float hgHi = (1.0 - gg) / pow(1.0 + gg - 2.0 * shaftAnisotropy, 1.5);
+            float hgLo = (1.0 - gg) / pow(1.0 + gg + 2.0 * shaftAnisotropy, 1.5);
             float forward = clamp((hg - hgLo) / (hgHi - hgLo), 0.0, 1.0);
 
             float sunW = ray * weight * 8.5 * forward * timeFactor;
@@ -206,7 +209,9 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
 
             shaftW += sunW;
 
-            vec3 clearCol = color + sunCol * 0.72 * shaftW;
+            vec3 shaftLight = sunCol + vec3(0.26, 0.38, 0.62) * time[5];
+
+            vec3 clearCol = color + shaftLight * 0.72 * shaftW;
 
             if (rainStrength > 0.001) {
                 float mistD = 1.0 - exp(-length(worldPos.xz) * 0.0016);
