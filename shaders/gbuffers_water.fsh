@@ -25,7 +25,6 @@ uniform ivec2 atlasSize;
 
 uniform vec3 shadowLightPosition;
 uniform vec3 sunPosition;
-uniform sampler2D colortex15;   // physical sky-view LUT
 uniform vec3 skyColor;
 
 uniform mat4 gbufferModelViewInverse;
