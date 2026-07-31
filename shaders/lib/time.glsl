@@ -17,7 +17,7 @@ float transitionFade = 1.0-(
     clamp(0.005*ticks - 119.,0.0,1.0)
 );
 
-// WIP transitionFade adjustments
+// WIP transitionFade adjustments, need to revisit
 // uniform int worldTime;
 
 // float ticks = worldTime;

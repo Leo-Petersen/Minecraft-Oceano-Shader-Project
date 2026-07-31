@@ -83,7 +83,7 @@ vec2 vcOffset16(int frame) {
 }
 
 // look modifiers //
-#define cloudAltitude 300             //[0 50 100 150 200 250 300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000] Additional altitude offset for the cloud layer, has a small performance impact
+#define cloudAltitude 300             //[0 50 100 150 200 250 300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000] Altitude offset for the cloud layer, has a small performance impact
 #define cloudBottom (300.0 + cloudAltitude)
 // Normal cloud top.
 #define cloudCumulusTop (470.0 + cloudAltitude)
@@ -144,7 +144,6 @@ vec2 vcOffset16(int frame) {
 
 #define cloudNoiseSingleFetch
 
-#define cloudPi 3.14159265
 #define cloudIso 0.0795775   // isotropic phase value, 1/(4*pi)
 
 float vcBase = cloudBottom - cloudRainDrop * rainStrength;
@@ -307,14 +306,14 @@ float vcDensityShadowFast(vec3 wpos, float coverage, float storm) {
 
 // Lighting //
 float vcKleinNishina(float x, float e) {	// silver lining
-    return e / (2.0 * cloudPi * (e - e * x + 1.0) * log(2.0 * e + 1.0));
+    return e / (2.0 * PI * (e - e * x + 1.0) * log(2.0 * e + 1.0));
 }
 float vcPhaseG(float x, float g) {
 	float gg = g * g;
-	return (gg * -0.25 / cloudPi + 0.25 / cloudPi) * pow(-2.0 * (g * x) + (gg + 1.0), -1.5);
+	return (gg * -0.25 / PI + 0.25 / PI) * pow(-2.0 * (g * x) + (gg + 1.0), -1.5);
 }
 
-/* // Technically a better method, but breaks clouds. Can't figure out why but the improvement with this method is minimal so... idk
+/* // Technically a better method, but breaks clouds. Can't figure out why but the visual improvement with this method is minimal so... idk
 float vcPhase(float cosT) {
     float fwdA = vcKleinNishina(cosT, 2600.0);
     float fwdB = vcPhaseG(cosT, 0.70);

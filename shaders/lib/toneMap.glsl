@@ -49,6 +49,7 @@ vec3 ACES(vec3 color) {
 
 //http://filmicworlds.com/blog/filmic-tonemapping-operators/
 //Similiar look to ACES while still preserving highlights
+//Abandoned due to destroying clarity in hue/color changes
 vec3 Duiker(vec3 color)
 {
    color *= 16;  // Hardcoded Exposure Adjustment

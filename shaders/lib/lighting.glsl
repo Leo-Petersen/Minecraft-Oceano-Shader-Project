@@ -3,7 +3,6 @@ const bool shadowHardwareFiltering1 = true;
 const bool shadowcolor0Nearest = true;
 const bool shadowcolor1Nearest = true;
 
-// NOTE: shadowcolor still uses sampler2D (to get actual color values)
 float Depth = texture2D(depthtex0, texcoord).r;
 vec3 viewNormal = normalize(decodeNormal(texture2D(colortex1, texcoord).xy));
 

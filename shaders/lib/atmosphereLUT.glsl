@@ -351,10 +351,10 @@ vec3 atmSunsetTint(vec3 col, vec3 rd, vec3 sunDir, float clearness) {
 
 // aerial perspective //
 #define atmosApDensity 0.040
-#define atmosApHeight 90.0    // scale height in blocks, density halves about every 62 blocks up
-#define atmosApBaseY 63.0    // altitude where density is full (set to sea level)
+#define atmosApHeight 90.0    // scale of density by height (in blocks), density halves about every 62 blocks up
+#define atmosApBaseY 63.0    // altitude where density is full (currently set to sea level)
 #define atmosApSourceExposure 1.0
-#define atmosApLift 0.12  // how 'far above the horizon' the fog samples
+#define atmosApLift 0.12  // how far above the horizon the fog samples
 
 vec3 atmAerialPBR(vec3 surfaceColor, sampler2D skyViewTex, vec2 res,
                   vec3 rd, float distBlocks, vec3 sunDir, float clearness,

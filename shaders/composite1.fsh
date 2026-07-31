@@ -27,6 +27,7 @@ uniform sampler2D depthtex0;
 uniform sampler2D noisetex;
 
 uniform float frameTimeCounter;
+uniform float PI;
 uniform int frameCounter;
 uniform vec3 cameraPosition;
 uniform vec3 shadowLightPosition;

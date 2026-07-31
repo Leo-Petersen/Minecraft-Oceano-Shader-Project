@@ -49,6 +49,7 @@ uniform float near;
 uniform float blindness;
 uniform float darknessFactor;
 uniform float wetness;
+uniform float PI;
 
 uniform int isEyeInWater;
 uniform int heldBlockLightValue;

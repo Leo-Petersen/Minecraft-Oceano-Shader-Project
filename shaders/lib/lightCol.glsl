@@ -60,12 +60,12 @@ vec3 sunlightCol = rainGrey(atmHueMix((
 vec3 ambientShadowColor = vec3(20, 30, 55)/255;;
 
 //Shadow Distance Colour//
-vec3 shadowDistColor = rainGrey((vec3(20, 30, 55)/255 * 0.7 * (time[0]) +
-                  vec3(20, 30, 55)/255  * 1  * (time[1]) +
-                  vec3(20, 30, 55)/255 * 1  * (time[2]) +
-                  vec3(20, 30, 55)/255  * 1 * (time[3]) +
-                  vec3(20, 30, 55)/255 * 0.7  * (time[4]) +
-                  vec3(20, 30, 80)/255    * 0.2 * (time[5])
+vec3 shadowDistColor = rainGrey((vec3(20, 30, 55)/255 * (time[0]) +
+                  vec3(20, 30, 55)/255 * (time[1]) +
+                  vec3(20, 30, 55)/255 * (time[2]) +
+                  vec3(20, 30, 55)/255 * (time[3]) +
+                  vec3(20, 30, 55)/255 * (time[4]) +
+                  vec3(20, 30, 80)/255 * 0.2 * (time[5])
                  ) * clamp(transitionFade, 0.55, 1.0),
                 rainStrength * 0.30) * (1 - rainStrength * 0.66);
 

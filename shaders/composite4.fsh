@@ -2,17 +2,18 @@
 
 // TO-DO: Filter with TAA to drag performance back
 
-#define SUNSHAFTS 1
-#define SUNSHAFT_SAMPLES 40
-#define SUNSHAFT_STRENGTH 0.55
-#define SUNSHAFT_THRESHOLD 0.55
-#define SUNSHAFT_DECAY 0.965
-#define SUNSHAFT_DENSITY 0.85
+#define sunShafts
+#define sunShaftSamples 40
+#define sunShaftStrength 0.55
+#define sunShaftThreshold 0.55
+#define sunShaftDecay 0.965
+#define sunShaftDensity 0.85
 
 varying vec2 texcoord;
 
 uniform sampler2D colortex0;
 uniform sampler2D depthtex0;
+uniform int worldTime;
 
 uniform mat4 gbufferProjection;
 uniform mat4 gbufferModelViewInverse;
@@ -20,13 +21,21 @@ uniform vec3 sunPosition;
 uniform float viewWidth, viewHeight;
 uniform float rainStrength;
 
+float ticks = worldTime;
+float transitionFade = 1.0-(
+    clamp(0.00333333*ticks - 40.,0.0,1.0)-
+    clamp(0.00333333*ticks - 49,0.0,1.0)+
+    clamp(0.005*ticks - 105.,0.0,1.0)-
+    clamp(0.005*ticks - 119.,0.0,1.0)
+);
+
 void main() {
 
     vec3 color = texture2D(colortex0, texcoord).rgb;
     float Depth = texture2D(depthtex0, texcoord).r;
 
     if (Depth == 1) {
-        #if SUNSHAFTS == 1
+        #ifdef sunShafts
             vec4 clip = gbufferProjection * vec4(sunPosition, 1.0);
             vec2 sunScreen = clip.xy / clip.w * 0.5 + 0.5;
 
@@ -40,25 +49,25 @@ void main() {
             float gate = dayFade * inFront * onScreen;
 
             if (gate > 0.001) {
-                vec2 delta = (texcoord - sunScreen) * (SUNSHAFT_DENSITY / float(SUNSHAFT_SAMPLES));
+                vec2 delta = (texcoord - sunScreen) * (sunShaftDensity / float(sunShaftSamples));
                 vec2 pos = texcoord;
                 float decay = 1.0;
                 vec3 shaft = vec3(0.0);
 
-                for (int i = 0; i < SUNSHAFT_SAMPLES; i++) {
+                for (int i = 0; i < sunShaftSamples; i++) {
                     pos -= delta;
                     vec3 s = texture2D(colortex0, clamp(pos, 0.0, 1.0)).rgb;
                     float l = dot(s, vec3(0.2126, 0.7152, 0.0722));
 
-                    vec3 bright = s * smoothstep(SUNSHAFT_THRESHOLD, SUNSHAFT_THRESHOLD + 0.5, l);
+                    vec3 bright = s * smoothstep(sunShaftThreshold, sunShaftThreshold + 0.5, l);
                     shaft += bright * decay;
-                    decay *= SUNSHAFT_DECAY;
+                    decay *= sunShaftDecay;
                 }
-                shaft /= float(SUNSHAFT_SAMPLES);
+                shaft /= float(sunShaftSamples);
 
                 float radial = 1.0 - smoothstep(0.0, 1.1, length(texcoord - sunScreen));
 
-                color += shaft * (SUNSHAFT_STRENGTH * gate * radial);
+                color += shaft * (sunShaftStrength * transitionFade * gate * radial);
             }
         #endif
     }
