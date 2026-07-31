@@ -124,21 +124,24 @@ void main() {
 	float packedWaveLight = texture2D(colortex3, texcoord).a;
 	float waterSSS = max(0.0, (0.5 - packedWaveLight) * 2.0);   
 	float frontGlow = max(0.0, (packedWaveLight - 0.5) * 2.0);  
-	// Wave normal for water so the sky reflection actually follows the surface, water looks flat otherwise
+	// This is subpixel wave slope variance, it translates to reflection roughness,
+	// i'm not going to calculate actual reflection roughness, this works.
+	float waveSlopeVar = length(fwidth(waterNormal));
+
+	// This is done so the sky reflection actually follow the surface, water looks flat otherwise
 	vec3 reflNormalSurf = viewNormal;
 	if (iswater > 0.5) {
-		// This is essentially how 'strongly' the wave normal bends the sky reflection
-		// Lower means flatter and 'gentler' sky reflections, 1.0 is fully accurate
-		const float reflSkyBend = 0.5;
-		reflNormalSurf = normalize(mix(viewNormal, waterNormal, reflSkyBend));
+		// footprint driven roughness. near water it's crisp, far water blurs to a flat mirror
+		// Also prefilters the smooth sky LUT by widening the normal toward flat as roughness rises
+		float reflRough = clamp(waveSlopeVar * waveReflFilter, 0.0, 1.0);
+		reflNormalSurf = normalize(mix(viewNormal, waterNormal, 1.0 - reflRough));
 	}
 	vec3 reflViewDir  = reflect(normalize(viewPos.xyz), reflNormalSurf);
 	vec3 reflWorldDir = normalize(mat3(gbufferModelViewInverse) * reflViewDir);
 
 	if (iswater > 0.5) {
-		// Keep reflected rays above the horizon so there are no deep 'troughs' in the water, this is an artistic choice
-		// This flattens waves but they look prettyyyy
-		reflWorldDir.y = max(reflWorldDir.y, 0.015);
+		// Subhorizon rays reflect more water, i.e. the bright horizon band. Fold, don't clamp!
+		if (reflWorldDir.y < 0.0) reflWorldDir.y *= -0.25;
 		reflWorldDir = normalize(reflWorldDir);
 	}
 
@@ -236,7 +239,7 @@ void main() {
 		refractedColor *= mix(waterAbsorption, vec3(1.0), absorptionFactor);
 		
 		float fresnel = pow(1.0 - normalDotEye, 5.0);
-			  fresnel = mix(0.2, 1.0, fresnel);
+			  fresnel = mix(0.02, 1.0, fresnel);
 
 		vec4 waterreflection;
 		vec2 reflHitUV = vec2(0.5);
