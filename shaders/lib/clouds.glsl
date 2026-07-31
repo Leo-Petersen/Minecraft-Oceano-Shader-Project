@@ -407,17 +407,23 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 
 	for (int i = 0; i < cloudStepsCeil; i++) {
 		if (t >= exitT) break;
+
+		// Distance LOD, keep clouds that are closer at the normal step, reduce far ones
+		float lod     = 1.0 + max(t - 2000.0, 0.0) * (1.0 / 3000.0);
+		float fineT   = min(fine * lod, cloudMaxStep);
+		float coarseT = fineT * cloudSkipMult;
+
 		vec3 pos = cameraPosition + worldDir * t;
 		float density = vcDensity(pos);
 
 		if (density <= 0.0) {
 			wasEmpty = true;
-			t += coarse;	// skip empty air
+			t += coarseT;	// skip empty air
 			continue;
 		}
 
-		if (wasEmpty && coarse > fine) {
-			t = max(entryT, t - coarse + fine);
+		if (wasEmpty && coarseT > fineT) {
+			t = max(entryT, t - coarseT + fineT);
 			wasEmpty = false;
 			continue;
 		}
@@ -446,7 +452,7 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 		vec3 direct  = sunColor * scatterSun * 2.4;
 		vec3 luminance = ambient + direct;
 
-		float stepT = exp(-extinction * fine);
+		float stepT = exp(-extinction * fineT);
 		float vis   = transmittance * (1.0 - stepT);
 			  distSum    += t * vis;
 			  distWeight += vis;
@@ -454,7 +460,7 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 			  transmittance *= stepT;
 
 		if (transmittance < 0.02) break;
-			t += fine;
+			t += fineT;
 	}
 
 	float coveredDist = t - entryT;

@@ -95,19 +95,22 @@ void main(){
 		const int area = cloudUpscale * cloudUpscale;
 		vec2 cornerSize = floor(vec2(viewWidth, viewHeight) / float(cloudUpscale));
 		if (gl_FragCoord.x < cornerSize.x && gl_FragCoord.y < cornerSize.y) {
-			ivec2 texel = ivec2(gl_FragCoord.xy);                 // low-res texel
+			ivec2 texel = ivec2(gl_FragCoord.xy);
 			ivec2 checkerPos = cloudUpscale * texel
 			                 + vcCheckerOffset(frameCounter % area);
 			vec2  fullUV = (vec2(checkerPos) + 0.5) / vec2(viewWidth, viewHeight);
 
-			vec4 dClip = vec4(fullUV, 1.0, 1.0) * 2.0 - 1.0;
-			vec4 dView = gbufferProjectionInverse * dClip; dView /= dView.w;
-			vec3 worldDir = normalize(mat3(gbufferModelViewInverse) * dView.xyz);
+			// only march samples that will actually be composited!!
+			if (texture2D(depthtex0, fullUV).r >= 1.0) {
+				vec4 dClip = vec4(fullUV, 1.0, 1.0) * 2.0 - 1.0;
+				vec4 dView = gbufferProjectionInverse * dClip; dView /= dView.w;
+				vec3 worldDir = normalize(mat3(gbufferModelViewInverse) * dView.xyz);
 
-			float dith = vcBayer8(vec2(checkerPos));
-			dith = fract(dith + float(frameCounter / area) * 0.61803399);
+				float dith = vcBayer8(vec2(checkerPos));
+				dith = fract(dith + float(frameCounter / area) * 0.61803399);
 
-			cloudLowRes = computeVolumetricClouds(worldDir, 1e9, dith, cloudSteps, atmSunTrue.y, cloudDist);
+				cloudLowRes = computeVolumetricClouds(worldDir, 1e9, dith, cloudSteps, atmSunTrue.y, cloudDist);
+			}
 		}
 	}
 	#endif
