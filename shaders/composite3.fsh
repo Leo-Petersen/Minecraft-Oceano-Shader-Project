@@ -125,9 +125,23 @@ void main() {
 	float waterSSS = max(0.0, (0.5 - packedWaveLight) * 2.0);   
 	float frontGlow = max(0.0, (packedWaveLight - 0.5) * 2.0);  
 	// Wave normal for water so the sky reflection actually follows the surface, water looks flat otherwise
-	vec3 reflNormalSurf = (iswater > 0.5) ? waterNormal : viewNormal;
+	vec3 reflNormalSurf = viewNormal;
+	if (iswater > 0.5) {
+		// This is essentially how 'strongly' the wave normal bends the sky reflection
+		// Lower means flatter and 'gentler' sky reflections, 1.0 is fully accurate
+		const float reflSkyBend = 0.5;
+		reflNormalSurf = normalize(mix(viewNormal, waterNormal, reflSkyBend));
+	}
 	vec3 reflViewDir  = reflect(normalize(viewPos.xyz), reflNormalSurf);
 	vec3 reflWorldDir = normalize(mat3(gbufferModelViewInverse) * reflViewDir);
+
+	if (iswater > 0.5) {
+		// Keep reflected rays above the horizon so there are no deep 'troughs' in the water, this is an artistic choice
+		// This flattens waves but they look prettyyyy
+		reflWorldDir.y = max(reflWorldDir.y, 0.015);
+		reflWorldDir = normalize(reflWorldDir);
+	}
+
 	vec3 reflectedskyBoxCol = atmSky(colortex15, vec2(viewWidth, viewHeight), reflWorldDir, atmSunTrue);
 	vec3 skyBoxCol = texture2D(colortex9, texcoord).rgb;
 
