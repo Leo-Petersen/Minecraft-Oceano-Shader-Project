@@ -244,7 +244,7 @@ void main() {
 		 skybox = atmSunsetTint(skybox, reflWorldDir, sunDirWorld, 1.0 - rainStrength);
 		 skybox = luminance(skybox, 1.12);
 		 skybox += vec3(skyColor * 0.5) * (rainStrength * 0.5);
-		 skybox *= 1.2;
+		 //skybox *= 1.2;
 	     //skybox *= (1.0 - rainStrength * 0.3);
 	#endif
 
