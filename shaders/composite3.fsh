@@ -123,15 +123,19 @@ void main() {
 	float waterSSS = max(0.0, (0.5 - packedWaveLight) * 2.0);   
 	float frontGlow = max(0.0, (packedWaveLight - 0.5) * 2.0);  
 	// This is subpixel wave slope variance, it translates to reflection roughness,
-	// i'm not going to calculate actual reflection roughness, this works.
+	// i'm not going to calculate actual reflection roughness, this works
 	float waveSlopeVar = length(fwidth(waterNormal));
 
+	// The effective reflection roughness for water
+	float reflRough = 0.0;
 	// This is done so the sky reflection actually follow the surface, water looks flat otherwise
 	vec3 reflNormalSurf = viewNormal;
 	if (iswater > 0.5) {
-		// footprint driven roughness. near water it's crisp, far water blurs to a flat mirror
-		// Also prefilters the smooth sky LUT by widening the normal toward flat as roughness rises
-		float reflRough = clamp(waveSlopeVar * waveReflFilter, 0.0, 1.0);
+		float viewDist = length(viewPos.xyz);
+
+		// Screen space slope variance
+		// It's accurate up close, but eh far away because the stored wave normal is itself undersampled
+		reflRough = clamp(waveSlopeVar * waveReflFilter, 0.0, 1.0);
 		reflNormalSurf = normalize(mix(viewNormal, waterNormal, 1.0 - reflRough));
 	}
 	vec3 reflViewDir  = reflect(normalize(viewPos.xyz), reflNormalSurf);
@@ -245,7 +249,7 @@ void main() {
 		vec3 reflSky = mix(reflectedskyClouds, skyBoxCol, rainStrength) * reflSkyAccess;
 
 		if (fresnel > 0.05) {
-			waterreflection = raytrace(reflSky, viewPos.xyz, waterNormal, 6, reflHitUV, reflHitDepth);
+			waterreflection = raytrace(reflSky, viewPos.xyz, reflNormalSurf, 6, reflHitUV, reflHitDepth);
 		} else {
 			waterreflection = vec4(reflSky, 0.0);
 		}
