@@ -52,16 +52,8 @@ varying mat3 tbnMatrix;
 #include "/lib/waterBump.glsl"
 #include "/lib/time.glsl"
 #include "/lib/lightCol.glsl"
-#include "/lib/atmosphereLUT.glsl"
 #include "/lib/encode.glsl"
 #include "/lib/sharedLighting.glsl"
-
-vec3 getSkyDir() {
-    vec2 ndc = gl_FragCoord.xy / vec2(viewWidth, viewHeight) * 2.0 - 1.0;
-    vec4 viewPos = gbufferProjectionInverse * vec4(ndc, 1.0, 1.0);
-    viewPos /= viewPos.w;
-    return normalize(mat3(gbufferModelViewInverse) * viewPos.xyz);
-}
 
 vec3 toNDC(vec3 pos){
 	vec4 iProjDiag = vec4(gbufferProjectionInverse[0].x, gbufferProjectionInverse[1].y, gbufferProjectionInverse[2].zw);
@@ -231,21 +223,6 @@ void main() {
 	} else {
 		normalTangentSpace = vec4(normalize(bump * tbnMatrix) * 0.5 + 0.5, 1.0);
 	}
-	
-	// Reflected sky
-	vec3 reflNormalView = normalize(bump * tbnMatrix).xyz;
-	if (isglass > 0.5 || isice > 0.5 || ishoney > 0.5) {
-		reflNormalView = glassNormal;
-	}
-	vec3 reflViewDir  = reflect(normalize(fragpos), reflNormalView);
-	vec3 reflWorldDir = normalize(mat3(gbufferModelViewInverse) * reflViewDir);
-	vec3 sunDirWorld  = normalize(mat3(gbufferModelViewInverse) * sunPosition);
-	vec3 skybox = atmSky(colortex15, vec2(viewWidth, viewHeight), reflWorldDir, sunDirWorld);
-		 skybox = atmSunsetTint(skybox, reflWorldDir, sunDirWorld, 1.0 - rainStrength);
-		 skybox = luminance(skybox, 1.12);
-		 skybox += vec3(skyColor * 0.5) * (rainStrength * 0.5);
-		 //skybox *= 1.2;
-	     //skybox *= (1.0 - rainStrength * 0.3);
 	#endif
 
 	// Water SSS //
@@ -284,11 +261,10 @@ void main() {
 		color.a = 0.96; // temp fix to stop ice looking weird
 	}
 
-/* DRAWBUFFERS:012583 */
+/* DRAWBUFFERS:01253 */
 	gl_FragData[0] = color;
 	gl_FragData[1] = vec4(encodeNormal((isglass > 0.5 || isice > 0.5 || ishoney > 0.5) ? glassNormal : viewNormal), 1, 1);
 	gl_FragData[2] = vec4(lmcoord, material, 1.0f);
 	gl_FragData[3] = normalTangentSpace;
-	gl_FragData[4] = vec4(skybox, 1.0);
-	gl_FragData[5] = vec4(vec3(0.0), packedWaveLight);
+	gl_FragData[4] = vec4(vec3(0.0), packedWaveLight);
 }

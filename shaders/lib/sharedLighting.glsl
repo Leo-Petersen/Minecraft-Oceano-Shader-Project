@@ -1,6 +1,3 @@
-#ifndef SHARED_LIGHTING_GLSL
-#define SHARED_LIGHTING_GLSL
-
 float getTransparencyFactor() {
     return 0.5  * time[0] +   // sunrise
            0.6  * time[1] +   // day
@@ -55,5 +52,3 @@ vec3 getTorchLighting(float processedTorch, vec3 albedo) {
     float intensity = processedTorch * processedTorch * 3.2;
     return getTorchColor(intensity) * intensity * albedo;
 }
-
-#endif

@@ -67,7 +67,7 @@ vec3 getWaveHeight(vec2 posxz, float iswater, float randangle, float viewDist) {
 
 vec3 getParallaxDisplacement(vec3 posxz, float iswater, float viewDist) {
     
-    vec2 offset = viewVector.xy * (6.0 * WaterDepth) / max(viewDist, 1.0);
+    vec2 offset = viewVector.xy * (4.0 * WaterDepth) / max(viewDist, 1.0);
     
     float waveZ = mix(3.0, 0.25, iswater);
     float waveM = mix(0.0, 2.0, iswater);

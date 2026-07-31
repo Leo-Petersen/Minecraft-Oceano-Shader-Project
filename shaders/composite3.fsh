@@ -124,7 +124,9 @@ void main() {
 	float packedWaveLight = texture2D(colortex3, texcoord).a;
 	float waterSSS = max(0.0, (0.5 - packedWaveLight) * 2.0);   
 	float frontGlow = max(0.0, (packedWaveLight - 0.5) * 2.0);  
-	vec3 reflViewDir  = reflect(normalize(viewPos.xyz), viewNormal);
+	// Wave normal for water so the sky reflection actually follows the surface, water looks flat otherwise
+	vec3 reflNormalSurf = (iswater > 0.5) ? waterNormal : viewNormal;
+	vec3 reflViewDir  = reflect(normalize(viewPos.xyz), reflNormalSurf);
 	vec3 reflWorldDir = normalize(mat3(gbufferModelViewInverse) * reflViewDir);
 	vec3 reflectedskyBoxCol = atmSky(colortex15, vec2(viewWidth, viewHeight), reflWorldDir, atmSunTrue);
 	vec3 skyBoxCol = texture2D(colortex9, texcoord).rgb;
@@ -137,11 +139,7 @@ void main() {
 	vec3 reflectedskyClouds = reflectedskyBoxCol;
 	#if defined(VolumetricClouds) && defined(cloudReflections)
 		if (isEyeInWater < 0.9 && Depth < 1.0 && iswater > 0.5) {
-			// Mirror the view ray about the actual wave normal
-			// This is a bit expensive, but the effect is worth it I reckon, looks stupid otherwise lol
-			vec3 reflViewDir = reflect(normalize(viewPos.xyz), waterNormal);
-			vec3 reflWDir = normalize(mat3(gbufferModelViewInverse) * reflViewDir);
-			reflectedskyClouds = vcReflectClouds(reflectedskyBoxCol, reflWDir, vcDither, atmSunTrue.y);
+			reflectedskyClouds = vcReflectClouds(reflectedskyBoxCol, reflWorldDir, vcDither, atmSunTrue.y);
 		}
 	#endif
 
