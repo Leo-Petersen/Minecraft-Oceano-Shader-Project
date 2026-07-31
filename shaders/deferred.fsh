@@ -77,7 +77,6 @@ vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
 vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunDir);
 vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue);
 #include "/lib/lightCol.glsl"
-#include "/lib/clouds.glsl"
 #include "/lib/lighting.glsl"
 #include "/lib/brdf.glsl"
 #include "/lib/raytrace.glsl"

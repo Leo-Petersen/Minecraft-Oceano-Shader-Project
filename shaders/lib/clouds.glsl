@@ -1,6 +1,9 @@
 #define cloudUpscale 4
 #define cloudQuality 2
+// ifdef is here so this actually shows up in the shader settings menu, idk why
+#ifdef cloudReflections
 #define cloudReflections
+#endif
 
 #if cloudQuality == 1
   #define cloudUpscale 6
