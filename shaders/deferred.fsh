@@ -7,8 +7,6 @@
 uniform sampler2D colortex0; // .rgb = color
 uniform sampler2D colortex1; // .stp = VIEWNormal
 uniform sampler2D colortex2; // .s = torchLightMap, .t = skyLightMap, .p = material
-uniform sampler2D colortex3;
-uniform sampler2D colortex8;
 uniform sampler2D colortex9;
 uniform sampler2D colortex13;
 uniform sampler2D colortex14;  // transmittance + multiscatter LUT
@@ -194,7 +192,6 @@ void main() {
 
 	vec2 specularMap = colortex1Map.ba;
     float roughness = clamp(1.0 - specularMap.r, 0.01, 0.99);
-    vec3 reflectedskyBoxCol = texture2D(colortex8, texcoord).rgb;
     
     float Diffuse = calculateDiffuse(shadowLightPosition * 0.01, normalize(-viewPos.xyz), normal, roughness);
 

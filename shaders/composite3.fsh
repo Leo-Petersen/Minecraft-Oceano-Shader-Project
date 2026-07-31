@@ -8,7 +8,6 @@ uniform sampler2D colortex3;
 uniform sampler2D colortex4;
 uniform sampler2D colortex5;
 uniform sampler2D colortex7;
-uniform sampler2D colortex8;
 uniform sampler2D colortex9;
 uniform sampler2D colortex10;
 uniform sampler2D colortex11;
@@ -26,7 +25,6 @@ const float 	wetnessHalflife 			= 70.0; //[0.0 10.0 20.0 30.0 40.0 50.0 60.0 70.
 const float 	drynessHalflife 			= 70.0; //[0.0 10.0 20.0 30.0 40.0 50.0 60.0 70.0 80.0 90.0 100.0 110.0 120.0 130.0 140.0]
 
 const int colortex6Format = R11F_G11F_B10F;
-const int colortex8Format = R11F_G11F_B10F;
 */
 
 uniform mat4 gbufferProjection, gbufferProjectionInverse;
