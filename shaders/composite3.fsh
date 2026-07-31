@@ -45,6 +45,7 @@ uniform float viewHeight;
 uniform float far;
 uniform float near;
 uniform float blindness;
+uniform vec3 moonPosition;
 uniform float darknessFactor;
 uniform float wetness;
 uniform float PI;
@@ -80,6 +81,7 @@ float undergroundFix = clamp(mix(max(lmcoord.t-2.0/16.0,0.0)*1.14285714286,1.0,c
 #define atmosphereSun
 
 vec3 atmSunDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+vec3 atmMoonDir = normalize(mat3(gbufferModelViewInverse) * moonPosition);
 vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
 
 #include "/lib/settings.glsl"
@@ -147,7 +149,14 @@ void main() {
 		reflWorldDir = normalize(reflWorldDir);
 	}
 
-	vec3 reflectedskyBoxCol = atmSky(colortex15, vec2(viewWidth, viewHeight), reflWorldDir, atmSunTrue);
+	vec3 reflectedskyBoxCol = vec3(0.0);
+	if (Depth < 1.0) {
+		reflectedskyBoxCol = atmSky(colortex15, vec2(viewWidth, viewHeight), reflWorldDir, atmSunTrue);
+		reflectedskyBoxCol = atmSkyFinish(reflectedskyBoxCol, reflWorldDir, atmSunTrue, atmMoonDir);
+		reflectedskyBoxCol = atmSunsetTint(reflectedskyBoxCol, reflWorldDir, atmSunDir,
+		                                   (1.0 - rainStrength) * (1.0 - rainStrength));
+	}
+
 	vec3 skyBoxCol = texture2D(colortex9, texcoord).rgb;
 
 	float vcDither = vcBayer8(gl_FragCoord.xy);

@@ -299,6 +299,23 @@ vec3 atmSky(sampler2D skyViewTex, vec2 res, vec3 rd, vec3 sunDir) {
     return col;
 }
 
+vec3 atmMoonSky(vec3 rd, vec3 moonDir) {
+    float up = clamp(rd.y * 0.5 + 0.5, 0.0, 1.0);
+    vec3 tint = vec3(0.05, 0.09, 0.20);
+    float glow = atmPhaseM(dot(rd, moonDir), 0.6) * 0.5;
+    float moonUp = clamp(moonDir.y * 2.0, 0.0, 1.0);
+    return (tint * up + vec3(0.25, 0.30, 0.45) * glow) * moonUp;
+}
+
+
+vec3 atmSkyFinish(vec3 sky, vec3 rd, vec3 sunDir, vec3 moonDir) {
+    float night = smoothstep(0.02, -0.10, sunDir.y);
+    sky += atmMoonSky(rd, moonDir) * night * (1.0 - rainStrength * 0.95);
+    float luma = dot(sky, vec3(0.2126, 0.7152, 0.0722));
+    sky = mix(sky, vec3(luma), vec3(1.0 - 1.12));   // 12% saturation, matches luminance(sky, 1.12) in skybasic.fsh
+    return sky;
+}
+
 vec3 atmSunColor(sampler2D transTex, vec2 res, vec3 sunDir) {
     float below = smoothstep(-0.06, 0.02, sunDir.y);
     vec3 tr = atmFetchTrans(transTex, res, atmosRg + 0.0005, clamp(sunDir.y, -1.0, 1.0));
