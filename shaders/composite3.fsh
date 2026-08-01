@@ -100,6 +100,38 @@ float getDepth(float depth) {
     return 2.0 * near * far / (far + near - (2.0 * depth - 1.0) * (far - near));
 }
 
+// Bicubic Catmull Rom fetch. This preserves the higher frequencies across repeated
+// reprojection so the cloud history stops eroding into a blurry mess while the camera moves
+vec4 vcSampleCatmullRom(sampler2D tex, vec2 uv, vec2 texSize) {
+	vec2 samplePos = uv * texSize;
+	vec2 texPos1 = floor(samplePos - 0.5) + 0.5;
+	vec2 f = samplePos - texPos1;
+
+	vec2 w0 = f * (-0.5 + f * (1.0 - 0.5 * f));
+	vec2 w1 = 1.0 + f * f * (-2.5 + 1.5 * f);
+	vec2 w2 = f * (0.5 + f * (2.0 - 1.5 * f));
+	vec2 w3 = f * f * (-0.5 + 0.5 * f);
+
+	vec2 w12 = w1 + w2;
+	vec2 offset12 = w2 / w12;
+
+	vec2 texPos0  = (texPos1 - 1.0) / texSize;
+	vec2 texPos3  = (texPos1 + 2.0) / texSize;
+	vec2 texPos12 = (texPos1 + offset12) / texSize;
+
+	vec4 r = vec4(0.0);
+	r += texture2D(tex, vec2(texPos0.x,  texPos0.y))  * w0.x  * w0.y;
+	r += texture2D(tex, vec2(texPos12.x, texPos0.y))  * w12.x * w0.y;
+	r += texture2D(tex, vec2(texPos3.x,  texPos0.y))  * w3.x  * w0.y;
+	r += texture2D(tex, vec2(texPos0.x,  texPos12.y)) * w0.x  * w12.y;
+	r += texture2D(tex, vec2(texPos12.x, texPos12.y)) * w12.x * w12.y;
+	r += texture2D(tex, vec2(texPos3.x,  texPos12.y)) * w3.x  * w12.y;
+	r += texture2D(tex, vec2(texPos0.x,  texPos3.y))  * w0.x  * w3.y;
+	r += texture2D(tex, vec2(texPos12.x, texPos3.y))  * w12.x * w3.y;
+	r += texture2D(tex, vec2(texPos3.x,  texPos3.y))  * w3.x  * w3.y;
+	return r;
+}
+
 void main() {
 	
 	vec4 screenPos = vec4(texcoord, Depth, 1.0);
@@ -428,7 +460,7 @@ void main() {
 		            previousCameraPosition);
 		vec2 prevUV = rp.xy;
 
-		vec4 history     = texture2D(colortex11, prevUV);
+		vec4 history     = vcSampleCatmullRom(colortex11, prevUV, vec2(viewWidth, viewHeight));
 		vec4 historyData = texture2D(colortex10,  prevUV);
 
 		bool disocclusion = rp.z < 0.5 || any(isnan(history));
