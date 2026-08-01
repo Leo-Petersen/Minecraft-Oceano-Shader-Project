@@ -1,8 +1,3 @@
-#define cloudUpscale 4
-#define cloudQuality 2
-
-#define cloudReflections
-
 #if cloudQuality == 1
   #define cloudUpscale 6
   #define cloudSteps 20
@@ -53,7 +48,6 @@ const ivec2 vcCheckerTable[4] = ivec2[4](ivec2(0,0), ivec2(1,1), ivec2(1,0), ive
 ivec2 vcCheckerOffset(int i) { return vcCheckerTable[i]; }
 
 
-#define cloudReflSteps 2
 #define cloudReflStepsCeil 12	// hard march cap for reflections
 #define cloudReflDist 4000.0	// the max reflected cloud distance
 #define cloudMaxStep 90.0
@@ -61,9 +55,7 @@ ivec2 vcCheckerOffset(int i) { return vcCheckerTable[i]; }
 // Empty space skipping
 #define cloudSkipMult 3.5
 
-#define cloudRainDrop 130.0
-#define cloudRainSlab 0.88
-#define cloudRainOpacity 2.6
+#define cloudRainDrop 0.0 // set to zero for now, makes the transition to rain too abrupt
 
 vec2 vcOffset8(int frame) {
 	int i = frame & 7;
@@ -86,14 +78,12 @@ vec2 vcOffset16(int frame) {
 }
 
 // look modifiers //
-#define cloudAltitude 300             //[0 50 100 150 200 250 300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000] Altitude offset for the cloud layer, has a small performance impact
 #define cloudBottom (300.0 + cloudAltitude)
 // Normal cloud top.
 #define cloudCumulusTop (470.0 + cloudAltitude)
 // Cumulonimbus
-#define cloudCumulonimbus 1
+#define cloudCumulonimbus
 #define cloudCbTop (900.0 + cloudAltitude)      // tower ceiling
-#define cloudCbAmount 0.2    // rarity
 // 'anvil' vertical profile, couldn't actually get the anvil shaping to work but this ended up looking good so...
 #define cloudCbWaist 0.40     // width at the middle
 #define cloudCbBase 0.10      // extra width at the base
@@ -104,42 +94,13 @@ vec2 vcOffset16(int frame) {
 #define cloudCbCover 0.40     // the coverage above which a cloud towers into cumulonimbus
 
 // March ceiling
-#if cloudCumulonimbus == 1
+#ifdef cloudCumulonimbus
 #define cloudTop cloudCbTop
 #else
 #define cloudTop cloudCumulusTop
 #endif
 
-#define cloudScale 0.0000060
-#define cloudCoverage 0.30
-#define cloudSeparation 2.00
-#define cloudDensity 0.50      // opacity
-#define cloudDetail 2.00       // billow carve depth
-#define cloudSize 5.0          // overall scale
-
-#define cloudThickness 3.0
-#define cloudTopFall 1.0
-#define cloudBaseFlat 0.24
-
-// Detail
-#define cloudDetailCell 26.0
-#define cloudDetailVaspect 0.80
-
 #define cloudSelfshadow 1
-
-// Multiple scattering fill
-#define cloudMs 0.80
-// Powder/dark edge strength
-#define cloudPowder 0.30
-// Billow swirl
-#define cloudSwirl 0.60
-
-#define cloudSunBrightness 4.0
-#define cloudAmbient 1.6
-#define cloudTransitionDim 0.15
-#define cloudWindSpeed 5
-// Shape change over time
-#define cloudEvolve 0.2
 
 // Noise config //
 #define cloudNoiseRes 2048.0
@@ -213,13 +174,13 @@ float vcCoverage(vec2 p) {
 }
 
 float vcCloudType(vec2 p) {
-#if cloudCumulonimbus == 0
-	return 0.0;
-#else
+#ifdef cloudCumulonimbus
 	p += vcEvolveWarp(p);
 	float n = vcNoise(p * (cloudScale * 0.25 / cloudSize) + 0.37);
 	float th = 1.0 - cloudCbAmount;
 	return smoothstep(th, min(th + 0.10, 0.999), n);
+#else
+	return 0.0;
 #endif
 }
 
@@ -276,7 +237,7 @@ float vcDensity(vec3 wpos) {
 		return clamp(d, 0.0, 1.0);
 	}
 
-#if cloudCumulonimbus == 1
+#ifdef cloudCumulonimbus
 	float storm = vcCloudType(vcScrollXZ(wpos)) * (1.0 - rainStrength * 0.92);
 	vcStormOut = storm;
 	coverage = max(coverage, storm * 0.9);
@@ -347,7 +308,7 @@ float vcLightMarch(vec3 pos, vec3 sunDir, float coverage, float storm) {
 	if (rainStrength > 0.6) {
         float localTop = mix(vcTopCu, cloudCbTop, pow(storm, 0.45));
         float toTop = max(localTop - pos.y, 0.0) / max(abs(sunDir.y), 0.15);
-        return toTop * coverage * cloudDensity * cloudSelfshadow * 0.11 * (1.0 + rainStrength * cloudRainOpacity);
+        return toTop * coverage * cloudDensity * cloudSelfshadow * 0.11 * (1.0 + rainStrength * 2.6);
     }
     float od = 0.0;
     float stepSize = (vcTopCu - vcBase) / float(cloudLightSteps) * 0.6;

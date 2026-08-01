@@ -97,9 +97,6 @@
     #define caveFog
         #define caveFogStrength 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0 3.1 3.2 3.3 3.4 3.5 3.6 3.7 3.8 3.9 4.0]
 
-//Volumetric Clouds (WIP)//
-    #define VolumetricClouds
-
 //Post//
     #define TAA
     //#define Sharpen
@@ -129,6 +126,45 @@
     #define foliageWindFloor     0.25  // [0.0 0.1 0.15 0.2 0.25 0.3 0.4 0.5 0.6]
     #define foliageFlutterSpeed  2.2   // [0.5 1.0 1.5 2.0 2.2 2.5 3.0 4.0 5.0]
     #define foliageFlutterScale  0.9   // [0.2 0.4 0.6 0.8 0.9 1.2 1.5 2.0]
+
+//Volumetric Clouds//
+    #define VolumetricClouds
+    #define cloudReflections
+        #define cloudReflSteps 2
+
+        // Cloud Quality
+        #define cloudUpscale 4 // [2 3 4 6]
+        #define cloudQuality 2 // [1 2 3 4]
+
+        // Cloud Look
+        #define cloudAltitude 300   //[0 50 100 150 200 250 300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000] Altitude offset for the cloud layer, has a small performance impact
+        
+        #define cloudScale 0.0000060
+        #define cloudCoverage 0.30
+        #define cloudSeparation 2.00
+        #define cloudDensity 0.50      // opacity
+        #define cloudDetail 2.00       // billow carve depth
+        #define cloudSize 5.0          // overall scale
+        #define cloudThickness 3.0
+
+        #define cloudDetailCell 26.0
+        #define cloudDetailVaspect 0.80
+
+        #define cloudTopFall 1.0
+        #define cloudBaseFlat 0.24
+
+        #define cloudMs 0.80        // Multiple scattering fill
+        #define cloudPowder 0.30    // Powder/dark edge strength
+        #define cloudSwirl 0.60     // Billow swirl
+
+        #define cloudSunBrightness 4.0
+        #define cloudAmbient 1.6
+        #define cloudTransitionDim 0.15
+        #define cloudWindSpeed 5
+        #define cloudEvolve 0.2     // Shape change over time
+
+        // Cumulonimbus
+        #define cloudCbAmount 0.2   // coverage of cumulonimbus clouds
 
 //Mods//
     //#define PHOTONICS_ENABLED
