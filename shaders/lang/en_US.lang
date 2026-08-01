@@ -44,3 +44,74 @@ option.volumetricCloudFog = Cloud Fog (WIP)
 
 option.parallaxTAA=Parallax TAA
     option.parallaxTAA.comment= Smooths imperfections in Parallax. Disable then increase parallaxQuality & parallaxShadowQuality to obtain higher quality parallax
+# Volumetric Clouds #
+
+screen.VolumetricClouds = Volumetric Clouds
+    option.VolumetricClouds = Volumetric Clouds
+    option.VolumetricClouds.comment = Enables raymarched volumetric clouds.
+    option.cloudReflections = Cloud Reflections
+    option.cloudReflections.comment = Renders the volumetric clouds in reflective surfaces such as water.
+
+    screen.CloudQuality = Quality
+        option.cloudUpscale = Upscale Factor
+        option.cloudUpscale.comment = Renders clouds at a lower resolution then upscales. Higher is faster but softer.
+        option.cloudQuality = Cloud Quality
+            value.cloudQuality.1=Low
+            value.cloudQuality.2=Default
+            value.cloudQuality.3=High
+            value.cloudQuality.4=Ultra
+        option.cloudQuality.comment = Overall quality of the clouds. Higher looks cleaner but costs performance.
+        option.cloudReflSteps = Reflection Steps
+        option.cloudReflSteps.comment = Raymarch steps used when clouds are drawn in reflections.
+
+    screen.CloudParameters = Parameters
+
+        screen.CloudShape = Shape & Coverage
+            option.cloudAltitude = Altitude
+            option.cloudAltitude.comment = Altitude offset for the cloud layer. Has a small performance impact.
+            option.cloudScale = Noise Scale
+            option.cloudScale.comment = World space scale of the base cloud noise. Smaller values make larger cloud formations.
+            option.cloudSize = Size
+            option.cloudSize.comment = Overall scale of the clouds.
+            option.cloudThickness = Thickness
+            option.cloudThickness.comment = Vertical thickness of the cloud layer.
+            option.cloudCoverage = Coverage
+            option.cloudCoverage.comment = How much of the sky the clouds fill.
+            option.cloudSeparation = Separation
+            option.cloudSeparation.comment = Spacing between individual cloud formations.
+            option.cloudDensity = Density
+            option.cloudDensity.comment = Overall opacity of the clouds.
+            option.cloudTopFall = Top Falloff
+            option.cloudTopFall.comment = Softness of the cloud tops.
+            option.cloudBaseFlat = Base Flatten
+            option.cloudBaseFlat.comment = Flattens the underside of the clouds.
+
+        screen.CloudDetail = Detail & Noise
+            option.cloudDetail = Detail Carve Depth
+            option.cloudDetail.comment = Depth of the billow detail carved into the cloud shape.
+            option.cloudDetailCell = Detail Cell Size
+            option.cloudDetailCell.comment = Scale of the fine detail noise.
+            option.cloudDetailVaspect = Detail Vertical Aspect
+            option.cloudDetailVaspect.comment = Vertical stretch of the detail noise.
+            option.cloudSwirl = Billow Swirl
+            option.cloudSwirl.comment = Amount of swirl applied to the billow detail.
+
+        screen.CloudLighting = Lighting & Scattering
+            option.cloudSunBrightness = Sun Brightness
+            option.cloudSunBrightness.comment = Brightness of direct sunlight on the clouds.
+            option.cloudAmbient = Ambient Light
+            option.cloudAmbient.comment = Ambient sky light contribution on the clouds.
+            option.cloudTransitionDim = Twilight Dimming
+            option.cloudTransitionDim.comment = Dims the clouds during sunrise and sunset transitions.
+            option.cloudMs = Multiple Scattering
+            option.cloudMs.comment = Multiple scattering fill light inside the clouds.
+            option.cloudPowder = Powder Effect
+            option.cloudPowder.comment = Strength of the powder / dark edge effect.
+
+        screen.CloudWeather = Weather & Motion
+            option.cloudWindSpeed = Wind Speed
+            option.cloudWindSpeed.comment = Speed the clouds drift across the sky.
+            option.cloudEvolve = Evolution Speed
+            option.cloudEvolve.comment = How quickly cloud shapes change over time.
+            option.cloudCbAmount = Cumulonimbus Amount
+            option.cloudCbAmount.comment = Coverage of tall cumulonimbus (storm) clouds.

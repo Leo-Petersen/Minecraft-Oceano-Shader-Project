@@ -130,8 +130,7 @@
 //Volumetric Clouds//
     #define VolumetricClouds
     #define cloudReflections
-        #define cloudReflSteps 2
-
+        #define cloudReflSteps 2 // [1 2 3 4 6 8]
         // Cloud Quality
         #define cloudUpscale 4 // [2 3 4 6]
         #define cloudQuality 2 // [1 2 3 4]
@@ -139,32 +138,32 @@
         // Cloud Look
         #define cloudAltitude 300   //[0 50 100 150 200 250 300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000] Altitude offset for the cloud layer, has a small performance impact
         
-        #define cloudScale 0.0000060
-        #define cloudCoverage 0.30
-        #define cloudSeparation 2.00
-        #define cloudDensity 0.50      // opacity
-        #define cloudDetail 2.00       // billow carve depth
-        #define cloudSize 5.0          // overall scale
-        #define cloudThickness 3.0
+        #define cloudScale 0.0000060       // [0.0000040 0.0000050 0.0000060 0.0000070 0.0000080 0.0000100 0.0000120]
+        #define cloudCoverage 0.30          // [0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.70 0.80]
+        #define cloudSeparation 2.00        // [1.00 1.25 1.50 1.75 2.00 2.25 2.50 3.00 3.50 4.00]
+        #define cloudDensity 0.50      // [0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00] opacity
+        #define cloudDetail 2.00       // [0.50 1.00 1.50 2.00 2.50 3.00 3.50 4.00] billow carve depth
+        #define cloudSize 5.0          // [2.0 3.0 4.0 5.0 6.0 7.0 8.0 10.0] overall scale
+        #define cloudThickness 3.0          // [1.0 1.5 2.0 2.5 3.0 3.5 4.0 5.0 6.0]
 
-        #define cloudDetailCell 26.0
-        #define cloudDetailVaspect 0.80
+        #define cloudDetailCell 26.0        // [10.0 15.0 20.0 24.0 26.0 28.0 30.0 35.0 40.0]
+        #define cloudDetailVaspect 0.80     // [0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.20]
 
-        #define cloudTopFall 1.0
-        #define cloudBaseFlat 0.24
+        #define cloudTopFall 1.0            // [0.0 0.25 0.5 0.75 1.0 1.25 1.5 2.0]
+        #define cloudBaseFlat 0.24          // [0.00 0.08 0.16 0.24 0.32 0.40 0.50 0.60]
 
-        #define cloudMs 0.80        // Multiple scattering fill
-        #define cloudPowder 0.30    // Powder/dark edge strength
-        #define cloudSwirl 0.60     // Billow swirl
+        #define cloudMs 0.80        // [0.00 0.20 0.40 0.60 0.80 1.00 1.20 1.50] Multiple scattering fill
+        #define cloudPowder 0.30    // [0.00 0.10 0.20 0.30 0.40 0.50 0.60 0.80 1.00] Powder/dark edge strength
+        #define cloudSwirl 0.60     // [0.00 0.20 0.40 0.60 0.80 1.00 1.20 1.50] Billow swirl
 
-        #define cloudSunBrightness 4.0
-        #define cloudAmbient 1.6
-        #define cloudTransitionDim 0.15
-        #define cloudWindSpeed 5
-        #define cloudEvolve 0.2     // Shape change over time
+        #define cloudSunBrightness 4.0      // [1.0 2.0 3.0 4.0 5.0 6.0 8.0 10.0]
+        #define cloudAmbient 1.6            // [0.0 0.4 0.8 1.2 1.6 2.0 2.4 3.0]
+        #define cloudTransitionDim 0.15     // [0.00 0.05 0.10 0.15 0.20 0.30 0.40 0.50]
+        #define cloudWindSpeed 5            // [0 1 2 3 4 5 6 8 10 15 20]
+        #define cloudEvolve 0.2     // [0.0 0.1 0.2 0.3 0.4 0.5 0.8 1.0] Shape change over time
 
         // Cumulonimbus
-        #define cloudCbAmount 0.2   // coverage of cumulonimbus clouds
+        #define cloudCbAmount 0.2   // [0.0 0.1 0.2 0.3 0.4 0.5 0.7 1.0] coverage of cumulonimbus clouds
 
 //Mods//
     //#define PHOTONICS_ENABLED
