@@ -310,7 +310,12 @@ void main() {
 					// No border fog here, otherwise open water flattens to gray.
 					reflBorderFog = 0.0;
 				}
-				reflectionCol = mix(reflectionCol, skyBoxCol * (1.0 - effects * 0.95), reflBorderFog);
+				vec3 reflFogSky = skyBoxCol * (1.0 - effects * 0.95);
+				#ifdef atmosphereFog
+					float reflFogC = 1.0 - rainStrength;
+					reflFogSky = atmSunsetTint(reflFogSky, reflWorldDir, atmSunDir, reflFogC * reflFogC);
+				#endif
+				reflectionCol = mix(reflectionCol, reflFogSky, reflBorderFog);
 			#endif
 
 		if (isEyeInWater < 0.5){
@@ -347,7 +352,12 @@ void main() {
 		vec4 glassreflection = raytrace(reflectedskyBoxCol*lightMap.t, viewPos.xyz, viewNormal, 4);
 		vec3 reflectionCol = mix(reflectedskyBoxCol*lightMap.t, glassreflection.rgb, glassreflection.a);
 			#ifdef BorderFog
-				reflectionCol = mix(reflectionCol, skyBoxCol * (1.0 - effects * 0.95), borderFog);
+				vec3 glassFogSky = skyBoxCol * (1.0 - effects * 0.95);
+				#ifdef atmosphereFog
+					float glassFogC = 1.0 - rainStrength;
+					glassFogSky = atmSunsetTint(glassFogSky, reflWorldDir, atmSunDir, glassFogC * glassFogC);
+				#endif
+				reflectionCol = mix(reflectionCol, glassFogSky, borderFog);
 			#endif
 
 		color.rgb = mix(color.rgb, reflectionCol, fresnel);
@@ -540,7 +550,13 @@ void main() {
 	//// Border Fog ////
 	#ifdef BorderFog
 		if (Depth < 1.0 && isEyeInWater < 0.9) {
-			color.rgb = mix(color.rgb, skyBoxCol * (1.0 - effects * 0.95), borderFog);
+			vec3 fogSky = skyBoxCol * (1.0 - effects * 0.95);
+			#ifdef atmosphereFog
+				vec3 fogRd = normalize(mat3(gbufferModelViewInverse) * viewPos.xyz);
+				float fogC = 1.0 - rainStrength;
+				fogSky = atmSunsetTint(fogSky, fogRd, atmSunDir, fogC * fogC);
+			#endif
+			color.rgb = mix(color.rgb, fogSky, borderFog);
 		}
 	#endif
 
