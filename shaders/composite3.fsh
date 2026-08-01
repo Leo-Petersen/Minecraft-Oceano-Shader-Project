@@ -196,13 +196,6 @@ void main() {
 		vcDither = fract(vcDither + float(frameCounter & 15) * 0.0625);
 	#endif
 
-	vec3 reflectedskyClouds = reflectedskyBoxCol;
-	#if defined(VolumetricClouds) && defined(cloudReflections)
-		if (isEyeInWater < 0.9 && Depth < 1.0 && iswater > 0.5) {
-			reflectedskyClouds = vcReflectClouds(reflectedskyBoxCol, reflWorldDir, vcDither, atmSunTrue.y);
-		}
-	#endif
-
 	//// Border Fog ////
 	#ifdef BorderFog
 		float effects = blindness + darknessFactor;
@@ -284,10 +277,18 @@ void main() {
 		float fresnel = pow(1.0 - normalDotEye, 5.0);
 			  fresnel = mix(0.02, 1.0, fresnel);
 
+		// Cloud reflections
+		vec3 reflSkyClouds = reflectedskyBoxCol;
+		#if defined(VolumetricClouds) && defined(cloudReflections)
+			if (isEyeInWater < 0.9 && fresnel > 0.10) {
+				reflSkyClouds = vcReflectClouds(reflectedskyBoxCol, reflWorldDir, vcDither, atmSunTrue.y);
+			}
+		#endif
+		vec3 reflSky = mix(reflSkyClouds, skyBoxCol, rainStrength) * reflSkyAccess;
+
 		vec4 waterreflection;
 		vec2 reflHitUV = vec2(0.5);
 		float reflHitDepth = -1.0;
-		vec3 reflSky = mix(reflectedskyClouds, skyBoxCol, rainStrength) * reflSkyAccess;
 
 		if (fresnel > 0.05) {
 			waterreflection = raytrace(reflSky, viewPos.xyz, reflNormalSurf, 6, reflHitUV, reflHitDepth);
@@ -376,7 +377,7 @@ void main() {
 			float distFactor = length(worldPos.xz) / 120.0;
 				distFactor = pow(distFactor, 2.2);
 				distFactor = exp(-1.2 * distFactor);
-			color.rgb = puddles(color.rgb, worldPos, reflectedskyClouds, viewPos.xyz, lightMap, iswet, distFactor, 1);
+			color.rgb = puddles(color.rgb, worldPos, reflectedskyBoxCol, viewPos.xyz, lightMap, iswet, distFactor, 1);
 		}
 	#endif
 	

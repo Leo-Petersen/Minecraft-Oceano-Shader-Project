@@ -53,7 +53,9 @@ const ivec2 vcCheckerTable[4] = ivec2[4](ivec2(0,0), ivec2(1,1), ivec2(1,0), ive
 ivec2 vcCheckerOffset(int i) { return vcCheckerTable[i]; }
 
 
-#define cloudReflSteps 4
+#define cloudReflSteps 2
+#define cloudReflStepsCeil 12	// hard march cap for reflections
+#define cloudReflDist 4000.0	// the max reflected cloud distance
 #define cloudMaxStep 90.0
 
 // Empty space skipping
@@ -260,6 +262,20 @@ float vcEnvelope(float coverage, float relH, float storm) {
 float vcDensity(vec3 wpos) {
 	float coverage = vcCoverage(vcScrollXZ(wpos));
 
+	// Simplified density function for reflections
+	if (vcCheapLight) {
+		vcStormOut = 0.0;
+		if (coverage <= 0.0) return 0.0;
+		float relH = (wpos.y - vcBase) / (vcTopCu - vcBase);
+		if (relH <= 0.0 || relH >= 1.0) return 0.0;
+		float env = vcEnvelope(coverage, relH, 0.0);
+		if (env <= 0.0) return 0.0;
+		float e1 = vcValNoise(vcLatticePos(wpos, 1.0));	// single octave, no swirl
+		float n = 1.0 - e1; n = n * n;
+		float d = env - n * n * cloudDetail * (0.2 + relH);
+		return clamp(d, 0.0, 1.0);
+	}
+
 #if cloudCumulonimbus == 1
 	float storm = vcCloudType(vcScrollXZ(wpos)) * (1.0 - rainStrength * 0.92);
 	vcStormOut = storm;
@@ -405,6 +421,7 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 
 	for (int i = 0; i < cloudStepsCeil; i++) {
 		if (t >= exitT) break;
+		if (vcCheapLight && i >= cloudReflStepsCeil) break;
 
 		// Distance LOD, keep clouds that are closer at the normal step, reduce far ones
 		float lod     = 1.0 + max(t - 2000.0, 0.0) * (1.0 / 3000.0);
@@ -457,7 +474,7 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 			  scatter += transmittance * luminance * (1.0 - stepT);
 			  transmittance *= stepT;
 
-		if (transmittance < 0.02) break;
+		if (transmittance < (vcCheapLight ? 0.10 : 0.02)) break;
 			t += fineT;
 	}
 
@@ -500,7 +517,7 @@ vec3 vcReflectClouds(vec3 baseReflSky, vec3 reflWorldDir, float dither, float su
     if (reflWorldDir.y <= 0.0) return baseReflSky;
     vcCheapLight = true;
     float ignoredDist;
-    vec4 c = computeVolumetricClouds(reflWorldDir, 1e9, dither, cloudReflSteps, sunElevY, ignoredDist);
+    vec4 c = computeVolumetricClouds(reflWorldDir, cloudReflDist, dither, cloudReflSteps, sunElevY, ignoredDist);
     vcCheapLight = false;
     vcReflectTrans = c.a;
     return baseReflSky * c.a + c.rgb;
