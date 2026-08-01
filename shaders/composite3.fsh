@@ -227,7 +227,7 @@ void main() {
 		float depthDifference = max(underwaterDepth - waterDepth, 0.0);
 		
 		vec2 refractOffset = (refractDir.xy - viewDir.xy);
-		float offsetScale = clamp(depthDifference * 0.25, 0.0, 0.15);
+		float offsetScale = clamp(depthDifference * 0.45, 0.0, 0.30);
 		refractOffset *= offsetScale;
 
 		// Chromatic aberration
@@ -324,6 +324,19 @@ void main() {
 			color.rgb += reflectedSun * vcReflectTrans * reflSkyAccess;
 			color.rgb += (vec3(shallowwaterR, shallowwaterG, shallowwaterB)/255) * waterSSS * 0.6; 
 			color.rgb += (vec3(deepwaterR, deepwaterG, deepwaterB)/255) * frontGlow * 0.4;           
+
+			// Physically water should have no diffuse. This tilts brightness by how each
+			// wave face angles toward the sun, so faces turned sunward are lit and
+			// faces turned away are shaded. That should give crests/troughs the
+			// light and dark shading that creates readable wave shape
+			// Without this water looks flat, the surface is only readable due to the reflection of the sky
+			vec3  wN        = normalize(mat3(gbufferModelViewInverse) * waterNormal);
+			vec2  faceTilt  = wN.xz;
+			vec2  sunHoriz  = normalize(atmSunDir.xz + 1e-5);
+			float towardSun = dot(faceTilt, sunHoriz);	// positive is a sun facing face, negative away
+			// strength of the shading effect
+			float waveShadeStrength = 0.8;
+			color.rgb *= clamp(1.0 + towardSun * waveShadeStrength, 0.65, 1.5);
 		} else {
 			//color.rgb = mix(refractedColor, reflectionCol, fresnel * 0.3);
 			color.rgb += (vec3(shallowwaterR, shallowwaterG, shallowwaterB)/255) * waterSSS * 0.5 * fogDepth2; 
