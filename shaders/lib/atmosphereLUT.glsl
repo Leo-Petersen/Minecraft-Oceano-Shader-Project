@@ -225,13 +225,13 @@ vec2 atmSkyViewUv(vec3 rd) {
 // (sun at azimuth 0).
 vec3 atmGenSkyView(vec2 uv, vec3 sunDir, float camAltKm, sampler2D transTex, sampler2D msTex, vec2 res) {
     vec3 rd = atmSkyViewDir(uv);
-    float r = atmosRg + max(camAltKm, 0.0002);
+    float r = atmosRg + max(camAltKm, 0.003);
     vec3 ro = vec3(0.0, r, 0.0);
 
     float tEnd = atmRaySphere(ro, rd, atmosRt);
     float tG = atmRaySphere(ro, rd, atmosRg);
     if (tG > 0.0) tEnd = min(tEnd, tG);
-    if (tEnd <= 0.0) return vec3(0.0);
+    if (tEnd <= 0.0) tEnd = 1.0;
 
     const int STEPS = 32;
     float seg = tEnd / float(STEPS);
