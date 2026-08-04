@@ -28,7 +28,6 @@ void main() {
 
     float camAltKm = max(0.0, (cameraPosition.y - 63.0)) / 1000.0;
 
-    // both transmittance and multiscatter live in colortex14
     vec3 sky = atmGenSkyView(uv, sunLocal, camAltKm, colortex14, colortex14, res);
     imageStore(colorimg15, px + ivec2(atmosSkyOrg), vec4(sky, 1.0));
 }

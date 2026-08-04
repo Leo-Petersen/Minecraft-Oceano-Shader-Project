@@ -132,7 +132,6 @@
     #define cloudReflections
         #define cloudReflSteps 2 // [1 2 3 4 6 8]
         // Cloud Quality
-        #define cloudUpscale 4 // [2 3 4 6]
         #define cloudQuality 2 // [1 2 3 4]
 
         // Cloud Look

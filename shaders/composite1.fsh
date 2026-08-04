@@ -96,8 +96,7 @@ void main(){
 		vec2 cornerSize = floor(vec2(viewWidth, viewHeight) / float(cloudUpscale));
 		if (gl_FragCoord.x < cornerSize.x && gl_FragCoord.y < cornerSize.y) {
 			ivec2 texel = ivec2(gl_FragCoord.xy);
-			ivec2 checkerPos = cloudUpscale * texel
-			                 + vcCheckerOffset(frameCounter % area);
+			ivec2 checkerPos = cloudUpscale * texel + vcCheckerOffset(frameCounter % area);
 			vec2  fullUV = (vec2(checkerPos) + 0.5) / vec2(viewWidth, viewHeight);
 
 			// only march samples that will actually be composited!!

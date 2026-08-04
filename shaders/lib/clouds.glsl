@@ -90,7 +90,7 @@ vec2 vcOffset16(int frame) {
 #define cloudCbAnvil 0.75     // extra width at the top
 #define cloudCbAnvilH 0.82   // height of the anvil
 #define cloudCbThin 0.28     // how much thinner the top is
-#define cloudCbRough 2.60     // extra erosion
+#define cloudCbRough 1.20     // extra erosion at height on storms
 #define cloudCbCover 0.40     // the coverage above which a cloud towers into cumulonimbus
 
 // March ceiling
@@ -110,6 +110,15 @@ vec2 vcOffset16(int frame) {
 
 #define cloudIso 0.0795775   // isotropic phase value, 1/(4*pi)
 
+#define cloudDetailDist 2500.0    // max distancefor the 3rd detail octave
+#define cloudDetail3Weight 0.10   // amplitude of the 3rd octave
+#define cloudDetail3EnvGate 0.60  // only run 3rd octave where env < this
+#define cloudDomainWarp 90.0      // coverage domain warp strength 0 = off
+#define cloudAnvilSpread 400.0    // how far the anvil dilates downwind 0 = off
+#define cloudAnvilFlatten 0.5     // <1 widens the anvil footprint (lower frequency)
+#define cloudShapeOct 0.5         // frequency of the low 'shape' octave
+#define cloudShapeWeight 0.5      // how much the shape octave dominates the carve
+
 float vcBase = cloudBottom - cloudRainDrop * rainStrength;
 float vcTopCu = cloudCumulusTop - 90.0 * rainStrength;
 
@@ -118,6 +127,10 @@ float vcBayer2(vec2 a) { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75)
 #define vcBayer8(a)  (vcBayer4(0.5 * (a)) * 0.25 + vcBayer2(a))
 
 float vcNoise(vec2 uv) { return texture2D(noisetex, uv).x; }
+
+// Billow remap
+// 0 at a lobe core (v = 0.5), 1 in the crevices between lobes.
+float vcBil(float v) { return abs(v * 2.0 - 1.0); }
 
 float vcRelH(float y) { return (y - vcBase) / (cloudTop - vcBase); }
 
@@ -161,14 +174,21 @@ float vcCoverage(vec2 p) {
 	// cloudEvolve controls how fast cloud shapes shift/change with time, bad approach to this but good enough for now
 	float t = frameTimeCounter * cloudEvolve;
 	vec2 warp = vcEvolveWarp(p);
-	float n = vcNoise((p + warp) * (cloudScale / cloudSize));
+	vec2 q = p + warp;
+
+#if cloudDomainWarp > 0.0
+	vec2 dw = texture2D(noisetex, q * (cloudScale * 0.05 / cloudSize)).xy - 0.5;
+	q += dw * cloudDomainWarp;
+#endif
+
+	float n = vcNoise(q * (cloudScale / cloudSize));
 	float cover = mix(cloudCoverage, 0.97, rainStrength) + 0.10 * sin(t * 0.006);
     float th = 0.5 - cover * 0.5;
     float c = clamp((n - th) / max(1.0 - th, 0.001), 0.0, 1.0);
 
     float sep = mix(cloudSeparation, 0.55, rainStrength);
     c = pow(c, sep);
-	float broad = vcNoise((p + warp) * (cloudScale * 0.18 / cloudSize) + 0.71);
+	float broad = vcNoise(q * (cloudScale * 0.18 / cloudSize) + 0.71);
     c *= mix(1.0, 0.55 + broad * 0.9, rainStrength * 0.8);
     return max(c, rainStrength * 0.42);
 }
@@ -219,7 +239,6 @@ float vcEnvelope(float coverage, float relH, float storm) {
 	return env;
 }
 
-// Two octave noise^4 erosion, this seems to work best from what I've found. Revisit later
 float vcDensity(vec3 wpos) {
 	float coverage = vcCoverage(vcScrollXZ(wpos));
 
@@ -232,8 +251,8 @@ float vcDensity(vec3 wpos) {
 		float env = vcEnvelope(coverage, relH, 0.0);
 		if (env <= 0.0) return 0.0;
 		float e1 = vcValNoise(vcLatticePos(wpos, 1.0));	// single octave, no swirl
-		float n = 1.0 - e1; n = n * n;
-		float d = env - n * n * cloudDetail * (0.2 + relH);
+		float b = vcBil(e1);
+		float d = env - b * b * cloudDetail * (0.2 + relH);
 		return clamp(d, 0.0, 1.0);
 	}
 
@@ -252,19 +271,39 @@ float vcDensity(vec3 wpos) {
 	float relH = (wpos.y - vcBase) / (localTop - vcBase);
 	if (relH <= 0.0 || relH >= 1.0) return 0.0;
 
+#if cloudAnvilSpread > 0.0
+	if (storm > 0.01 && relH > cloudCbAnvilH - 0.1) {
+		float spread = smoothstep(cloudCbAnvilH - 0.1, 1.0, relH);
+		vec2 downwind = normalize(vec2(cloudWindSpeed, cloudWindSpeed * 0.3) + 1e-3);
+		vec2 axz = wpos.xz + downwind * spread * cloudAnvilSpread;
+		float anvilCov = vcCoverage(axz * cloudAnvilFlatten);
+		coverage = mix(coverage, max(coverage, anvilCov * storm), spread);
+	}
+#endif
+
 	float env = vcEnvelope(coverage, relH, storm);
 	if (env <= 0.0) return 0.0;
 
+	float e0 = vcValNoise(vcLatticePos(wpos, cloudShapeOct));
 	float e1 = vcValNoise(vcLatticePos(wpos, 1.0));
-	vec3 lp2 = vcLatticePos(wpos, 3.0);
-	lp2.xz += (e1 - 0.5) * cloudSwirl; // warp fine detail, WIP, kinda ass
+	vec3 lp2 = vcLatticePos(wpos, 2.2);
+	lp2.xz += (e1 - 0.5) * cloudSwirl; // warp fine detail, WIP, kinda ass, note: hass been improved with third octave
 	float e2 = vcValNoise(lp2);
-	float n = (1.0 - e1) + (0.5 - e2 * 0.5);
-	n /= 1.5;
-	n = n * n;
+
+	float billow = vcBil(e0) * cloudShapeWeight + vcBil(e1) * 0.28 + vcBil(e2) * 0.12;
+
 	// Erosion "based on height"* for cumulonimbus, so cumulonimbus clouds are not just a big ol' smooth bricks
 	float carve = cloudDetail * (0.2 + relH * (1.0 + storm * cloudCbRough)) * (1.0 - rainStrength * 0.22);
-	float d = env - n * n * carve; // noise^4 carve
+	float d = env - billow * billow * carve; // squared keeps lobe cores round and dense
+
+	// Gated 3rd octave
+	float dist = distance(wpos, cameraPosition);
+	if (dist < cloudDetailDist && env < cloudDetail3EnvGate) {
+		float e3 = vcValNoise(vcLatticePos(wpos, 5.0));
+		billow += vcBil(e3) * cloudDetail3Weight;
+		d = env - billow * billow * carve;
+	}
+
 	return clamp(d, 0.0, 1.0);
 }
 
@@ -275,9 +314,8 @@ float vcDensityShadowFast(vec3 wpos, float coverage, float storm) {
     if (relH <= 0.0 || relH >= 1.0) return 0.0;
     float env = vcEnvelope(coverage, relH, storm);
     if (env <= 0.0) return 0.0;
-    float n = 1.0 - vcValNoise(vcLatticePos(wpos, 1.0));
-    n = n * n;
-    float d = env - n * n * cloudDetail * (0.2 + relH);
+    float b = vcBil(vcValNoise(vcLatticePos(wpos, 1.0)));
+    float d = env - b * b * cloudDetail * (0.2 + relH);
     return clamp(d, 0.0, 1.0);
 }
 
