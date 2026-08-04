@@ -56,10 +56,17 @@ void main() {
 
                 for (int i = 0; i < sunShaftSamples; i++) {
                     pos -= delta;
-                    vec3 s = texture2D(colortex0, clamp(pos, 0.0, 1.0)).rgb;
+                    vec2 sp = clamp(pos, 0.0, 1.0);
+
+                    // FIX FOR BRDF BEING INCLUDED
+                    // Only the sky contributes to shafts, solid geometry acts as an occluder
+                    // Stops bright surfaces being smeared in
+                    float skyMask = step(0.9999, texture2D(depthtex0, sp).r);
+
+                    vec3 s = texture2D(colortex0, sp).rgb;
                     float l = dot(s, vec3(0.2126, 0.7152, 0.0722));
 
-                    vec3 bright = s * smoothstep(sunShaftThreshold, sunShaftThreshold + 0.5, l);
+                    vec3 bright = s * smoothstep(sunShaftThreshold, sunShaftThreshold + 0.5, l) * skyMask;
                     shaft += bright * decay;
                     decay *= sunShaftDecay;
                 }
