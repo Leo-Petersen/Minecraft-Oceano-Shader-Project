@@ -54,7 +54,7 @@ void main() {
 	lmcoord  = (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;
 	glcolor = gl_Color;
 
-	vec3 viewpos = mat3(gbufferModelViewInverse) * (gl_ModelViewMatrix * gl_Vertex).xyz + gbufferModelViewInverse[3].xyz;
+	vec3 viewpos = mat3(gbufferModelViewInverse) * (gl_ModelViewMatrix * gl_Vertex).xyz;
 	wpos = viewpos.xyz + cameraPosition;
 	viewPos = (gl_ModelViewMatrix * gl_Vertex).xyz;
 	worldViewDir = normalize(viewpos.xyz);
