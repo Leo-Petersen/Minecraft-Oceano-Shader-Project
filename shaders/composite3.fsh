@@ -487,7 +487,33 @@ void main() {
 		vec4 history     = vcSampleCatmullRom(colortex11, prevUV, vec2(viewWidth, viewHeight));
 		vec4 historyData = texture2D(colortex10,  prevUV);
 
-		bool disocclusion = rp.z < 0.5 || any(isnan(history));
+		// Terrain edge disocclusion. The reprojected history is only trustworthy if that spot actually held valid sky/cloud last frame 
+		vec2  hSize = vec2(viewWidth, viewHeight);
+		ivec2 hMax  = ivec2(hSize) - 1;
+		ivec2 hBase = ivec2(floor(prevUV * hSize - 0.5));
+		float ageMin = min(
+			min(texelFetch(colortex10, clamp(hBase + ivec2(0,0), ivec2(0), hMax), 0).g,
+			    texelFetch(colortex10, clamp(hBase + ivec2(1,0), ivec2(0), hMax), 0).g),
+			min(texelFetch(colortex10, clamp(hBase + ivec2(0,1), ivec2(0), hMax), 0).g,
+			    texelFetch(colortex10, clamp(hBase + ivec2(1,1), ivec2(0), hMax), 0).g));
+		bool historyWasSky = ageMin >= 0.5 && !any(isnan(historyData));
+		bool disocclusion = rp.z < 0.5 || any(isnan(history)) || !historyWasSky;
+
+		bool marchedHere = texelFetch(colortex10, src, 0).a >= 0.5;
+		bool borrowed = false;
+		if (disocclusion && !marchedHere) {
+			for (int r = 1; r <= 2 && !borrowed; r++)
+			for (int oy = -r; oy <= r && !borrowed; oy++)
+			for (int ox = -r; ox <= r && !borrowed; ox++) {
+				if (max(abs(ox), abs(oy)) != r) continue;   // walk one ring at a time, nearest first
+				ivec2 s2 = clamp(src + ivec2(ox, oy), ivec2(0), corner - 1);
+				if (texelFetch(colortex10, s2, 0).a >= 0.5) {
+					current   = texelFetch(colortex12, s2, 0);
+					freshDist = texelFetch(colortex10, s2, 0).b;
+					borrowed  = true;
+				}
+			}
+		}
 		// Velocity gated neighbourhood clamp
 		float camVel = length(cameraPosition - previousCameraPosition) / max(frameTime, 1e-4);
 		float uvVel = length(prevUV - texcoord) * max(viewWidth, viewHeight);
@@ -522,9 +548,15 @@ void main() {
 		float historyWeight = 1.0 - 1.0 / max(age - float(area), 1.0);
 			  historyWeight = min(historyWeight, mix(0.97, 0.80, clamp(uvVel / 8.0, 0.0, 1.0)));
 
+		bool skyHere = (Depth >= 1.0);
+
 		cloudAccum     = max(mix(current, history, historyWeight), 0.0);
 		cloudDataOut.r = mix(freshDist, historyData.x, historyWeight);
-		cloudDataOut.g = min(age + 1.0, float(cloudAccumLimit));
+		// Only genuine sky pixels build temporal age
+		bool validNow = !disocclusion || marchedHere || borrowed;
+		cloudDataOut.g = (skyHere && validNow) ? min(age + 1.0, float(cloudAccumLimit)) : 0.0;
+
+		if (!skyHere) cloudAccum = current;
 
 		if (isEyeInWater < 0.9 && Depth >= 1.0) {
 			float ca = clamp((cloudAccum.a - 0.05) / 0.95, 0.0, 1.0);

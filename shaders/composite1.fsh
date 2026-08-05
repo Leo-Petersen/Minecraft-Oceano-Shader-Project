@@ -90,6 +90,7 @@ void main(){
 
 	vec4  cloudLowRes = vec4(0.0, 0.0, 0.0, 1.0);
 	float cloudDist   = 1e6;
+	float cloudMarched = 0.0;   // 1.0 means this low-res texel actually ran a march this frame
 	#ifdef VolumetricClouds
 	{
 		const int area = cloudUpscale * cloudUpscale;
@@ -109,6 +110,7 @@ void main(){
 				dith = fract(dith + float(frameCounter / area) * 0.61803399);
 
 				cloudLowRes = computeVolumetricClouds(worldDir, 1e9, dith, cloudSteps, atmSunTrue.y, cloudDist);
+				cloudMarched = 1.0;
 			}
 		}
 	}
@@ -117,6 +119,6 @@ void main(){
 /* RENDERTARGETS: 0,12,10 */
 	gl_FragData[0] = vec4(color, 1.0);
 	gl_FragData[1] = cloudLowRes;
-	gl_FragData[2] = vec4(texelFetch(colortex10, ivec2(gl_FragCoord.xy), 0).rg, cloudDist, 0.0);
+	gl_FragData[2] = vec4(texelFetch(colortex10, ivec2(gl_FragCoord.xy), 0).rg, cloudDist, cloudMarched);
 
 }
