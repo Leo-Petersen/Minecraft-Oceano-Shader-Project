@@ -345,14 +345,8 @@ void main() {
 	}
 
 	// Glass Reflections //
-	if (isglass == 1.0) {
+	if (isglass == 1.0 && specularMap.r > 0.1) {
 		float perceptualSmoothness = specularMap.r;
-		
-		// Default smoothness if no texture data
-		if (perceptualSmoothness == 0.0) {
-			perceptualSmoothness = 0.95;
-		}
-		
 		float roughness = 1.0 - perceptualSmoothness;
 		
 		vec3 viewDir = normalize(viewPos.xyz);
@@ -472,6 +466,11 @@ void main() {
 		vec4  current   = texelFetch(colortex12, src, 0);      // fresh color+transmittancve
 		float freshDist = texelFetch(colortex10, src, 0).b;    // fresh apparent dist
 
+	  if (Depth < 1.0) {
+		// Terrain here means clouds are never composited onto solid geometry, so skip the entire reproject
+		cloudAccum   = current;
+		cloudDataOut = vec4(freshDist, 0.0, 0.0, 0.0);
+	  } else {
 		vec3 worldDir = normalize(mat3(gbufferModelViewInverse) * viewPos.xyz);
 
 		// fresh vs last frame's history at this pixel
@@ -487,7 +486,7 @@ void main() {
 		vec4 history     = vcSampleCatmullRom(colortex11, prevUV, vec2(viewWidth, viewHeight));
 		vec4 historyData = texture2D(colortex10,  prevUV);
 
-		// Terrain edge disocclusion. The reprojected history is only trustworthy if that spot actually held valid sky/cloud last frame 
+		// Terrain edge disocclusion
 		vec2  hSize = vec2(viewWidth, viewHeight);
 		ivec2 hMax  = ivec2(hSize) - 1;
 		ivec2 hBase = ivec2(floor(prevUV * hSize - 0.5));
@@ -548,20 +547,17 @@ void main() {
 		float historyWeight = 1.0 - 1.0 / max(age - float(area), 1.0);
 			  historyWeight = min(historyWeight, mix(0.97, 0.80, clamp(uvVel / 8.0, 0.0, 1.0)));
 
-		bool skyHere = (Depth >= 1.0);
-
 		cloudAccum     = max(mix(current, history, historyWeight), 0.0);
 		cloudDataOut.r = mix(freshDist, historyData.x, historyWeight);
-		// Only genuine sky pixels build temporal age
+		// A freshly disoccluded pixel only starts aging once it has a real sample
 		bool validNow = !disocclusion || marchedHere || borrowed;
-		cloudDataOut.g = (skyHere && validNow) ? min(age + 1.0, float(cloudAccumLimit)) : 0.0;
+		cloudDataOut.g = validNow ? min(age + 1.0, float(cloudAccumLimit)) : 0.0;
 
-		if (!skyHere) cloudAccum = current;
-
-		if (isEyeInWater < 0.9 && Depth >= 1.0) {
+		if (isEyeInWater < 0.9) {
 			float ca = clamp((cloudAccum.a - 0.05) / 0.95, 0.0, 1.0);
 			color.rgb = color.rgb * ca + cloudAccum.rgb;
 		}
+	  }
 	}
 	#endif
 

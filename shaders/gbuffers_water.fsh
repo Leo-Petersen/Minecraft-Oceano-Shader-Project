@@ -7,6 +7,7 @@ uniform sampler2D colortex10;
 uniform sampler2D colortex11;
 uniform sampler2D normals;
 uniform sampler2D noisetex;
+uniform sampler2D specular;
 
 uniform float frameTimeCounter;
 uniform float rainStrength;
@@ -68,6 +69,7 @@ void main() {
 	float isice = float(material > 0.14 && material < 0.16);
 	float isportal = float(material > 0.16 && material < 0.18);
 	float isTransparent = 1.0 - iswater; // Everything except water
+	float pbrSmoothness = texture2D(specular, texcoord).r;
 	
 	vec3 fragpos = toNDC(vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z));
 	
@@ -262,7 +264,7 @@ void main() {
 
 /* DRAWBUFFERS:01253 */
 	gl_FragData[0] = color;
-	gl_FragData[1] = vec4(encodeNormal((isglass > 0.5 || isice > 0.5 || ishoney > 0.5) ? glassNormal : viewNormal), 1, 1);
+	gl_FragData[1] = vec4(encodeNormal((isglass > 0.5 || isice > 0.5 || ishoney > 0.5) ? glassNormal : viewNormal), pbrSmoothness, 1);
 	gl_FragData[2] = vec4(lmcoord, material, 1.0f);
 	gl_FragData[3] = normalTangentSpace;
 	gl_FragData[4] = vec4(vec3(0.0), packedWaveLight);
