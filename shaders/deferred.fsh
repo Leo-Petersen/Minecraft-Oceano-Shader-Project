@@ -392,7 +392,7 @@ void main() {
     #ifdef shadowMap
         float ambientStrength = ambientStr * 0.09;
     #else
-        float ambientStrength = 0.03;
+        float ambientStrength = 0.034 * pow(ao, 0.42);
         ShadowAccum = vec3(0.5);
     #endif
     
