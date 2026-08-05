@@ -7,6 +7,7 @@ uniform sampler2D colortex10;
 uniform sampler2D colortex11;
 uniform sampler2D noisetex;
 uniform sampler2D normals;
+uniform sampler2D texture;
 
 uniform float frameTimeCounter;
 uniform float rainStrength;
@@ -89,7 +90,7 @@ void main() {
 	#endif
 
 	// Base color
-	vec4 color = texture2D(colortex0, texcoord) * glcolor;
+	vec4 color = texture2D(texture, texcoord) * glcolor;
 	vec3 albedo = color.rgb;
 
 	if (iswater > 0.5) {
