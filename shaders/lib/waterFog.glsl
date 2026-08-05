@@ -56,7 +56,7 @@ vec3 getInScatteredLight(vec3 lightColor, float distToSurface, float cosTheta, f
 }
 
 
-vec3 getWaterDepthFog(vec3 color, vec3 fragpos, vec3 fragpos2, float iswater, float lightMap) {
+vec3 getWaterDepthFog(vec3 color, vec3 fragpos, vec3 fragpos2, float iswater, float lightMap, float skyAccess) {
     
     float depth = distance(fragpos, fragpos2);
     depth = clamp(depth, 0.0, 20.0);
@@ -66,6 +66,9 @@ vec3 getWaterDepthFog(vec3 color, vec3 fragpos, vec3 fragpos2, float iswater, fl
     
     float adaptiveFactor = 1.0 + (1.0 - lightMap) * 0.3;
     fogDensity = clamp(fogDensity * adaptiveFactor, 0.0, 1.0);
+
+    // How much daylight actually reaches this water
+    float skyVisibility = smoothstep(0.02, 0.30, skyAccess);
     
     vec3 shallowWaterColor = vec3(shallowwaterR, shallowwaterG, shallowwaterB)/255;
     vec3 deepWaterColor = vec3(deepwaterR, deepwaterG, deepwaterB)/255;
@@ -178,8 +181,12 @@ vec3 getWaterDepthFog(vec3 color, vec3 fragpos, vec3 fragpos2, float iswater, fl
     turbidity = turbidity * 0.1 + 0.95;
     baseWaterColor *= turbidity;
     
+    vec3 litWaterColor = baseWaterColor * fogStr;
+    vec3 caveWaterColor = deepWaterColor * 0.04;
+    vec3 waterTint = mix(caveWaterColor, litWaterColor, skyVisibility);
+
     vec3 extinctedColor = color * transmittance;
-    vec3 finalColor = mix(extinctedColor, baseWaterColor * fogStr, fogDensity);
+    vec3 finalColor = mix(extinctedColor, waterTint, fogDensity);
     
     return finalColor;
 }

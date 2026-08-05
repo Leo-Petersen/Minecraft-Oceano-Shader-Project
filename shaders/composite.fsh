@@ -66,6 +66,7 @@ const bool colortex15Clear = false;
 float Depth = texture2D(depthtex0, texcoord).r;
 float Depth1 = texture2D(depthtex1, texcoord).r;
 vec2 lightMap = texture2D(colortex2, texcoord).st;
+float rawSkyLightMap = lightMap.t;
 
 vec3 luma(vec3 color, float strength) {
 	float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
@@ -275,7 +276,7 @@ void main() {
 
 	////Fog////
 	if (iswater == 1.0){
-		color.rgb = getWaterDepthFog(color.rgb, viewPos.xyz, fragpos2, iswater, lightMap.t);
+		color.rgb = getWaterDepthFog(color.rgb, viewPos.xyz, fragpos2, iswater, lightMap.t, rawSkyLightMap);
 	}
 
 	#ifdef Fog
