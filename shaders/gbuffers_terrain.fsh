@@ -96,8 +96,17 @@ void main() {
     }
     
     vec2 normalXY = normalRaw.rg * 2.0 - 1.0;
-    vec3 normalData = vec3(normalXY, sqrt(1.0 - dot(normalXY, normalXY)));
+    vec3 normalData = vec3(normalXY, sqrt(max(1.0 - dot(normalXY, normalXY), 0.0)));
          normalData *= tbnMatrix;
+
+    #define normalTiltStrength 1.0
+    #define normalTiltMax 0.5
+
+    float faceTilt   = 1.0 - clamp(dot(normalize(normalData), normalize(viewNormal)), 0.0, 1.0);
+    float pRough     = 1.0 - specularMap.r;   // perceptual roughness
+    float tiltKernel = min(normalTiltStrength * faceTilt * faceTilt, normalTiltMax);
+    float widened    = pow(clamp(pRough * pRough * pRough * pRough + tiltKernel, 0.0, 1.0), 0.25);
+    specularMap.r    = 1.0 - widened;
     
     float textureAO = normalRaw.b;
     float surfaceHeight = texture2DGradARB(normals, parallaxedUV, dFdxy[0], dFdxy[1]).a;

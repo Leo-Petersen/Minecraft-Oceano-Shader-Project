@@ -1,5 +1,9 @@
 #ifdef CookTorranceGGXBRDF
 
+#define specularAAStrength 0.5
+#define specularAAClamp 0.5
+#define specularClamp 6.0
+
 //// Area Light NdotH^2 ////
 float GetNoHSquared(float radiusTan, float NoL, float NoV, float VoL) {
     float radiusCos = 1.0 / sqrt(1.0 + radiusTan * radiusTan);
@@ -39,8 +43,9 @@ float GGXDistribution(float NoHsqr, float alpha) {
 // Denominator (4·NdotL·NdotV) is baked into the 0.5/ form
 float SchlickGGX(float NoL, float NoV, float alpha) {
     float k = alpha * 0.5;
-    float smithL = 0.5 / (NoL * (1.0 - k) + k);
-    float smithV = 0.5 / (NoV * (1.0 - k) + k);
+    // max() stops the denominator collapsing at grazing angles, fixes the blown out BRDF issues with packs like Patrix
+    float smithL = 0.5 / max(NoL * (1.0 - k) + k, 1e-4);
+    float smithV = 0.5 / max(NoV * (1.0 - k) + k, 1e-4);
     return smithL * smithV;
 }
 
@@ -52,6 +57,10 @@ vec3 SphericalGaussianFresnel(float HoL, vec3 baseReflectance) {
 // Albedo is needed only for metallic F0 calculation.
 vec3 cookTorranceGGXBRDF(vec3 albedo, vec2 specularMap, float skyMap, vec3 sunCol)
 {
+    vec3 dNdx = dFdx(viewNormal);
+    vec3 dNdy = dFdy(viewNormal);
+    float normalVariance = specularAAStrength * (dot(dNdx, dNdx) + dot(dNdy, dNdy));
+
     vec3 ClipSpace = vec3(texcoord, Depth) * 2.0 - 1.0;
     vec4 ViewW     = gbufferProjectionInverse * vec4(ClipSpace, 1.0);
     vec3 View      = ViewW.xyz / ViewW.w;
@@ -79,6 +88,9 @@ vec3 cookTorranceGGXBRDF(vec3 albedo, vec2 specularMap, float skyMap, vec3 sunCo
     float roughness = max(1.0 - wetSmoothness, 0.025);
     float alpha = roughness * roughness;
 
+    float aaKernel = min(2.0 * normalVariance, specularAAClamp);
+    alpha = sqrt(clamp(alpha * alpha + aaKernel, 0.0, 1.0));
+
     // Area light
     float sunRadius = 0.05;
     float NoHsqr = GetNoHSquared(sunRadius, NoL, NoV, VoL);
@@ -86,7 +98,7 @@ vec3 cookTorranceGGXBRDF(vec3 albedo, vec2 specularMap, float skyMap, vec3 sunCo
         float NoH = max(dot(viewNormal, halfDir), 0.0);
         NoHsqr = NoH * NoH;
     }
-    NoV = max(NoV, 0.0);
+    NoV = max(NoV, 1e-3);
 
     vec3  F0 = mix(vec3(0.04), albedo, metalness);
     vec3  F  = SphericalGaussianFresnel(HoL, F0);
@@ -100,6 +112,11 @@ vec3 cookTorranceGGXBRDF(vec3 albedo, vec2 specularMap, float skyMap, vec3 sunCo
     vec3 specular = specScalar / (1.0 + 0.0078125 * specScalar) * Fn * NoL * sunCol;
 
     specular *= (1.0 - rainStrength * 0.8);
+
+    const vec3 lumaW = vec3(0.2126, 0.7152, 0.0722);
+    float specLuma = dot(specular, lumaW);
+    float maxLuma  = specularClamp * dot(sunCol, lumaW);
+    if (specLuma > maxLuma) specular *= maxLuma / max(specLuma, 1e-6);
 
     return specular;
 }
