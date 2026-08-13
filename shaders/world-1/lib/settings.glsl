@@ -1,7 +1,7 @@
 //ShadowMap//
     const int shadowMapResolution = 2048; // [512 768 1024 1256 1536 2048 3072 4096 6144 8192] Resolution of shadows
     const int noiseTextureResolution = 2048;
-    const float sunPathRotation = -30.0f; // [-50.0f -40.0f -30.0f -20.0f -10.0f 0.0f 10.0f 20.0f 30.0f 40.0f 50.0f]
+    const float sunPathRotation = -50.0f; // [-50.0f -40.0f -30.0f -20.0f -10.0f 0.0f 10.0f 20.0f 30.0f 40.0f 50.0f]
     const float ambientOcclusionLevel = 0.0;
     const float shadowDistance = 256;  // [64 96 128 160 192 224 256 320 384 448 512] enabled or disabled? differs between versions of iris, will test later
     const float shadowDistortion = 0.85; // [0.70 0.75 0.80 0.85 0.90 0.95] Distortion of shadow map
@@ -140,7 +140,7 @@
         #define cloudScale 0.0000060       // [0.0000040 0.0000050 0.0000060 0.0000070 0.0000080 0.0000100 0.0000120]
         #define cloudCoverage 0.30          // [0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.70 0.80]
         #define cloudSeparation 2.00        // [1.00 1.25 1.50 1.75 2.00 2.25 2.50 3.00 3.50 4.00]
-        #define cloudDensity 0.50      // [0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00] opacity
+        #define cloudDensity 1.0      // [0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00] opacity
         #define cloudDetail 2.00       // [0.50 1.00 1.50 2.00 2.50 3.00 3.50 4.00] billow carve depth
         #define cloudSize 5.0          // [2.0 3.0 4.0 5.0 6.0 7.0 8.0 10.0] overall scale
         #define cloudThickness 3.0          // [1.0 1.5 2.0 2.5 3.0 3.5 4.0 5.0 6.0]
@@ -158,20 +158,18 @@
         #define cloudSunBrightness 4.0      // [1.0 2.0 3.0 4.0 5.0 6.0 8.0 10.0]
         #define cloudAmbient 1.6            // [0.0 0.4 0.8 1.2 1.6 2.0 2.4 3.0]
         #define cloudTransitionDim 0.15     // [0.00 0.05 0.10 0.15 0.20 0.30 0.40 0.50]
-        #define cloudWindSpeed 5            // [0 1 2 3 4 5 6 8 10 15 20]
+        #define cloudWindSpeed 1            // [0 1 2 3 4 5 6 8 10 15 20]
         #define cloudEvolve 0.2     // [0.0 0.1 0.2 0.3 0.4 0.5 0.8 1.0] Shape change over time
 
         // Cumulonimbus
         #define cloudCbAmount 0.2   // [0.0 0.1 0.2 0.3 0.4 0.5 0.7 1.0] coverage of cumulonimbus clouds
-        
 //Dimensions//
     //Nether//
-        //#define NetherShadowMap
-        #define netherHeatHaze
-            #define heatHazeStrength 1.0    // [0.5 1.0 1.5 2.0 3.0]
-            #define heatHazeScale    0.32    // spatial frequency of the wobble
-            #define heatHazeSpeed    1.5    // how fast it shimmers
-    //End//
+    //#define NetherShadowMap
+    #define netherHeatHaze
+        #define heatHazeStrength 1.0    // [0.5 1.0 1.5 2.0 3.0]
+        #define heatHazeScale    0.32    // spatial frequency of the wobble
+        #define heatHazeSpeed    1.5    // how fast it shimmers
 
 //Mods//
     //#define PHOTONICS_ENABLED

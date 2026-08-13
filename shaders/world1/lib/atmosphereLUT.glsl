@@ -312,7 +312,7 @@ vec3 atmSkyFinish(vec3 sky, vec3 rd, vec3 sunDir, vec3 moonDir) {
     float night = smoothstep(0.02, -0.10, sunDir.y);
     sky += atmMoonSky(rd, moonDir) * night * (1.0 - rainStrength * 0.95);
     float luma = dot(sky, vec3(0.2126, 0.7152, 0.0722));
-    sky = mix(sky, vec3(luma), vec3(1.0 - 1.12));
+    sky = mix(sky, vec3(luma), vec3(1.0 - 1.12));   // 12% saturation, matches luminance(sky, 1.12) in skybasic.fsh
     return sky;
 }
 

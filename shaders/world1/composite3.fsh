@@ -67,7 +67,7 @@ varying vec2 lmcoord;
 varying vec3 viewVector;
 varying vec3 upVec;
 
-#include "/lib/encode.glsl"
+#include "/world1/lib/encode.glsl"
 
 vec3 viewNormal = normalize(decodeNormal(texture2D(colortex1, texcoord).st));
 float rainMask = 1;
@@ -85,16 +85,16 @@ vec3 atmMoonDir = normalize(mat3(gbufferModelViewInverse) * moonPosition);
 vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
 
 #include "/lib/settings.glsl"
-#include "/lib/time.glsl"
-#include "/lib/atmosphereLUT.glsl"
+#include "/world1/lib/time.glsl"
+#include "/world1/lib/atmosphereLUT.glsl"
 vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunDir);
 vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue);
-#include "/lib/lightCol.glsl"
-#include "/lib/raytrace.glsl"
-#include "/lib/waterBump.glsl"
-#include "/lib/puddles.glsl"
-#include "/lib/caveFog.glsl"
-#include "/lib/clouds.glsl"
+#include "/world1/lib/lightCol.glsl"
+#include "/world1/lib/raytrace.glsl"
+#include "/world1/lib/waterBump.glsl"
+#include "/world1/lib/puddles.glsl"
+#include "/world1/lib/caveFog.glsl"
+#include "/world1/lib/clouds.glsl"
 
 float getDepth(float depth) {
     return 2.0 * near * far / (far + near - (2.0 * depth - 1.0) * (far - near));
@@ -198,8 +198,8 @@ void main() {
 
 	//// Border Fog ////
 	#ifdef BorderFog
-		float effects = blindness + darknessFactor;
-		float borderFog = clamp(pow(length(worldPos.xz) / far, 14.0) * 0.7, 0.0, 1.0);
+		// float effects = blindness + darknessFactor;
+		// float borderFog = clamp(pow(length(worldPos.xz) / far, 14.0) * 0.7, 0.0, 1.0);
 		//borderFog *= (1.0 - rainStrength);
 	#endif
 
@@ -298,25 +298,25 @@ void main() {
 
 		vec3 reflectionCol = mix(reflSky, waterreflection.rgb, waterreflection.a);
 			#ifdef BorderFog
-				// Fog the reflection by the distance to what it REFLECTS, not the water surface!!
-				float reflBorderFog;
-				if (reflHitDepth >= 0.0) {
-					// Reflection hit, reconstruct the hit's world position and fog by its distance
-					vec4 hClip  = vec4(reflHitUV, reflHitDepth, 1.0) * 2.0 - 1.0;
-					vec4 hView  = gbufferProjectionInverse * hClip; hView /= hView.w;
-					vec3 hWorld = mat3(gbufferModelViewInverse) * hView.xyz + gbufferModelViewInverse[3].xyz;
-					reflBorderFog = clamp(pow(length(hWorld.xz) / far, 14.0) * 0.7, 0.0, 0.5) * (1.0 - rainStrength);
-				} else {
-					// Miss, reflecting the sky, which is already sky-colored (yay).
-					// No border fog here, otherwise open water flattens to gray.
-					reflBorderFog = 0.0;
-				}
-				vec3 reflFogSky = skyBoxCol * (1.0 - effects * 0.95);
-				#ifdef atmosphereFog
-					float reflFogC = 1.0 - rainStrength;
-					reflFogSky = atmSunsetTint(reflFogSky, reflWorldDir, atmSunDir, reflFogC * reflFogC);
-				#endif
-				reflectionCol = mix(reflectionCol, reflFogSky, reflBorderFog);
+				// // Fog the reflection by the distance to what it REFLECTS, not the water surface!!
+				// float reflBorderFog;
+				// if (reflHitDepth >= 0.0) {
+				// 	// Reflection hit, reconstruct the hit's world position and fog by its distance
+				// 	vec4 hClip  = vec4(reflHitUV, reflHitDepth, 1.0) * 2.0 - 1.0;
+				// 	vec4 hView  = gbufferProjectionInverse * hClip; hView /= hView.w;
+				// 	vec3 hWorld = mat3(gbufferModelViewInverse) * hView.xyz + gbufferModelViewInverse[3].xyz;
+				// 	reflBorderFog = clamp(pow(length(hWorld.xz) / far, 14.0) * 0.7, 0.0, 0.5) * (1.0 - rainStrength);
+				// } else {
+				// 	// Miss, reflecting the sky, which is already sky-colored (yay).
+				// 	// No border fog here, otherwise open water flattens to gray.
+				// 	reflBorderFog = 0.0;
+				// }
+				// vec3 reflFogSky = skyBoxCol * (1.0 - effects * 0.95);
+				// #ifdef atmosphereFog
+				// 	float reflFogC = 1.0 - rainStrength;
+				// 	reflFogSky = atmSunsetTint(reflFogSky, reflWorldDir, atmSunDir, reflFogC * reflFogC);
+				// #endif
+				// reflectionCol = mix(reflectionCol, reflFogSky, reflBorderFog);
 			#endif
 
 		if (isEyeInWater < 0.5){
@@ -328,8 +328,7 @@ void main() {
 			vec3  wN        = normalize(mat3(gbufferModelViewInverse) * waterNormal);
 			vec2  faceTilt  = wN.xz;
 			vec2  sunHoriz  = normalize(atmSunDir.xz + 1e-5);
-			float towardSun = dot(faceTilt, sunHoriz);	// positive is a sun facing face, negative away
-			// strength of the shading effect
+			float towardSun = dot(faceTilt, sunHoriz);
 			float waveShadeStrength = 0.8;
 			color.rgb *= clamp(1.0 + towardSun * waveShadeStrength, 0.65, 1.5);
 		} else {
@@ -355,12 +354,12 @@ void main() {
 		vec4 glassreflection = raytrace(reflectedskyBoxCol*lightMap.t, viewPos.xyz, viewNormal, 4);
 		vec3 reflectionCol = mix(reflectedskyBoxCol*lightMap.t, glassreflection.rgb, glassreflection.a);
 			#ifdef BorderFog
-				vec3 glassFogSky = skyBoxCol * (1.0 - effects * 0.95);
-				#ifdef atmosphereFog
-					float glassFogC = 1.0 - rainStrength;
-					glassFogSky = atmSunsetTint(glassFogSky, reflWorldDir, atmSunDir, glassFogC * glassFogC);
-				#endif
-				reflectionCol = mix(reflectionCol, glassFogSky, borderFog);
+				// vec3 glassFogSky = skyBoxCol * (1.0 - effects * 0.95);
+				// #ifdef atmosphereFog
+				// 	float glassFogC = 1.0 - rainStrength;
+				// 	glassFogSky = atmSunsetTint(glassFogSky, reflWorldDir, atmSunDir, glassFogC * glassFogC);
+				// #endif
+				// reflectionCol = mix(reflectionCol, glassFogSky, borderFog);
 			#endif
 
 		color.rgb = mix(color.rgb, reflectionCol, fresnel);
@@ -368,20 +367,6 @@ void main() {
 		// Sun specular
 		color.rgb += reflectedSun;
 	}
-
-	#ifdef rainReflection
-		float iswet = wetness;
-		float isParticle = float(material == 0);
-		  #ifdef alwaysPuddles
-	      iswet = 1.0;
-		  #endif
-		if (iswet > 0 && iswater != 1.0 && isglass != 1.0 && isParticle != 1.0 && Depth > 0.56) {
-			float distFactor = length(worldPos.xz) / 120.0;
-				distFactor = pow(distFactor, 2.2);
-				distFactor = exp(-1.2 * distFactor);
-			color.rgb = puddles(color.rgb, worldPos, reflectedskyBoxCol, viewPos.xyz, lightMap, iswet, distFactor, 1);
-		}
-	#endif
 	
 
 	//// PBR Reflections (opaque surfaces) ////
@@ -444,7 +429,6 @@ void main() {
 			}
 		}
 	#endif
-
 
 	//// Volumetric Clouds ////
 	vec4 cloudAccum   = vec4(0.0, 0.0, 0.0, 1.0);
@@ -558,23 +542,12 @@ void main() {
 
 	//// Atmosphere Fog ////
 	#ifdef atmosphereFog
-		if (isEyeInWater < 0.9) {
-			vec3 rd = normalize(mat3(gbufferModelViewInverse) * viewPos.xyz);
-
-			if (Depth < 1.0) {
-				float dist = length(worldPos.xz);	// horizontal distance, blocks
-				float dayF = max(smoothstep(-0.12, 0.02, atmSunDir.y), rainStrength * 0.65);
-
-				vec3 fogged = atmAerialPBR(color.rgb, colortex15, vec2(viewWidth, viewHeight),
-				                           rd, dist, atmSunDir, 1.0 - rainStrength,
-				                           cameraPosition.y, cameraPosition.y + worldPos.y);
-				color.rgb = mix(color.rgb, fogged, dayF);
-			}
-
-			if (Depth >= 1.0) {
-				float c = 1.0 - rainStrength;
-                color.rgb = atmSunsetTint(color.rgb, rd, atmSunDir, c * c);
-			}
+		if (isEyeInWater < 0.9 && Depth < 1.0) {
+			const vec3  endFogColor   = vec3(0.075, 0.045, 0.130)*2;
+			const float endFogDensity = 0.002;
+			float dist = length(worldPos.xz);
+			float fog  = 1.0 - exp(-dist * endFogDensity);
+			color.rgb  = mix(color.rgb, endFogColor, fog);
 		}
 	#endif
 	#ifdef caveFog
@@ -586,15 +559,15 @@ void main() {
 
 	//// Border Fog ////
 	#ifdef BorderFog
-		if (Depth < 1.0 && isEyeInWater < 0.9) {
-			vec3 fogSky = skyBoxCol * (1.0 - effects * 0.95);
-			#ifdef atmosphereFog
-				vec3 fogRd = normalize(mat3(gbufferModelViewInverse) * viewPos.xyz);
-				float fogC = 1.0 - rainStrength;
-				fogSky = atmSunsetTint(fogSky, fogRd, atmSunDir, fogC * fogC);
-			#endif
-			color.rgb = mix(color.rgb, fogSky, borderFog);
-		}
+		// if (Depth < 1.0 && isEyeInWater < 0.9) {
+		// 	vec3 fogSky = skyBoxCol * (1.0 - effects * 0.95);
+		// 	#ifdef atmosphereFog
+		// 		vec3 fogRd = normalize(mat3(gbufferModelViewInverse) * viewPos.xyz);
+		// 		float fogC = 1.0 - rainStrength;
+		// 		fogSky = atmSunsetTint(fogSky, fogRd, atmSunDir, fogC * fogC);
+		// 	#endif
+		// 	color.rgb = mix(color.rgb, fogSky, borderFog);
+		// }
 	#endif
 
 #ifdef VolumetricClouds
