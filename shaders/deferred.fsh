@@ -486,7 +486,7 @@ void main() {
 
         #ifdef materialEmission
             float emissionStr = mix(0.05, 1.0, torchFactor) + (1.0 - lightMap.t) * 0.5;
-            emissionStr = clamp(emissionStr, 0.0, 1.0);
+            emissionStr = clamp(emissionStr, 0.0, 0.15);
             #if defined(PHOTONICS) && defined(PHOTONICS_ENABLED)
                 color += albedo * emission * emissionStrength * 0.1;
             #else

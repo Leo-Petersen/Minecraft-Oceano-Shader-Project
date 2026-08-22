@@ -174,7 +174,7 @@ vec3 netherHaze(vec3 color, vec2 uv, float heat, float dist) {
 	vec2  wobble = vec2(wx, wy);
 
 	// Distortion grows with heat and distance, but capped
-	float amount = heat * clamp(dist / 24.0, 0.0, 0.6) * heatHazeStrength;
+	float amount = heat * clamp(dist / 24.0, 0.0, 0.6) * heatHazeStrength * 2;
 	vec2  offset = wobble * amount * 0.01;   // 0.01 keeps it in gentle UV units
 
 	return texture2D(colortex0, uv + offset).rgb;

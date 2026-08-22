@@ -89,11 +89,14 @@ void main() {
     
     // Default SSS for foliage materials without LabPBR data
     bool isLeaves = (material > 0.005 && material < 0.02);
+    bool isEmissiveBlock = (material > 0.06 && material < 0.08);
     bool isGrassBlock = (material > 0.025 && material < 0.04);
     if (labSSS < 0.01) {
         if (isLeaves)          labSSS = 0.75;
         else if (isGrassBlock) labSSS = 0.45;
     }
+
+    if (isEmissiveBlock) terrainColor.rgb *= 0.5;
     
     vec2 normalXY = normalRaw.rg * 2.0 - 1.0;
     vec3 normalData = vec3(normalXY, sqrt(max(1.0 - dot(normalXY, normalXY), 0.0)));

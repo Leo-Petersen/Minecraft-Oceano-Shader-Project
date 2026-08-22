@@ -544,7 +544,7 @@ void main() {
 	#ifdef atmosphereFog
 		if (isEyeInWater < 0.9 && Depth < 1.0) {
 			const vec3  endFogColor   = vec3(0.075, 0.045, 0.130)*2;
-			const float endFogDensity = 0.002;
+			const float endFogDensity = 0.0014;
 			float dist = length(worldPos.xz);
 			float fog  = 1.0 - exp(-dist * endFogDensity);
 			color.rgb  = mix(color.rgb, endFogColor, fog);
