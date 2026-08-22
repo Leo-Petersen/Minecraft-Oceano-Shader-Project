@@ -40,10 +40,6 @@ vec3 TransparentShadowHardware(vec3 SampleCoords, float transparencyFactor, floa
     if (shadowOpaque < 0.01) {
         return vec3(0.0);
     }
-    
-    if (shadowOpaque > 0.99) {
-        return sunlightCol * shadowOpaque;
-    }
 
     if (shadowOpaque > shadowTransparent + 0.01) {
         vec4 shadowCol = texture2D(shadowcolor0, SampleCoords.xy);
