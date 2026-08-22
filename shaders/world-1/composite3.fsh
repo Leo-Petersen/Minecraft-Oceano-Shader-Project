@@ -1,5 +1,7 @@
 #version 130
 
+#include "/lib/voxel_settings.glsl"
+
 uniform sampler2D colortex0;
 uniform sampler2D colortex1;
 uniform sampler2D colortex2;
@@ -19,6 +21,9 @@ uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 uniform sampler2D noisetex;
 uniform sampler2D shadowtex1;
+
+uniform sampler3D floodfillSampler;
+uniform sampler3D floodfillSamplerCopy;
 
 /*
 const float 	wetnessHalflife 			= 70.0; //[0.0 10.0 20.0 30.0 40.0 50.0 60.0 70.0 80.0 90.0 100.0 110.0 120.0 130.0 140.0]
@@ -95,6 +100,33 @@ vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue)
 #include "/world-1/lib/puddles.glsl"
 #include "/world-1/lib/caveFog.glsl"
 #include "/world-1/lib/clouds.glsl"
+
+const vec3 voxelVolumeSize = vec3(VOXEL_VOLUME_SIZE, VOXEL_VOLUME_SIZE * 0.5, VOXEL_VOLUME_SIZE);
+vec3 worldToVoxelUV(vec3 wpos) {
+    vec3 voxelPos = wpos + fract(cameraPosition) + voxelVolumeSize * 0.5;
+    return voxelPos / voxelVolumeSize;
+}
+
+float sampleHeat(vec3 worldPos) {
+    float jitter = vcBayer8(gl_FragCoord.xy);
+    #ifdef TAA
+        jitter = fract(jitter + float(frameCounter & 15) * 0.0625);
+    #endif
+
+    float H = 0.0;
+    float wsum = 0.0;
+    for (int i = 0; i < HEAT_STEPS; i++) {
+        float ti = min((float(i) + jitter) / float(HEAT_STEPS - 1), 1.0);
+        vec3  uv = worldToVoxelUV(worldPos * ti);
+        if (any(lessThan(uv, vec3(0.0))) || any(greaterThan(uv, vec3(1.0)))) continue;
+
+        float hs = ((frameCounter & 1) == 0) ? texture(floodfillSamplerCopy, uv).a
+                                             : texture(floodfillSampler,     uv).a;
+        H += hs;
+        wsum += 1.0;
+    }
+    return (wsum > 0.0) ? H / wsum : 0.0;
+}
 
 float getDepth(float depth) {
     return 2.0 * near * far / (far + near - (2.0 * depth - 1.0) * (far - near));
@@ -448,11 +480,22 @@ void main() {
 	#endif
 
 	#ifdef netherHeatHaze
-	if (isEyeInWater < 0.9) {
-		float heat = pow(lightMap.s, 2.0);
+	if (isEyeInWater < 0.9 && Depth < 1.0) {
+		float heat = sampleHeat(worldPos);
 		float dist = length(viewPos.xyz);
-		color = netherHaze(color, texcoord, heat, dist);
+		if (heat > 0.001) color = netherHaze(color, texcoord, heat, dist);
 	}
+	#endif
+
+	//// Atmosphere Fog ////
+	#ifdef atmosphereFog
+		if (isEyeInWater < 0.9) {
+			const vec3  netherFogColor   = vec3(0.22, 0.06, 0.04);
+			const float netherFogDensity = 0.03;
+			float dist = length(worldPos.xz);
+			float fog  = 1.0 - exp(-dist * netherFogDensity);
+			color.rgb  = mix(color.rgb, netherFogColor, fog);
+		}
 	#endif
 
 	//// Volumetric Clouds ////
@@ -471,22 +514,23 @@ void main() {
 		float freshDist = texelFetch(colortex10, src, 0).b;    // fresh apparent dist
 
 		if (Depth < 1.0) {
-			// The terrain path has no temporal accumulation, so blur the low-res
-			// cloud buffer spatially to hide the checkerboard/dither.
+			float terrainDist = length(viewPos.xyz);
+
 			vec4 sm = vec4(0.0); float wsum = 0.0;
 			for (int oy = -1; oy <= 1; oy++)
 			for (int ox = -1; ox <= 1; ox++) {
 				ivec2 s2 = clamp(src + ivec2(ox, oy), ivec2(0), corner - 1);
-				float w = (ox == 0 && oy == 0) ? 2.0 : 1.0;
+				float fd  = texelFetch(colortex10, s2, 0).b;
+				float inF = 1.0 - smoothstep(-8.0, 8.0, fd - terrainDist); // 0 if behind terrain
+				float w   = ((ox == 0 && oy == 0) ? 2.0 : 1.0) * inF;
 				sm += texelFetch(colortex12, s2, 0) * w; wsum += w;
 			}
-			sm /= wsum;
+			sm = (wsum > 0.0) ? sm / wsum : vec4(0.0, 0.0, 0.0, 1.0);
 
 			cloudAccum   = sm;
 			cloudDataOut = vec4(freshDist, 0.0, 0.0, 0.0);
 
 			if (isEyeInWater < 0.9) {
-				float terrainDist = length(viewPos.xyz);
 				float inFront = 1.0 - smoothstep(-8.0, 8.0, freshDist - terrainDist);
 
 				float ca = clamp((cloudAccum.a - 0.05) / 0.95, 0.0, 1.0);
@@ -540,7 +584,7 @@ void main() {
 		float camVel = length(cameraPosition - previousCameraPosition) / max(frameTime, 1e-4);
 		float uvVel = length(prevUV - texcoord) * max(viewWidth, viewHeight);
 		float velFactor = uvVel / (uvVel + 2.0);
-		if (velFactor > 0.02) {
+		{
 			vec4 e1 = current;	// centre fresh sample
 			vec4 b1 = texelFetch(colortex12, src + ivec2( 0,-1), 0);
 			vec4 d1 = texelFetch(colortex12, src + ivec2(-1, 0), 0);
@@ -554,7 +598,8 @@ void main() {
 			lo = 0.5 * (lo + min(min(min(lo,a1), min(c1,g1)), i1));
 			vec4 hi = max(max(max(b1,d1), max(e1,f1)), h1);
 			hi = 0.5 * (hi + max(max(max(hi,a1), max(c1,g1)), i1));
-			history = mix(history, clamp(history, lo, hi), velFactor);
+			float clampAmt = max(velFactor, 0.75);
+			history = mix(history, clamp(history, lo, hi), clampAmt);
 		}
 
 		// Checkerboard
@@ -584,17 +629,6 @@ void main() {
 	}
 	#endif
 	
-	//// Atmosphere Fog ////
-	#ifdef atmosphereFog
-		if (isEyeInWater < 0.9) {
-			const vec3  endFogColor   = vec3(0.22, 0.06, 0.04);
-			const float endFogDensity = 0.03;                     // higher = closer fog
-			float dist = length(worldPos.xz);
-			float fog  = 1.0 - exp(-dist * endFogDensity);
-			color.rgb  = mix(color.rgb, endFogColor, fog);
-		}
-	#endif
-
 	//// Border Fog ////
 	#ifdef BorderFog
 		// if (Depth < 1.0 && isEyeInWater < 0.9) {

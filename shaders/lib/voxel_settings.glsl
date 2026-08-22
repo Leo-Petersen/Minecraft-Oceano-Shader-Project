@@ -3,3 +3,6 @@
 #define VOXEL_VOLUME_SIZE 128
 #define FLOODFILL_BRIGHTNESS 4
 #define FLOODFILL_RADIUS 2
+#define RISE_DECAY     0.70   // [0.80 0.85 0.88 0.90 0.92 0.94]
+#define RISE_SPREAD    0.30   // [0.05 0.10 0.15 0.22 0.30]
+#define RISE_BUOYANCY  1.00   // [0.80 0.90 1.00 1.10]

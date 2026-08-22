@@ -1,5 +1,7 @@
 #version 130
 
+#include "/lib/voxel_settings.glsl"
+
 uniform sampler2D colortex0;
 uniform sampler2D colortex1;
 uniform sampler2D colortex2;
@@ -19,6 +21,9 @@ uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 uniform sampler2D noisetex;
 uniform sampler2D shadowtex1;
+
+uniform sampler3D floodfillSampler;
+uniform sampler3D floodfillSamplerCopy;
 
 /*
 const float 	wetnessHalflife 			= 70.0; //[0.0 10.0 20.0 30.0 40.0 50.0 60.0 70.0 80.0 90.0 100.0 110.0 120.0 130.0 140.0]
@@ -96,6 +101,33 @@ vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue)
 #include "/lib/caveFog.glsl"
 #include "/lib/clouds.glsl"
 
+const vec3 voxelVolumeSize = vec3(VOXEL_VOLUME_SIZE, VOXEL_VOLUME_SIZE * 0.5, VOXEL_VOLUME_SIZE);
+vec3 worldToVoxelUV(vec3 wpos) {
+    vec3 voxelPos = wpos + fract(cameraPosition) + voxelVolumeSize * 0.5;
+    return voxelPos / voxelVolumeSize;
+}
+
+float sampleHeat(vec3 worldPos) {
+    float jitter = vcBayer8(gl_FragCoord.xy);
+    #ifdef TAA
+        jitter = fract(jitter + float(frameCounter & 15) * 0.0625);
+    #endif
+
+    float H = 0.0;
+    float wsum = 0.0;
+    for (int i = 0; i < HEAT_STEPS; i++) {
+        float ti = min((float(i) + jitter) / float(HEAT_STEPS - 1), 1.0);
+        vec3  uv = worldToVoxelUV(worldPos * ti);
+        if (any(lessThan(uv, vec3(0.0))) || any(greaterThan(uv, vec3(1.0)))) continue;
+
+        float hs = ((frameCounter & 1) == 0) ? texture(floodfillSamplerCopy, uv).a
+                                             : texture(floodfillSampler,     uv).a;
+        H += hs;
+        wsum += 1.0;
+    }
+    return (wsum > 0.0) ? H / wsum : 0.0;
+}
+
 float getDepth(float depth) {
     return 2.0 * near * far / (far + near - (2.0 * depth - 1.0) * (far - near));
 }
@@ -130,6 +162,20 @@ vec4 vcSampleCatmullRom(sampler2D tex, vec2 uv, vec2 texSize) {
 	r += texture2D(tex, vec2(texPos12.x, texPos3.y))  * w12.x * w3.y;
 	r += texture2D(tex, vec2(texPos3.x,  texPos3.y))  * w3.x  * w3.y;
 	return r;
+}
+
+vec3 netherHaze(vec3 color, vec2 uv, float heat, float dist) {
+	float t = frameTimeCounter * heatHazeSpeed;
+	vec2  nUV = uv * heatHazeScale;
+	vec2  riseScroll = vec2(t * 0.15, -t);
+	float wx = vcNoise(nUV + riseScroll) - 0.5;
+	float wy = vcNoise(nUV + riseScroll * 0.8 + 3.7) - 0.5;
+	vec2  wobble = vec2(wx, wy);
+
+	float amount = heat * clamp(dist / 24.0, 0.0, 0.6) * heatHazeStrength * 2;
+	vec2  offset = wobble * amount * 0.01;
+
+	return texture2D(colortex0, uv + offset).rgb;
 }
 
 void main() {
@@ -201,6 +247,14 @@ void main() {
 		float effects = blindness + darknessFactor;
 		float borderFog = clamp(pow(length(worldPos.xz) / far, 14.0) * 0.7, 0.0, 1.0);
 		//borderFog *= (1.0 - rainStrength);
+	#endif
+
+	#ifdef heatHaze
+	if (isEyeInWater < 0.9 && Depth < 1.0) {
+		float heat = sampleHeat(worldPos);
+		float dist = length(viewPos.xyz);
+		if (heat > 0.001) color = netherHaze(color, texcoord, heat, dist);
+	}
 	#endif
 
 	// Water Refraction and Reflection //
@@ -444,7 +498,6 @@ void main() {
 			}
 		}
 	#endif
-
 
 	//// Volumetric Clouds ////
 	vec4 cloudAccum   = vec4(0.0, 0.0, 0.0, 1.0);

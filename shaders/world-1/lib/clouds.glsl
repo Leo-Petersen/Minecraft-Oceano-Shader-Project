@@ -16,7 +16,7 @@
   #define cloudStepsCeil 112
   #define cloudAccumLimit 20
 #elif cloudQuality == 4
-  #define cloudUpscale 2
+  #define cloudUpscale 3
   #define cloudSteps 30
   #define cloudStepsCeil 112
   #define cloudAccumLimit 20
@@ -67,8 +67,8 @@ ivec2 vcCheckerOffset(int i) { return vcCheckerTable[i]; }
 #define netherVeinScale    0.0016
 #define netherVeinSharp    2.2
 #define netherFireEvolve   0.03
-#define netherBaseGlow     0.55
-#define netherFireStrength 1.8
+#define netherBaseGlow     0.75
+#define netherFireStrength 0.75
 
 #define netherFireHi vec3(2.6, 0.85, 0.16)     // hottest vein colour
 #define netherFireLo vec3(0.9, 0.18, 0.05)     // smoke colour
@@ -232,8 +232,12 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 	exitT = min(exitT, netherFadeFar);	// stop at the bedrock / walls
 	if (entryT >= exitT) return vec4(vec3(0.0), 1.0);
 
-	float fine = clamp((netherCeilTop - netherCeilBottom) / 10.0, 2.5, cloudMaxStep);
-	float t = entryT + fine * dither;
+	float fine = clamp((netherCeilTop - netherCeilBottom) / 10.0, 1.5, cloudMaxStep);
+	float ditherAnim = dither;
+	#ifdef TAA
+		//ditherAnim = fract(ditherAnim + float(frameCounter & 15) * 0.0625);
+	#endif
+	float t = entryT + fine * ditherAnim;
 	float entryStart = entryT;
 	bool  wasEmpty = true;
 
