@@ -1,6 +1,7 @@
 #version 130
 
 uniform sampler2D lightmap;
+uniform sampler2D texture;
 uniform sampler2D colortex0;
 uniform sampler2D colortex2;
 uniform sampler2D colortex10;
@@ -90,7 +91,7 @@ void main() {
 	float waterTransparency = 1.0 - iswater * 0.3;
 	#endif
 
-	vec4 color = texture2D(colortex0, texcoord) * glcolor;
+	vec4 color = texture2D(texture, texcoord) * glcolor;
 	vec3 albedo = color.rgb;
 
 	// Water Lighting //
@@ -164,7 +165,7 @@ void main() {
 			offset = vec2(offset.x * c - offset.y * s, offset.x * s + offset.y * c);
 			
 			vec2 layerUV = tileMin + mod(texcoord - tileMin + offset, tileSize);
-			vec3 layerColor = texture2D(colortex0, layerUV).rgb * glcolor.rgb;
+			vec3 layerColor = texture2D(texture, layerUV).rgb * glcolor.rgb;
 			
 			layerColor = pow(layerColor, vec3(1.4));
 			

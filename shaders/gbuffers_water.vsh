@@ -100,7 +100,7 @@ void main() {
 	tileMax = midcoord + halfTile;
 
 	//water//
-	//material = 0.0;
+	material = 0.0;
 	if (mc_Entity.x == 13000) material = 0.09;
     if (mc_Entity.x == 13010) material = 0.11;
 	if (mc_Entity.x == 13030) material = 0.13;

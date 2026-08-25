@@ -96,7 +96,7 @@ void main() {
         else if (isGrassBlock) labSSS = 0.45;
     }
 
-    if (isEmissiveBlock) terrainColor.rgb *= 0.5;
+    if (isEmissiveBlock) terrainColor.rgb *= 0.4;
     
     vec2 normalXY = normalRaw.rg * 2.0 - 1.0;
     vec3 normalData = vec3(normalXY, sqrt(max(1.0 - dot(normalXY, normalXY), 0.0)));

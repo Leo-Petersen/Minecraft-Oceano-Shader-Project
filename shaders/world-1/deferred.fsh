@@ -220,9 +220,7 @@ void main() {
     float originalBlockLight = lightMap.s;
     float torchTimeBlend = mix(1.0, torchFactor, rawSkyLight);
     float ph_torchTimeBlend = mix(1.0, photonicsTorchFactor, rawSkyLight);
-    float torchmapLight = max(lightMap.s, handlight) * lightMap.t * torchTimeBlend;
-    float torchmapCovered = max(lightMap.s, handlight) * (1.0 - lightMap.t);
-    lightMap.s = (torchmapLight * pow(ao, 0.3) * 0.5) + torchmapCovered;
+    lightMap.s = max(pow(lightMap.s, 1.8), handlight);
     
     // Torch intensity
     float torchIntensity = lightMap.s * lightMap.s * 5.2;

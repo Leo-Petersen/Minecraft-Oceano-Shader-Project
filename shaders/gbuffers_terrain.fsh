@@ -72,7 +72,10 @@ void main() {
     #endif
 
     vec3 fragpos = toNDC(vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z));
-    vec4 terrainColor = vec4(texture2DGradARB(texture, parallaxedUV, dFdxy[0], dFdxy[1]) * glcolor);
+
+    vec4 albedoSample = textureGrad(texture, parallaxedUV, dFdxy[0], dFdxy[1]);
+    if (albedoSample.a < 0.1) discard;
+    vec4 terrainColor = albedoSample * glcolor;
     vec4 specularData = texture2D(specular, parallaxedUV);
     vec4 normalRaw = texture2D(normals, parallaxedUV);
     
@@ -109,7 +112,7 @@ void main() {
     specularMap.r    = 1.0 - widened;
     
     float textureAO = normalRaw.b;
-    float surfaceHeight = texture2DGradARB(normals, parallaxedUV, dFdxy[0], dFdxy[1]).a;
+    float surfaceHeight = textureGrad(normals, parallaxedUV, dFdxy[0], dFdxy[1]).a;
 
     float shadowFactor = 1.0;
     #ifdef Parallax
