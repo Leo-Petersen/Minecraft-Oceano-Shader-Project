@@ -8,7 +8,7 @@ mat2 dFdxy = mat2(
 );
 
 vec4 readNormal(in vec2 coord) {
-    return texture2DGradARB(normals, fract(coord) * vtexcoordam.pq + vtexcoordam.st, dFdxy[0], dFdxy[1]);
+    return textureGrad(normals, fract(coord) * vtexcoordam.pq + vtexcoordam.st, dFdxy[0], dFdxy[1]);
 }
 
 float bayer2(vec2 a) {
@@ -120,7 +120,7 @@ float GetParallaxShadow(float depth, float fade, vec2 coord, vec3 lightVector, m
         float currentHeight = depth + stepHeight * iJittered;
         
         vec2 parallaxCoord = fract(newvTexCoord + stepOffset * iJittered) * vtexcoordam.pq + vtexcoordam.st;
-        float offsetHeight = texture2DGrad(normals, parallaxCoord, dcdx, dcdy).a;
+        float offsetHeight = textureGrad(normals, parallaxCoord, dcdx, dcdy).a;
         
         float sampleShadow = clamp(1.0 - (offsetHeight - currentHeight) * parallaxShadowStrength, 0.0, 1.0);
         minShadow = min(minShadow, sampleShadow);

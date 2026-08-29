@@ -4,6 +4,7 @@
 #define atmosRainG 0.30
 #define atmosOvercast
 #define atmosOvercastTint vec3(0.94, 0.97, 1.03)
+#define atmosApNightSky vec3(0.012, 0.017, 0.030)
 #define atmosOvercastGain 0.62
 #define atmosOvercastBlend 0.98
 #define atmosOvercastNight 0.2
@@ -375,7 +376,7 @@ vec3 atmSunsetTint(vec3 col, vec3 rd, vec3 sunDir, float clearness) {
 
 vec3 atmAerialPBR(vec3 surfaceColor, sampler2D skyViewTex, vec2 res,
                   vec3 rd, float distBlocks, vec3 sunDir, float clearness,
-                  float camY, float fragY) {
+                  float camY, float fragY, out vec3 fogColorOut) {
     float rain = 1.0 - clearness;
 
     float apH = atmosApHeight * mix(1.0, 0.45, rain);
@@ -396,10 +397,19 @@ vec3 atmAerialPBR(vec3 surfaceColor, sampler2D skyViewTex, vec2 res,
     vec3 skyC = atmSky(skyViewTex, res, rdLift, sunDir) * atmosApSourceExposure;
     atmWantBand = true;
 
+    float night   = smoothstep(0.02, -0.10, sunDir.y);
+    vec3  moonDir = -sunDir;
+
+    vec3 nightSky  = atmosApNightSky * (1.0 - rainStrength * 0.6);
+    nightSky      += atmMoonSky(rdLift, moonDir) * (1.0 - rainStrength * 0.95);
+    skyC          += nightSky * night * atmosApSourceExposure;
+
     float apNight = 1.0 - smoothstep(-0.10, 0.06, sunDir.y);
     skyC *= mix(1 - rainStrength * 0.7, 1, apNight);
 
     skyC = atmSunsetTint(skyC, rd, sunDir, clearness * clearness);
+    skyC = max(skyC, atmosApNightSky * atmosApSourceExposure * 4);
 
+    fogColorOut = skyC;
     return surfaceColor * tr + skyC * (1.0 - tr);
 }

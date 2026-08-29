@@ -8,6 +8,8 @@ uniform sampler2D texture;
 uniform sampler2D normals;
 uniform sampler2D specular;
 uniform sampler2D colortex10;
+uniform sampler2D noisetex;
+uniform float far;
 
 uniform int frameCounter;
 
@@ -21,6 +23,7 @@ uniform float screenBrightness;
 uniform ivec2 atlasSize; 
 uniform vec3 shadowLightPosition;
 uniform vec3 skyColor;
+uniform vec3 cameraPosition;
 
 uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
@@ -64,7 +67,15 @@ vec3 toNDC(vec3 pos){
 #ifdef parallaxTAA
 #endif
 
+float Bayer2(vec2 a) { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75))); }
+float Bayer4(vec2 a)  { return Bayer2(0.5 * a) * 0.25 + Bayer2(a); }
+float Bayer8(vec2 a)  { return Bayer4(0.5 * a) * 0.25 + Bayer2(a); }
+
 void main() {
+    float dither = Bayer8(gl_FragCoord.xy);
+    float minDist = (dither - 0.75) * 16.0 + far;
+    if (dist >= minDist) discard;
+
     #ifdef Parallax
     vec2 parallaxedUV = calcParallax();
     #else

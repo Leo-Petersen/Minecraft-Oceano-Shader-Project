@@ -143,7 +143,7 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
     altitudeFactor = pow(altitudeFactor, 10.0 - (rainStrength * 9.0));
 
     #ifdef volumetricLight
-         float altitudeFog = (1.0 - (exp(-50.0 * pow(length(worldPos.xz) / pow(far, startFactor) * closeFactor * 0.155, 2.5 - (2.0 * rainStrength)))));
+         float altitudeFog = (1.0 - (exp(-50.0 * pow(length(worldPos.xz) / pow(FOG_FAR, startFactor) * closeFactor * 0.155, 2.5 - (2.0 * rainStrength)))));
                altitudeFog *= (1.0 - altitudeFactor);
                altitudeFog *= timeFactor * 0.05 + sunAngleCosine * 0.1 * (1 - rainStrength);
 
@@ -229,7 +229,7 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
             color = max(clearCol, vec3(0.0));
         }
     #else
-        float altitudeFog = (1.0 - (exp(-50.0 * pow(length(worldPos.xz) / pow(far, startFactor) * closeFactor * 0.125, 3.25))));
+        float altitudeFog = (1.0 - (exp(-50.0 * pow(length(worldPos.xz) / pow(FOG_FAR, startFactor) * closeFactor * 0.125, 3.25))));
             altitudeFog *= (1.0 - altitudeFactor) * FogStrength * 1.3 * (0.50 * timeFactor);
             altitudeFog = clamp(altitudeFog, 0.0, 1.9);
 

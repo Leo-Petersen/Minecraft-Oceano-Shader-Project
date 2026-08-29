@@ -15,6 +15,10 @@ uniform sampler2D colortex0;
 uniform sampler2D depthtex0;
 uniform int worldTime;
 
+#ifdef DISTANT_HORIZONS
+uniform sampler2D dhDepthTex0;
+#endif
+
 uniform mat4 gbufferProjection;
 uniform mat4 gbufferModelViewInverse;
 uniform vec3 sunPosition;
@@ -34,7 +38,11 @@ void main() {
     vec3 color = texture2D(colortex0, texcoord).rgb;
     float Depth = texture2D(depthtex0, texcoord).r;
 
-    if (Depth == 1) {
+    bool pixelIsSky = (Depth == 1.0);
+    #ifdef DISTANT_HORIZONS
+    pixelIsSky = pixelIsSky && (texture2D(dhDepthTex0, texcoord).r >= 1.0);
+    #endif
+    if (pixelIsSky) {
         #ifdef sunShafts
             vec4 clip = gbufferProjection * vec4(sunPosition, 1.0);
             vec2 sunScreen = clip.xy / clip.w * 0.5 + 0.5;
@@ -62,6 +70,9 @@ void main() {
                     // Only the sky contributes to shafts, solid geometry acts as an occluder
                     // Stops bright surfaces being smeared in
                     float skyMask = step(0.9999, texture2D(depthtex0, sp).r);
+                    #ifdef DISTANT_HORIZONS
+                    skyMask *= step(0.9999, texture2D(dhDepthTex0, sp).r);
+                    #endif
 
                     vec3 s = texture2D(colortex0, sp).rgb;
                     float l = dot(s, vec3(0.2126, 0.7152, 0.0722));

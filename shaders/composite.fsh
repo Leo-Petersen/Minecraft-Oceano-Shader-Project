@@ -82,6 +82,7 @@ vec3 waterNormal = normalize(texture2D(colortex5, texcoord).rgb * 2.0 - 1.0);
 float Diffuse = max(0.0, dot(viewNormal, shadowLightPosition * 0.01)); 
 
 ////#includes////
+#include "/lib/dh.glsl"
 #include "/lib/time.glsl"
 #include "/lib/atmosphereLUT.glsl"
 vec3 atmSunDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
@@ -99,9 +100,8 @@ vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue)
 
 void main() {
 	////Setup world spaces////
-	vec4 screenPos = vec4(texcoord, Depth, 1.0);
-	vec4 viewPos = gbufferProjectionInverse * (screenPos * 2.0 - 1.0);
-		 viewPos /= viewPos.w;
+	bool fromDH;
+	vec4 viewPos = vec4(reconstructViewPos(texcoord, Depth, fromDH), 1.0);
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos.xyz + gbufferModelViewInverse[3].xyz;
 
 	vec4 screenPos1 = vec4(texcoord, Depth1, 1.0);
@@ -280,7 +280,7 @@ void main() {
 	}
 
 	#ifdef Fog
-	if (Depth < 1.0){
+	if (!isSky(texcoord, Depth)) {
 		color.rgb = getFog(color.rgb, cameraPosition, worldPos, fogColor, iswater, glare, sunCol, transitionFade, skyColor, sunAngleCosine);
 	}
 	#endif

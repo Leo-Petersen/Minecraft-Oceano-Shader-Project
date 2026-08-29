@@ -113,6 +113,6 @@ vec3 atmoColor = rainGrey(atmHueMix((vec3(255, 178, 120)/255 * 0.60 * (time[0]) 
                   vec3(110, 148, 210)/255 * 0.85  * (time[2]) +
                   vec3(95, 135, 195)/255  * 0.85 * (time[3]) +
                   vec3(255, 178, 120)/255 * 0.60  * (time[4]) +
-                  vec3(20, 30, 70)/255    * 0.15 * (time[5])
+                  vec3(20, 30, 70)/255    * 0.28 * (time[5])
                   ) * clamp(transitionFade, 0.6, 1.0), atmAmbHue),
                   rainStrength * 0.30);

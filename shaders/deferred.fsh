@@ -87,6 +87,7 @@ vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue)
 #include "/photonics/ph_samplers.glsl"
 uniform sampler2D radiosity_indirect;
 #endif
+#include "/lib/dh.glsl"
 
 const vec3 voxelVolumeSize = vec3(VOXEL_VOLUME_SIZE, VOXEL_VOLUME_SIZE * 0.5, VOXEL_VOLUME_SIZE);
 
@@ -142,7 +143,7 @@ float causticTimeFactor =  0.6 * (time[0]) +
 
 void main() {
     // Early out for sky pixels
-    if (Depth >= 1.0) {
+    if (isSky(texcoord, Depth)) {
         vec3 color = texture2D(colortex0, texcoord).rgb;
         /* DRAWBUFFERS:04 */
         gl_FragData[0] = vec4(color, 1.0);
@@ -174,16 +175,22 @@ void main() {
 
     vec3 normal = normalize(decodeNormal(colortex1Map.xy));
 
-    vec4 screenPos = vec4(texcoord, texture2D(depthtex0, texcoord).r, 1.0);
-    vec4 viewPos = gbufferProjectionInverse * (screenPos * 2.0 - 1.0);
-    viewPos /= viewPos.w;
+    bool fromDH;
+    vec4 viewPos = vec4(reconstructViewPos(texcoord, Depth, fromDH), 1.0);
     vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos.xyz + gbufferModelViewInverse[3].xyz;
 
     vec3 worldNormal = mat3(gbufferModelViewInverse) * normal;
     float NdotL = max(dot(normal, normalize(shadowLightPosition)), 0.0);
     vec3 shadowWorldPos = worldPos + worldNormal * 0.04 * (1.0 - NdotL);
 
-    float distFactor = length(worldPos.xz) / 120.0;
+    float distNorm = 120.0;
+    #ifdef DISTANT_HORIZONS
+        distNorm = max(120.0, dhRenderDistance * 0.5);
+    #endif
+    float clouddistFactor = length(worldPos.xz) / far;
+          clouddistFactor = pow(clouddistFactor, 2.2);
+          clouddistFactor = 1.0 - exp(-0.24 * clouddistFactor);
+    float distFactor = length(worldPos.xz) / distNorm;
           distFactor = pow(distFactor, 2.2);
           distFactor = 1.0 - exp(-1.2 * distFactor);
 
@@ -200,9 +207,12 @@ void main() {
         ao = ambientOcclusion(depthtex1);
         ao = pow(ao, aoStrength);
     #endif
-
+    #ifdef DISTANT_HORIZONS
+        if (fromDH) ao = 1.0;
+    #endif
+   
     float heldLightValue = max(float(heldBlockLightValue), float(heldBlockLightValue2));
-    float handlight = clamp(((heldLightValue * 1.2) - 1.5 * length(viewPos.xyz)) / 18.0, 0.0, 0.9333);
+    float handlight = clamp(((heldLightValue * 1.2) - 2.0 * length(viewPos.xyz)) / 18.0, 0.0, 0.9333);
 
     // Colored hand light
     vec3 handLightColor = vec3(0.0);
@@ -269,7 +279,8 @@ void main() {
     #endif
     
     // When hand light dominates, use its color; otherwise use voxel/default
-    vec3 voxelOrDefault = mix(defaultTorchColor, voxelColor * 2.0, voxelBlend);
+    vec3 voxelFallback = torchColorBase;
+    vec3 voxelOrDefault = mix(voxelFallback, voxelColor * 2.0, voxelBlend);
     vec3 handColor = (length(handLightColor) > 0.001) ? handLightColor : defaultTorchColor;
 
     float totalWeight = originalBlockLight + handlight + 0.001;
@@ -280,6 +291,12 @@ void main() {
     vec4 shadowCoord = ShadowSpace(shadowWorldPos);
     shadowCoord.xy *= distort(shadowCoord.xy);
     shadowCoord.z /= 6.0;
+
+    float shadowCoverage = 1.0;
+    #ifdef DISTANT_HORIZONS
+        float shadowEdge = shadowDistance - 8.0;    // fade a bit before the hard edge
+        shadowCoverage = 1.0 - smoothstep(shadowEdge - 12.0, shadowEdge, length(worldPos.xz));
+    #endif
 
     vec3 SampleCoords = shadowCoord.xyz * 0.5 + 0.5;
 
@@ -296,26 +313,32 @@ void main() {
     //// Shadow Sampling ////
     vec3 ShadowAccum = vec3(0.0);
 
+    #ifdef BounceColoredLight
+        vec3 flux = vec3(0.0);
+        float fluxRadius = 0.08;
+        float validSamples = 0.0;
+    #else
+        vec3 flux = vec3(0.4);
+    #endif
+
     #ifdef shadowMap
+    #ifdef DISTANT_HORIZONS
+    if (fromDH) {
+        float dhSh = GetDHShadow(viewPos.xyz, normalize(shadowLightPosition), IGN);
+        dhSh *= fakeCloudShadow(worldPos, clouddistFactor);
+        ShadowAccum = mix(shadowDistColor * 0, sunlightCol*Diffuse*transitionFade*3, dhSh);
+    } else
+    #endif
+    {
         float filterSize = 0.0025 * filterStr * (1.0 + rainStrength * 0.6);
 
-        #ifdef BounceColoredLight
-            vec3 flux = vec3(0.0);
-            float fluxRadius = 0.08;
-            float validSamples = 0.0;
-        #else
-            vec3 flux = vec3(0.4);
-        #endif
-        
         float sinAngle = sin(angle);
         float cosAngle = cos(angle);
 
-        // Golden angle rotation matrix
         const float goldenAngle = 2.39996323;
         float goldenCos = cos(goldenAngle);
         float goldenSin = sin(goldenAngle);
-        
-        // Initial direction from IGN noise rotation
+
         vec2 dir = vec2(cosAngle, sinAngle);
 
         float shadowBias = getShadowBias(SampleCoords);
@@ -323,13 +346,13 @@ void main() {
         for (int i = 0; i < lightingQuality; i++) {
             float radius = sqrt((float(i) + 0.5) / float(lightingQuality));
             vec2 offset = dir * radius;
-            
+
             ShadowAccum += TransparentShadowHardware(vec3(SampleCoords.xy + offset * filterSize, SampleCoords.z), transparencyFactor, shadowBias);
-            
+
             #ifdef BounceColoredLight
             if ((i & 1) == 0) {
                 vec2 fluxCoord = SampleCoords.xy + offset * fluxRadius;
-                if (fluxCoord.x >= 0.0 && fluxCoord.x <= 1.0 && 
+                if (fluxCoord.x >= 0.0 && fluxCoord.x <= 1.0 &&
                     fluxCoord.y >= 0.0 && fluxCoord.y <= 1.0) {
                     vec4 fluxSample = texture2D(shadowcolor0, fluxCoord);
                     flux += fluxSample.rgb * (1.0 - fluxSample.a);
@@ -337,21 +360,32 @@ void main() {
                 }
             }
             #endif
-            
-            // Rotate direction by golden angle for next sample
+
             dir = vec2(
                 dir.x * goldenCos - dir.y * goldenSin,
                 dir.x * goldenSin + dir.y * goldenCos
             );
         }
 
-        //// Process Shadow Results ////
         ShadowAccum /= float(lightingQuality);
         ShadowAccum *= parallaxShadow;
-        //ShadowAccum = mix(ShadowAccum, vec3(1.0), emission * 0.8);
+        #ifdef DISTANT_HORIZONS
+        if (shadowCoverage < 0.999) {
+            float dhSh = GetDHShadow(viewPos.xyz, normalize(shadowLightPosition), IGN);
+            dhSh *= fakeCloudShadow(worldPos, clouddistFactor);
+            vec3 dhShadowVal = mix(shadowDistColor * 0.0, sunlightCol * Diffuse * transitionFade * 5.0, dhSh);
+            // Blend from map shadow to DH trace
+            ShadowAccum = mix(dhShadowVal, ShadowAccum, shadowCoverage);
+        } else {
+            ShadowAccum = mix(sunlightCol, ShadowAccum, shadowCoverage);
+        }
+        #else
+        ShadowAccum = mix(sunlightCol, ShadowAccum, shadowCoverage);
+        #endif
+    }
     #else
+        // flux already declared above; nothing to declare here now.
         ShadowAccum = sunlightCol;
-        vec3 flux = vec3(0.4);
     #endif
 
     float shadowLum = dot(ShadowAccum, vec3(0.2126, 0.7152, 0.0722));
@@ -406,6 +440,7 @@ void main() {
         bool isFoliage = (material > 0.005 && material < 0.02);
 
         // Direct sunlight
+        if (isGrass == 1) Diffuse = mix(Diffuse, 0.3, distFactor);
         vec3 finalShadow = sunlightCol * Diffuse * ShadowAccum * lightMap.t * lightStrength * (1.0 - rainStrength * 0.7);
         finalShadow *= mix(1.0, 0.85, distFactor); // Reduce direct light on distant terrain to balance with fog and prevent harsh edges
 
@@ -423,10 +458,10 @@ void main() {
         vec3 finalAmbient = (baseAmbient + bounceAmbient) * 0.25 * pow(ao, 0.42) * textureAO;
 
         // Distance shadow transition (fade out of fake bouncelighting)
-        float distShadowDiffuse = mix(Diffuse, 1.0, isGrass); //Remove diffuse on grass with distance, not 'correct' but looks like artifacting otherwise
-        float distShadowMask = 1.0 - smoothstep(0.0, 0.15, shadowLum * distShadowDiffuse * transitionFade); // Using the full diffuse at distance makes distain terrain look too harsh, this achieves a good middle ground
+        //float distShadowDiffuse = mix(Diffuse, 1.0, isGrass); //Remove diffuse on grass with distance, not 'correct' but looks like artifacting otherwise
+        float distShadowMask = 1.0 - smoothstep(0.0, 0.15, shadowLum * Diffuse * transitionFade); // Using the full diffuse at distance makes distain terrain look too harsh, this achieves a good middle ground
         vec3 warmShadowDist = mix(shadowDistColor, sunlightCol * 0.4, 0.28) * mix(0.5, 1.0, transitionFade);
-        finalAmbient = mix(finalAmbient, mix(finalAmbient, warmShadowDist * 2.5, distShadowMask), distFactor * undergroundBlend);
+        finalAmbient = mix(finalAmbient, mix(finalAmbient, warmShadowDist * 2, distShadowMask), distFactor * undergroundBlend);
 
         // Underground ambient
         finalAmbient += vec3(0.025, 0.028, 0.035) * (1.0 - undergroundBlend) * pow(ao, 0.2) * textureAO * 5.0;
@@ -444,7 +479,7 @@ void main() {
                         worldPos, color, sunlightCol,
                         sssAmount,
                         VdotL, NdotL, lightMap.t,
-                        IGN
+                        IGN, distFactor
                     );
                     
                     finalShadow += sssContribution * lightStrength * undergroundFix * (1.0 - time[5] * 0.5);

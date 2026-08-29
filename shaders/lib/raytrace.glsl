@@ -156,3 +156,53 @@ vec4 raytracePuddles(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnel
     return color;
 }
 
+#ifdef DISTANT_HORIZONS
+// marches the DH depth buffer with dhProjection, so it can
+// reflect DH terrain that isn't in depthtex1
+// TO-DO: make this actually work lol, currently unused
+vec4 raytraceDH(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnelView) {
+    vec4 color = vec4(skyColor, 1.0);
+
+    vec3 reflectionVector = normalize(reflect(normalize(fragmentPos), normalize(normal)));
+    vec3 stepVector = stepSize * reflectionVector;
+    vec3 oldPosition = fragmentPos;
+    fragmentPos += stepVector;
+
+    int stepCount = 0;
+    vec3 start = fragmentPos;
+
+    for (int i = 0; i < numSamples; i++) {
+        // Project with DH projection
+        vec3 position = normalizedVec3(dhProjection * normalizedVec4(fragmentPos)) * 0.5 + 0.5;
+
+        if (position.x < -0.05 || position.x > 1.05 || position.y < -0.05 || position.y > 1.05) {
+            break;
+        }
+
+        // Sample DH depth
+        float dhd = texture2D(dhDepthTex0, position.st).r;
+        vec3 samplePosition = vec3(position.st, dhd);
+        samplePosition = normalizedVec3(dhProjectionInverse * normalizedVec4(samplePosition * 2.0 - 1.0));
+
+        float error = length(fragmentPos - samplePosition);
+        float dynamicThreshold = length(stepVector) * pow(length(stepVector), 0.1) * 2.0;
+
+        if (error < dynamicThreshold && dhd < 1.0) {
+            stepCount++;
+            if (stepCount >= maxRefinements) {
+                color = texture2D(colortex0, position.st);
+                color.a = 1.0 - pow(computeDistance(position.st), fresnelView);
+                break;
+            }
+            fragmentPos = oldPosition;
+            stepVector *= refinementMultiplier;
+        }
+
+        stepVector *= incrementFactor;
+        oldPosition = fragmentPos;
+        fragmentPos += stepVector;
+    }
+
+    return color;
+}
+#endif

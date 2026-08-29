@@ -53,12 +53,12 @@ vec3 TransparentShadowHardware(vec3 SampleCoords, float transparencyFactor, floa
 
 ////Fake Cloud Shadow////
 float cloudNoise(float noise, vec3 worldPos) {
-    return texture2D(noisetex, 0.000017 * (vec2(noise) + frameTimeCounter * 3.0 + (worldPos.xz + cameraPosition.xz))).r;
+    return texture2D(noisetex, 0.000003 * (vec2(noise) + frameTimeCounter * 3.0 + (worldPos.xz + cameraPosition.xz))).r;
 }
 
-float fakeCloudShadow(vec3 worldPos) {
+float fakeCloudShadow(vec3 worldPos, float distFactor) {
     float shadow = cloudNoise(0.0, worldPos) + cloudNoise(10000.0, worldPos);
-    return clamp(pow(shadow, 2.0 * (1.0 - time[5] * 0.5)), 0.0, 1.0);
+    return clamp(pow(shadow, 2.0 * (1.0 - time[5] * 0.5) * distFactor), 0.0, 1.0);
 }
 
 ////Bounce Light////
@@ -218,7 +218,8 @@ vec3 calculateSSS(
     float VdotL,
     float NdotL,
     float skyLight,
-    float IGN
+    float IGN,
+    float distFactor
 ) {
     if (sssAmount < 0.01) return vec3(0.0);
 
@@ -280,7 +281,7 @@ vec3 calculateSSS(
 
     vec3 sssContribution = lightColor * lightColor * phase * sssAmount * transmission * skyLight * 0.62;
     sssContribution *= (1.0 - rainStrength * 0.5);
-    sssContribution *= sssValid;
+    sssContribution *= sssValid * (1-distFactor);
     
     return sssContribution;
 }

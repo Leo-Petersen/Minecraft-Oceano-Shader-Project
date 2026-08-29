@@ -42,15 +42,15 @@ vec4 nvec4(vec3 pos){
 #include "/lib/settings.glsl"
 #include "/lib/time.glsl"
 #include "/lib/lightCol.glsl"
+#include "/lib/dh.glsl"
 
 void main() {
 	vec4 color = texture2D(colortex0, texcoord);
 	
 	float undergroundFix = clamp(mix(max(lmcoord.t-2.0/16.0,0.0)*1.14285714286,1.0,clamp((eyeBrightnessSmooth.y/255.0-2.0/16.)*4.0,0.0,1.0)), 0.0, 1.0);
 
-	vec4 screenPos = vec4(texcoord, Depth, 1.0);
-	vec4 viewPos = gbufferProjectionInverse * (screenPos * 2.0 - 1.0);
-		 viewPos /= viewPos.w;
+	bool fromDH;
+	vec4 viewPos = vec4(reconstructViewPos(texcoord, Depth, fromDH), 1.0);
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos.xyz + gbufferModelViewInverse[3].xyz;
 
 	vec3 fragpos2 = vec3(texcoord.st, texture2D(depthtex1, texcoord.st).r);
@@ -81,7 +81,7 @@ void main() {
 
 	#ifdef rainfogBlur
 	//Rain Blur
-	if (Depth < 1.0) {
+	if (!isSky(texcoord, Depth)) {
 		if (rainStrength > 0.0){
 			float fogDepth = length(worldPos.xz) / 120.0;
 				  fogDepth = pow(fogDepth, 1.5);

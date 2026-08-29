@@ -45,9 +45,9 @@ void main() {
 	float night = smoothstep(0.02, -0.10, sunDir.y);
 	sky = atmSkyFinish(sky, rd, sunDir, moonDir);
 
-	if (starData.a > 0.5) {
-		sky += starData.rgb * 4.0 * night * transitionFade * (1.0 - rainStrength);
-	}
+    if (starData.a > 0.5) {
+        discard; // removes the stars *thumbs up emoji*
+    }
 	sky = max(sky, vec3(0.0));
 
 /* DRAWBUFFERS:09 */
