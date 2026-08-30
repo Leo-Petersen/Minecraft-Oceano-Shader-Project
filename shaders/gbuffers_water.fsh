@@ -18,6 +18,7 @@ uniform float nightVision;
 uniform float viewWidth;
 uniform float viewHeight;
 uniform float darknessLightFactor;
+uniform float far;
 
 uniform int isEyeInWater;
 uniform int heldBlockLightValue;
@@ -63,7 +64,15 @@ vec3 toNDC(vec3 pos){
     return fragpos.xyz / fragpos.w;
 }
 
+float Bayer2(vec2 a) { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75))); }
+float Bayer4(vec2 a)  { return Bayer2(0.5 * a) * 0.25 + Bayer2(a); }
+float Bayer8(vec2 a)  { return Bayer4(0.5 * a) * 0.25 + Bayer2(a); }
+
 void main() {
+    float dither = Bayer8(gl_FragCoord.xy);
+    float minDist = (dither - 0.75) * 16.0 + far;
+    if (dist >= minDist) discard;
+
 	float iswater = float(material > 0.08 && material < 0.10);
     float isglass = float(material > 0.10 && material < 0.12);
 	float ishoney = float(material > 0.12 && material < 0.14);

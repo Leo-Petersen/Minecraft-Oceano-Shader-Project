@@ -225,10 +225,7 @@ void main() {
 	////Reflections////
 	vec3 fragpos2 = vec3(0.0);
 	if (iswater == 1.0){
-	    fragpos2 = vec3(texcoord.st, texture2D(depthtex1, texcoord.st).r);
-	#ifdef Reflections
-		fragpos2 = normalizedVec3(gbufferProjectionInverse * normalizedVec4(fragpos2 * 2.0 - 1.0));
-	#endif
+	    fragpos2 = reconstructViewPosOpaque(texcoord, Depth1);
 	}
 
     float glare = pow(sunDist*0.07, 2.0);

@@ -39,6 +39,8 @@ vec4 nvec4(vec3 pos){
     return vec4(pos.xyz, 1.0);
 }
 
+float Depth1 = texture2D(depthtex1, texcoord).r;
+
 #include "/lib/settings.glsl"
 #include "/lib/time.glsl"
 #include "/lib/lightCol.glsl"
@@ -53,8 +55,7 @@ void main() {
 	vec4 viewPos = vec4(reconstructViewPos(texcoord, Depth, fromDH), 1.0);
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos.xyz + gbufferModelViewInverse[3].xyz;
 
-	vec3 fragpos2 = vec3(texcoord.st, texture2D(depthtex1, texcoord.st).r);
-		 fragpos2 = nvec3(gbufferProjectionInverse * nvec4(fragpos2 * 2.0 - 1.0));
+	vec3 fragpos2 = reconstructViewPosOpaque(texcoord, Depth1);
 	
     float Pi2 = 6.28318530718; // Pi*2
     float Directions = 12.0;
