@@ -149,7 +149,7 @@ void main() {
     vec3 mainSun = pow(sunDist*0.02, 5.2) * sunCol;
 		 mainSun = 1.0 - exp( -mainSun );
 		 mainSun *= (1- rainStrength);
-		 mainSun *= 64.0;
+		 mainSun *= 12.0;
 	//Sun Glare//
     vec3 sunGlare = pow(sunDist*0.07, 1.8) * sunCol;
 		 sunGlare = 1.0 - exp( -sunGlare ); 
@@ -207,15 +207,17 @@ void main() {
 
 	//Final sky and sun colour//
 	sunStr *= 0.05;
+	float sunAboveHorizon = smoothstep(-0.02, 0.04, sunElevation);
+	float discGate = max(sunAboveHorizon, atmMoon);
 	vec3 reflectedskyBoxCol = texture2D(colortex8, texcoord.st).rgb+ReflectAtmoGlare;
 	#ifdef screenSunGlare
 	float visibleSun = float(texture2D(depthtex1, lightPos + 0.5).r >= 1.0);
-	vec3 finalGlare = (screensunGlare) * sunStr * (1.0 - ((time2[1].y)*rainStrength)) * transitionFade * (1.0-isEyeInWater) * visibleSun * transitionFade;
+	vec3 finalGlare = (screensunGlare) * sunStr * (1.0 - ((time2[1].y)*rainStrength)) * transitionFade * (1.0-isEyeInWater) * visibleSun * transitionFade * discGate;
 	#else
 	vec3 finalGlare = vec3(0.0);
 	#endif
 
-	vec3 finalSun = (mainSun + sunGlare + atmoGlare*atmoStr*transitionFade) * (1.0 - ((time2[1].y)*rainStrength) * 0.7) * (1.0-isEyeInWater) * sunStr * transitionFade;
+	vec3 finalSun = (mainSun + sunGlare + atmoGlare*atmoStr*transitionFade) * (1.0 - ((time2[1].y)*rainStrength) * 0.7) * (1.0-isEyeInWater) * sunStr * transitionFade * discGate;
 
 	
 	////Colours////

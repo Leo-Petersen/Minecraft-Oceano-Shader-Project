@@ -2,38 +2,34 @@ uniform int worldTime;
 
 float ticks = worldTime;
 
-float time[7] = float[7](((clamp(ticks, 21000.0, 24000.0) - 21000.0) / 3000.0) + (1.0 - (clamp(ticks, 0.0, 3000.0) / 3000.0)),          // Dusk
-                          (clamp(ticks, 0.0, 3000.0) / 3000.0) - ((clamp(ticks, 3000.0, 6000.0) - 3000.0) / 3000.0),                    // Morning
-                          ((clamp(ticks, 3000.0, 6000.0) - 3000.0) / 3000.0) - ((clamp(ticks, 6000.0, 9000.0) - 6000.0) / 3000.0),      // Noon
-                          ((clamp(ticks, 6000.0, 9000.0) - 6000.0) / 3000.0) - ((clamp(ticks, 9000.0, 12000.0) - 9000.0) / 3000.0),     // Afternoon
-                          ((clamp(ticks, 9000.0, 12000.0) - 9000.0) / 3000.0) - ((clamp(ticks, 12000.0, 15000.0) - 12000.0) / 3000.0),  // Sunset
-                          ((clamp(ticks, 12000.0, 15000.0) - 12000.0) / 3000.0) - ((clamp(ticks, 21000.0, 24000.0) - 21000.0) / 3000.0),// Night
-                          ((clamp(ticks, 12000.0, 12750.0) - 12000.0) / 750.0) - ((clamp(ticks, 23250.0, 24000.0) - 23250.0) / 750.0)); // Transition
+float atmCelRaw    = fract(ticks / 24000.0 - 0.25);
+float atmCelAngle  = atmCelRaw + ((1.0 - (cos(atmCelRaw * 3.14159265) + 1.0) * 0.5) - atmCelRaw) / 3.0;
+float sunElevation = cos(atmCelAngle * 6.28318531);
 
-float transitionFade = 1.0-(
-    clamp(0.00333333*ticks - 40.,0.0,1.0)-
-    clamp(0.00333333*ticks - 49,0.0,1.0)+
-    clamp(0.005*ticks - 105.,0.0,1.0)-
-    clamp(0.005*ticks - 119.,0.0,1.0)
-);
+float tDawn = ((clamp(ticks, 22500.0, 23250.0) - 22500.0) / 750.0)
+            - ((clamp(ticks, 23250.0, 24000.0) - 23250.0) / 3750.0)
+            + 0.8 * (1.0 - clamp(ticks, 0.0, 3000.0) / 3000.0);
 
-// WIP transitionFade adjustments, need to revisit
-// uniform int worldTime;
+float tNoon = ((clamp(ticks, 3000.0, 6000.0) - 3000.0) / 3000.0)
+            - ((clamp(ticks, 6000.0, 9000.0) - 6000.0) / 3000.0);
 
-// float ticks = worldTime;
+float tAfternoon = ((clamp(ticks, 6000.0, 9000.0) - 6000.0) / 3000.0)
+                 - ((clamp(ticks, 9000.0, 12750.0) - 9000.0) / 3750.0);
 
-// float time[7] = float[7](((clamp(ticks, 22500.0, 24000.0) - 22500.0) / 1500.0) + (1.0 - (clamp(ticks, 0.0, 3000.0) / 3000.0)),          // Dusk
-//                           (clamp(ticks, 0.0, 3000.0) / 3000.0) - ((clamp(ticks, 3000.0, 6000.0) - 3000.0) / 3000.0),                    // Morning
-//                           ((clamp(ticks, 3000.0, 6000.0) - 3000.0) / 3000.0) - ((clamp(ticks, 6000.0, 9000.0) - 6000.0) / 3000.0),      // Noon
-//                           ((clamp(ticks, 6000.0, 9000.0) - 6000.0) / 3000.0) - ((clamp(ticks, 9000.0, 12000.0) - 9000.0) / 3000.0),     // Afternoon
-//                           ((clamp(ticks, 9000.0, 12000.0) - 9000.0) / 3000.0) - ((clamp(ticks, 12000.0, 13600.0) - 12000.0) / 1600.0),  // Sunset
-//                           ((clamp(ticks, 12000.0, 13600.0) - 12000.0) / 1600.0) - ((clamp(ticks, 22500.0, 24000.0) - 22500.0) / 1500.0),// Night
-//                           ((clamp(ticks, 12000.0, 12750.0) - 12000.0) / 750.0) - ((clamp(ticks, 23250.0, 24000.0) - 23250.0) / 750.0)); // Transition
+float tSunset = ((clamp(ticks, 9000.0, 12750.0) - 9000.0) / 3750.0)
+              - ((clamp(ticks, 12750.0, 13500.0) - 12750.0) / 750.0);
 
-// float t1 = clamp((ticks - 12500.0) / 100.0, 0.0, 1.0)
-//          - clamp((ticks - 13500.0) / 100.0, 0.0, 1.0);
+float tNight = ((clamp(ticks, 12750.0, 13500.0) - 12750.0) / 750.0)
+             - ((clamp(ticks, 22500.0, 23250.0) - 22500.0) / 750.0);
 
-// float t2 = clamp((ticks - 22400.0) / 100.0, 0.0, 1.0)
-//          - clamp((ticks - 23400.0) / 100.0, 0.0, 1.0);
+float tMorning = 1.0 - (tDawn + tNoon + tAfternoon + tSunset + tNight);
 
-// float transitionFade = 1.0 - clamp(t1 + t2, 0.0, 1.0);
+float tTransition = ((clamp(ticks, 12000.0, 12750.0) - 12000.0) / 750.0)
+                  - ((clamp(ticks, 23250.0, 24000.0) - 23250.0) / 750.0);
+
+float time[7] = float[7](tDawn, tMorning, tNoon, tAfternoon, tSunset, tNight, tTransition);
+
+#define atmSwapInner 0.03
+#define atmSwapOuter 0.20
+
+float transitionFade = smoothstep(atmSwapInner, atmSwapOuter, abs(sunElevation));

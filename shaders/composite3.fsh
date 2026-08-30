@@ -623,18 +623,17 @@ void main() {
 			if (!isSky(texcoord, Depth)) {
 				float dist = length(worldPos.xz);	// horizontal distance, blocks
 				float dayF = max(smoothstep(-0.12, 0.02, atmSunDir.y), rainStrength * 0.65);
-
+				float timeFix = mix(0.2, 1, transitionFade);
                 vec3 apFogColor;
                 vec3 fogged = atmAerialPBR(color.rgb, colortex15, vec2(viewWidth, viewHeight),
                                            rd, dist, atmSunDir, 1.0 - rainStrength,
                                            cameraPosition.y, cameraPosition.y + worldPos.y,
-                                           apFogColor);
+                                           apFogColor, timeFix);
                 color.rgb = mix(color.rgb, fogged, dayF);
 
                 {
                     float hFall = exp(-max(worldPos.y + cameraPosition.y - 63.0, 0.0) / 24.0);
                     float dFall = smoothstep(120.0, 512.0, dist);
-					float timeFix = mix(0.2, 1, transitionFade);
                     float hazeAmt = clamp(hFall * dFall * 0.5 * dayF * timeFix, 0.0, 0.5);
                     color.rgb = mix(color.rgb, apFogColor, hazeAmt);
                 }

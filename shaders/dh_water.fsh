@@ -6,8 +6,11 @@ uniform sampler2D colortex2;
 uniform sampler2D depthtex1;
 uniform sampler2D noisetex;
 
+uniform mat4 gbufferModelViewInverse;
+
 uniform float viewWidth, viewHeight, far, frameTimeCounter, rainStrength, nightVision, darknessLightFactor;
 uniform vec3 skyColor;
+uniform vec3 sunPosition;
 
 varying float material;
 varying float dist;
@@ -18,6 +21,8 @@ varying vec3  wpos;
 varying vec4  glcolor;
 varying vec4  viewPosV;
 varying mat3  tbnMatrix;
+
+vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
 
 #include "/lib/settings.glsl"
 #include "/lib/encode.glsl"

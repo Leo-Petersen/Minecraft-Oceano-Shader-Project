@@ -23,6 +23,7 @@ uniform int heldBlockLightValue;
 uniform int heldBlockLightValue2;
 
 uniform vec3 shadowLightPosition;
+uniform vec3 sunPosition;
 uniform vec3 skyColor;
 
 uniform mat4 gbufferModelViewInverse;
@@ -42,6 +43,8 @@ varying vec4 glcolor;
 varying vec4 position;
 
 varying mat3 tbnMatrix;
+
+vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
 
 #include "/lib/settings.glsl"
 #include "/lib/waterBump.glsl"

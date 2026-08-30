@@ -74,7 +74,7 @@ vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
 
 #include "/lib/time.glsl"
 #include "/lib/atmosphereLUT.glsl"
-vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunDir);
+vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunTrue);
 vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue);
 #include "/lib/lightCol.glsl"
 #include "/lib/lighting.glsl"
@@ -110,7 +110,7 @@ float shadowFactor =  0.65 * (time[0]) +
                       1.0 * (time[2]) +
                       1.0 * (time[3]) +
                       0.65 * (time[4]) +
-                      0.35 * (time[5]);
+                      0.25 * (time[5]);
 
 float torchFactor =   1.00 * (time[0]) +
                       0.33 * (time[1]) +
@@ -482,7 +482,7 @@ void main() {
                         IGN, distFactor
                     );
                     
-                    finalShadow += sssContribution * lightStrength * undergroundFix * (1.0 - time[5] * 0.5);
+                    finalShadow += sssContribution * lightStrength * undergroundFix;
                 }
             #endif
         #endif

@@ -21,6 +21,7 @@ uniform float near;
 uniform float frameTimeCounter;
 uniform vec3 shadowLightPosition;
 uniform vec3 cameraPosition;
+uniform vec3 sunPosition;
 uniform vec3 skyColor;
 uniform int isEyeInWater;
 
@@ -30,6 +31,8 @@ varying vec2 lmcoord;
 float material = texture2D(colortex2, texcoord).p;
 float iswater = float(material > 0.08 && material < 0.10);
 float Depth = texture2D(depthtex0, texcoord).r;
+
+vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
 
 vec3 nvec3(vec4 pos){
     return pos.xyz/pos.w;

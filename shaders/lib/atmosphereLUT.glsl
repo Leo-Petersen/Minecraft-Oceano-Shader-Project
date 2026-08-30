@@ -302,10 +302,11 @@ vec3 atmSky(sampler2D skyViewTex, vec2 res, vec3 rd, vec3 sunDir) {
 
 vec3 atmMoonSky(vec3 rd, vec3 moonDir) {
     float up = clamp(rd.y * 0.5 + 0.5, 0.0, 1.0);
-    vec3 tint = vec3(0.05, 0.09, 0.20);
+    vec3 tint = vec3(0.05, 0.09, 0.18);
     float glow = atmPhaseM(dot(rd, moonDir), 0.6) * 0.5;
     float moonUp = clamp(moonDir.y * 2.0, 0.0, 1.0);
-    return (tint * up + vec3(0.25, 0.30, 0.45) * glow) * moonUp;
+    float tintUp = smoothstep(0.0, 0.12, moonDir.y);
+    return tint * up * tintUp + vec3(0.25, 0.30, 0.45) * glow * moonUp;
 }
 
 
@@ -352,7 +353,7 @@ vec3 atmAerial(sampler2D skyViewTex, sampler2D transTex, vec2 res,
 #define atmosSunsetSkyTop 1.0    // how far up the tint reaches
 #define atmosSunsetPastel 0.38    // 0 = saturated 1 = near white
 vec3 atmSunsetTint(vec3 col, vec3 rd, vec3 sunDir, float clearness) {
-    float sunsetT = exp(-pow(sunDir.y / 0.20, 2.0));
+    float sunsetT = smoothstep(0.24, 0.05, sunDir.y) * smoothstep(-0.13, -0.01, sunDir.y);
     if (sunsetT < 0.001) return col;
     float towardSun = max(dot(normalize(vec3(rd.x, 0.0, rd.z)),
                               normalize(vec3(sunDir.x, 0.0, sunDir.z))), 0.0);
@@ -376,7 +377,7 @@ vec3 atmSunsetTint(vec3 col, vec3 rd, vec3 sunDir, float clearness) {
 
 vec3 atmAerialPBR(vec3 surfaceColor, sampler2D skyViewTex, vec2 res,
                   vec3 rd, float distBlocks, vec3 sunDir, float clearness,
-                  float camY, float fragY, out vec3 fogColorOut) {
+                  float camY, float fragY, out vec3 fogColorOut, float timeFix) {
     float rain = 1.0 - clearness;
 
     float apH = atmosApHeight * mix(1.0, 0.45, rain);
@@ -397,15 +398,16 @@ vec3 atmAerialPBR(vec3 surfaceColor, sampler2D skyViewTex, vec2 res,
     vec3 skyC = atmSky(skyViewTex, res, rdLift, sunDir) * atmosApSourceExposure;
     atmWantBand = true;
 
-    float night   = smoothstep(0.02, -0.10, sunDir.y);
-    vec3  moonDir = -sunDir;
+    float night    = smoothstep(0.02, -0.10, sunDir.y);
+    float moonRise = smoothstep(-0.08, -0.22, sunDir.y);
+    vec3  moonDir  = -sunDir;
 
-    vec3 nightSky  = atmosApNightSky * (1.0 - rainStrength * 0.6);
-    nightSky      += atmMoonSky(rdLift, moonDir) * (1.0 - rainStrength * 0.95);
-    skyC          += nightSky * night * atmosApSourceExposure;
+    vec3 nightSky  = atmosApNightSky * (1.0 - rainStrength * 0.6) * night;
+    nightSky      += atmMoonSky(rdLift, moonDir) * (1.0 - rainStrength * 0.95) * moonRise;
+    skyC          += nightSky * atmosApSourceExposure;
 
     float apNight = 1.0 - smoothstep(-0.10, 0.06, sunDir.y);
-    skyC *= mix(1 - rainStrength * 0.7, 1, apNight);
+    skyC *= mix(1 - rainStrength * 0.7, 1, apNight)*timeFix;
 
     skyC = atmSunsetTint(skyC, rd, sunDir, clearness * clearness);
     skyC = max(skyC, atmosApNightSky * atmosApSourceExposure * 4);

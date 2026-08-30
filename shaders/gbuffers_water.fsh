@@ -50,6 +50,8 @@ varying vec4 position;
 
 varying mat3 tbnMatrix;
 
+vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
+
 #include "/lib/settings.glsl"
 #include "/lib/waterBump.glsl"
 #include "/lib/time.glsl"
