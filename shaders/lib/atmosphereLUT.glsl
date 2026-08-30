@@ -302,7 +302,7 @@ vec3 atmSky(sampler2D skyViewTex, vec2 res, vec3 rd, vec3 sunDir) {
 
 vec3 atmMoonSky(vec3 rd, vec3 moonDir) {
     float up = clamp(rd.y * 0.5 + 0.5, 0.0, 1.0);
-    vec3 tint = vec3(0.05, 0.09, 0.18);
+    vec3 tint = vec3(0.05, 0.09, 0.20);
     float glow = atmPhaseM(dot(rd, moonDir), 0.6) * 0.5;
     float moonUp = clamp(moonDir.y * 2.0, 0.0, 1.0);
     float tintUp = smoothstep(0.0, 0.12, moonDir.y);
@@ -353,7 +353,7 @@ vec3 atmAerial(sampler2D skyViewTex, sampler2D transTex, vec2 res,
 #define atmosSunsetSkyTop 1.0    // how far up the tint reaches
 #define atmosSunsetPastel 0.38    // 0 = saturated 1 = near white
 vec3 atmSunsetTint(vec3 col, vec3 rd, vec3 sunDir, float clearness) {
-    float sunsetT = smoothstep(0.24, 0.05, sunDir.y) * smoothstep(-0.13, -0.01, sunDir.y);
+    float sunsetT = smoothstep(0.35, 0.05, sunDir.y) * smoothstep(-0.13, -0.01, sunDir.y);
     if (sunsetT < 0.001) return col;
     float towardSun = max(dot(normalize(vec3(rd.x, 0.0, rd.z)),
                               normalize(vec3(sunDir.x, 0.0, sunDir.z))), 0.0);

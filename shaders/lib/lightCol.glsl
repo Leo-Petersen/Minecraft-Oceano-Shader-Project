@@ -32,8 +32,8 @@ vec3 rainGrey(vec3 c, float amt) {
 
 float atmDN    = smoothstep(-0.08, 0.08, sunElevation);
 float atmNight = 1.0 - atmDN;
-float atmGlow  = smoothstep(0.22, 0.05, sunElevation)
-               * smoothstep(-0.10, 0.00, sunElevation);
+float atmGlow  = smoothstep(0.35, 0.05, sunElevation) 
+               * smoothstep(-0.10, 0.00, sunElevation); 
 
 float atmMoon = 1.0 - smoothstep(-0.22, -0.08, sunElevation);
 
@@ -45,6 +45,7 @@ mat2 time2 = mat2(vec2(
 				((clamp(ticks, 12000.0f, 12750.0f) - 12000.0f) / 750.0f) - ((clamp(ticks, 23000.0f, 24000.0f) - 23000.0f) / 1000.0f))
 );
 
+//// Sun / Moon Disc Colour ////
 vec3 sunDisc  = atmTint(mix(vec3(255, 240, 214)/255, vec3(255, 140, 50)/255, atmGlow), atmSunHue, 0.85);
 vec3 moonDisc = vec3(3, 3, 4)/255;
 vec3 sunCol   = (sunDisc * atmDN + moonDisc * atmMoon);
