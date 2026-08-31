@@ -100,7 +100,7 @@ vec2 vcOffset16(int frame) {
 #define cloudTop cloudCumulusTop
 #endif
 
-#define cloudSelfshadow 1
+#define cloudSelfshadow 0.5
 
 // Noise config //
 #define cloudNoiseRes 2048.0
@@ -321,24 +321,17 @@ float vcDensityShadowFast(vec3 wpos, float coverage, float storm) {
 
 
 // Lighting //
-float vcKleinNishina(float x, float e) {	// silver lining
-    return e / (2.0 * PI * (e - e * x + 1.0) * log(2.0 * e + 1.0));
-}
 float vcPhaseG(float x, float g) {
 	float gg = g * g;
 	return (gg * -0.25 / PI + 0.25 / PI) * pow(-2.0 * (g * x) + (gg + 1.0), -1.5);
 }
-
-/* // Technically a better method, but literally can't tell the difference.
-float vcPhase(float cosT) {
-    float fwdA = vcKleinNishina(cosT, 2600.0);
-    float fwdB = vcPhaseG(cosT, 0.70);
-    return 0.8 * max(fwdA, fwdB)
-         + 0.2 * vcPhaseG(cosT, -0.20);
+float hg(float c, float g){
+    float g2 = g*g;
+    return (1.0 - g2) / (4.0*3.14159265 * pow(1.0 + g2 - 2.0*g*c, 1.5));
 }
-*/
-float vcPhase(float cosT) {
-    return max(vcPhaseG(cosT, 0.55), vcPhaseG(cosT, 0.20) * 0.7);
+float vcPhase(float c) {
+    float g = 0.8;
+    return mix(vcPhaseG(c, g), vcPhaseG(c, -g * 0.5), 0.35);
 }
 
 // Depth toward the sun through the eroded density
@@ -363,6 +356,9 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
     apparentDist = 1e6;
 
 	vec3 sunDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+
+	vec2 res         = vec2(viewWidth, viewHeight);
+	vec3 sunDirTrue  = normalize(mat3(gbufferModelViewInverse) * sunPosition);
 
 	vec3  backScatter = vec3(0.0);
 	float backTrans   = 1.0;
@@ -391,10 +387,18 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 	float cosT  = dot(worldDir, sunDir);
 	float phase = mix(vcPhase(cosT), cloudIso, rainStrength * 0.9);
 
-	vec3 sunColor = sunlightCol * cloudSunBrightness * transitionFade * (1.0 - time[5] * 0.8) * (1.0 - rainStrength * 0.97);
+	vec3 sunColor = (atmSunHue * atmDN + atmMoonLight * atmMoon * 0.8)
+              		* cloudSunBrightness * transitionFade * (1.0 - rainStrength * 0.97);
 
-	vec3 ambBot = atmoColor * cloudAmbient * 0.62 + cloudFogCol * time[5] * 0.14;
-	vec3 ambTop = mix(atmoColor, cloudFogCol, 0.15) * cloudAmbient * 1.3;
+	vec3 skyAmb = atmSkyAmbient(colortex15, res, sunDirTrue);
+	float ambL  = dot(skyAmb, vec3(0.2126, 0.7152, 0.0722));
+		 skyAmb = mix(skyAmb, vec3(ambL), 0.25);
+	vec3 ambTop = skyAmb * cloudAmbient * 1.35;
+	vec3 ambBot = skyAmb * cloudAmbient * 0.55;
+	vec3 nightAmb = atmMoonSky(vec3(0.0, 1.0, 0.0), -sunDirTrue) * atmMoon;
+		 ambTop += nightAmb;
+		 ambBot += nightAmb * 0.55;
+
     float oa = smoothstep(0.0, 0.55, rainStrength);
     if (oa > 0.001) {
         vec3 ocAmb = atmosOvercastTint * atmOvercastLum(sunElevY);
@@ -453,8 +457,8 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 		// Multiple scattering
 		float phMid = mix(phase, cloudIso, 0.5);
 		float scatterSun = exp(-odSun)          * phase
-		                 + exp(-odSun * 0.40) * phMid  * (0.55 * cloudMs)
-		                 + exp(-odSun * 0.15) * cloudIso * (0.28 * cloudMs);
+		                 + exp(-odSun * 0.40) * phMid  * (0.80 * cloudMs)
+		                 + exp(-odSun * 0.08) * cloudIso * (0.45 * cloudMs);
 
 		// Powder
         float powder = density / (density + 0.15);
@@ -487,7 +491,7 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 	vec3 cloudColor = scatter / cloudAlpha;
 
 	float distFade = smoothstep(3000.0, 13000.0, entryT + coveredDist);
-	vec3 farCol = mix(atmoColor * 1.6, atmosOvercastTint * atmOvercastLum(sunElevY) * 0.333, rainStrength) * vcTransDim;
+	vec3 farCol = mix(atmSky(colortex15, res, worldDir, sunDirTrue), atmosOvercastTint * atmOvercastLum(sunElevY) * 0.333, rainStrength) * vcTransDim;
     cloudColor = mix(cloudColor, farCol, distFade * 0.85);
 	cloudAlpha *= horizon * (1.0 - distFade * 0.75) * max(transitionFade, 0.85);
 
