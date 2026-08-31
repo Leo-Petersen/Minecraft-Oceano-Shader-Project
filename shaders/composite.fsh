@@ -139,12 +139,6 @@ void main() {
 					0.06 * (time[4]) + 
 					0.3 * (time[5]);
 
-	float altitudeAtmoStr = 0.0 * (time[0]) +  
-							0.8 * (time[1]) +
-							1.0 * (time[2]) + 
-							0.8 * (time[3]) + 
-							0.0 * (time[4]) + 
-							0.8 * (time[5]);
 	//Main sun//
     vec3 mainSun = pow(sunDist*0.02, 5.2) * sunCol;
 		 mainSun = 1.0 - exp( -mainSun );

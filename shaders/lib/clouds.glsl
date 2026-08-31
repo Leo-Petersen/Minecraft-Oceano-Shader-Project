@@ -329,7 +329,7 @@ float vcPhaseG(float x, float g) {
 	return (gg * -0.25 / PI + 0.25 / PI) * pow(-2.0 * (g * x) + (gg + 1.0), -1.5);
 }
 
-/* // Technically a better method, but breaks clouds. Can't figure out why but the visual improvement with this method is minimal so... idk
+/* // Technically a better method, but literally can't tell the difference.
 float vcPhase(float cosT) {
     float fwdA = vcKleinNishina(cosT, 2600.0);
     float fwdB = vcPhaseG(cosT, 0.70);
