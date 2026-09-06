@@ -147,17 +147,6 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
                altitudeFog *= (1.0 - altitudeFactor);
                altitudeFog *= timeFactor * 0.05 + sunAngleCosine * 0.1 * (1 - rainStrength);
 
-         float rainFogDepth = length(worldPos.xz) / 20.0;
-             rainFogDepth = (1.0 - exp(-0.1 * pow(rainFogDepth, 0.75)));
-             rainFogDepth = clamp(rainFogDepth, 0.0, 0.85);
-
-         float rainAltFactor = (worldPos.y + eyeAltitude + 1000.0 - altitude) * 0.001;
-               rainAltFactor = clamp(rainAltFactor, 0.0, 1.0);
-               rainAltFactor = pow(rainAltFactor, 2.0);
-               
-               rainFogDepth *= (1.0 - rainAltFactor * 0.7);
-               rainFogDepth *= rainStrength*3;
-
          float rayweight = ray * weight * 8.5 * pow(glare, 0.5) * timeFactor;
                rayweight *= clamp(altitudeFog, 0.025, 1.9) * 100.0;
                rayweight += clamp(altitudeFog * 5010.0 * timeFactor * ray * weight, 0.0, 1.9);
@@ -215,11 +204,11 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
 
             if (rainStrength > 0.001) {
                 float mistD = 1.0 - exp(-length(worldPos.xz) * 0.0016);
-                float mistH = exp(-max(worldPos.y + eyeAltitude - 70.0, 0.0) / 42.0);
-                float mist = clamp(mistD * mistH, 0.0, 0.85 * (1 - rainStrength * 0.6)) * rainStrength;
+                float mistH = exp(-max(worldPos.y + eyeAltitude - 40.0, 0.0) / 42.0);
+                float mist = clamp(mistD * mistH, 0.0, 0.85 * (1 - rainStrength * 0.4)) * rainStrength;
 
                 float vl = dot(volumeColor, vec3(0.2126, 0.7152, 0.0722));
-                vec3 mistCol = mix(volumeColor, vec3(vl) * vec3(0.95, 0.98, 1.03), 0.8) * 1.15;
+                vec3 mistCol = mix(volumeColor, vec3(vl) * vec3(0.95, 0.98, 1.03), 0.8) * 0.65;
 
                 mistCol += vec3(dot(sunCol, vec3(0.2126, 0.7152, 0.0722))) * 0.05 * ray * weight * timeFactor;
 

@@ -30,6 +30,6 @@ float tTransition = ((clamp(ticks, 12000.0, 12750.0) - 12000.0) / 750.0)
 float time[7] = float[7](tDawn, tMorning, tNoon, tAfternoon, tSunset, tNight, tTransition);
 
 #define atmSwapInner 0.03
-#define atmSwapOuter 0.20
+#define atmSwapOuter 0.10
 
 float transitionFade = smoothstep(atmSwapInner, atmSwapOuter, abs(sunElevation));

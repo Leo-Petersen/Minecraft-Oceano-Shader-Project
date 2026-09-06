@@ -314,13 +314,30 @@ vec3 atmSkyFinish(vec3 sky, vec3 rd, vec3 sunDir, vec3 moonDir) {
     float night = smoothstep(0.02, -0.10, sunDir.y);
     sky += atmMoonSky(rd, moonDir) * night * (1.0 - rainStrength * 0.95);
     float luma = dot(sky, vec3(0.2126, 0.7152, 0.0722));
-    sky = mix(sky, vec3(luma), vec3(1.0 - 1.12));
+    sky = mix(sky, vec3(luma), vec3(1.0 - 1.24));
     return sky;
 }
 
 vec3 atmSunColor(sampler2D transTex, vec2 res, vec3 sunDir) {
     float below = smoothstep(-0.06, 0.02, sunDir.y);
     vec3 tr = atmFetchTrans(transTex, res, atmosRg + 0.0005, clamp(sunDir.y, -1.0, 1.0));
+
+    // Chromatic adaptation (von Kries) to the 'high-sun illuminant'
+    // I added this since human eyes whitebalance warm colours to neutral colours
+    // i.e. the noon sun colouring was physically accurate but looked too yellow
+    // We need to adjust for what a human eye would actually see, not what the sun actually emits!!!!!!
+    // I miss magic numbers this one hurt my brain :(
+    vec3 refWhite = atmFetchTrans(transTex, res, atmosRg + 0.0005, 1.0); // zenith
+    vec3 balanced = tr / max(refWhite, vec3(1e-4));
+
+    // this shifts hue only, not brightness
+    float l0 = dot(tr,       vec3(0.2126, 0.7152, 0.0722));
+    float l1 = dot(balanced, vec3(0.2126, 0.7152, 0.0722));
+    balanced *= (l1 > 1e-4) ? (l0 / l1) : 1.0;
+
+    float adapt = mix(0.1, 0.3, smoothstep(0.1, 0.7, sunDir.y));
+    tr = mix(tr, balanced, adapt);
+
     return tr * atmosSunBrightness * below * (1.0 - rainStrength * 0.97);
 }
 
@@ -384,12 +401,14 @@ vec3 atmAerialPBR(vec3 surfaceColor, sampler2D skyViewTex, vec2 res,
     float avgY = 0.5 * (camY + fragY);
     float heightFall = exp(-max(avgY - atmosApBaseY, 0.0) / apH);
 
-    float aero = mix(1.0e-3, 4.0e-3, rain);
+    float aero = mix(1.0e-3, 6.0e-3, rain);
     vec3 betaExt = mix(atmosRayS, vec3(0.010), rain * 0.9) + vec3(aero);
-    float nearGuard = smoothstep(0.0, 80.0, distBlocks);
+    float apDens = atmosApDensity * mix(1.0, 2.2, rain);
+
+    float nearGuard = smoothstep(0.0, mix(80.0, 24.0, rain), distBlocks);
     nearGuard *= nearGuard;
-    vec3 tr = exp(-betaExt * (distBlocks * atmosApDensity * heightFall * nearGuard));
-         tr = max(tr, vec3(0.30));
+    vec3 tr = exp(-betaExt * (distBlocks * apDens * heightFall * nearGuard));
+    tr = max(tr, vec3(mix(0.30, 0.05, rain)));
 
     float lift = atmosApLift * (1.0 - rain * 0.92);
     vec3 rdLift = normalize(vec3(rd.x, max(rd.y, 0.0) * (1.0 - rain * 0.8) + lift, rd.z));
@@ -407,10 +426,11 @@ vec3 atmAerialPBR(vec3 surfaceColor, sampler2D skyViewTex, vec2 res,
     skyC          += nightSky * atmosApSourceExposure;
 
     float apNight = 1.0 - smoothstep(-0.10, 0.06, sunDir.y);
-    skyC *= mix(1 - rainStrength * 0.7, 1, apNight)*timeFix;
+    skyC *= mix(1.0 - rainStrength * 0.15, 1.0, apNight) * timeFix;
 
     skyC = atmSunsetTint(skyC, rd, sunDir, clearness * clearness);
-    skyC = max(skyC, atmosApNightSky * atmosApSourceExposure * 4);
+    vec3 nightFloor = mix(atmosApNightSky * 4.0, atmosOvercastTint * 0.03, rain);
+    skyC = max(skyC, nightFloor * atmosApSourceExposure);
 
     fogColorOut = skyC;
     return surfaceColor * tr + skyC * (1.0 - tr);

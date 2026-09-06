@@ -15,8 +15,8 @@ void main() {
 	if (fragcolor.a < 0.1) discard;
 
 	if (iswater == 1.0){
-		//fragcolor.a *= 0.8;
-		//fragcolor.rgb *= 1.5;
+		fragcolor.a *= 0.8;
+		fragcolor.rgb *= 1.5;
 		fragcolor.rgb *= (dot(vec3(0.2126, 0.7152, 0.0722), fragcolor.rgb) + (1-rainStrength));
 	}
 	

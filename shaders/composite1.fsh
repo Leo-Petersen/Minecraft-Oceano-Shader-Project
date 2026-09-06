@@ -148,11 +148,11 @@ void main(){
 		if (isEyeInWater < 0.9) {
 			vec3 overworldSky = skyBoxCol;
 
-			// 0 below the horizon, 1 above
 			float horizonMask = smoothstep(0.0, 0.05, sunDir.y);
 
-			overworldSky += Nebula(sunDir) * time[5] * transitionFade * 0.4 * horizonMask;
-			overworldSky += Stars(sunDir)  * time[5] * transitionFade * 4.0 * horizonMask;
+			float rainClear = 1.0 - rainStrength;
+			overworldSky += Nebula(sunDir) * time[5] * transitionFade * 0.4 * horizonMask * rainClear;
+			overworldSky += Stars(sunDir)  * time[5] * transitionFade * 4.0 * horizonMask * rainClear;
 			color.rgb = overworldSky * (1.0 - effects * 0.95);
 		}
 	}

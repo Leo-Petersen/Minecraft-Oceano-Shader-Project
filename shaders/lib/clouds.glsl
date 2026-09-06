@@ -1,3 +1,5 @@
+#undef cloudCumulonimbus
+
 #if cloudQuality == 1
   #define cloudUpscale 6
   #define cloudSteps 20
@@ -79,10 +81,26 @@ vec2 vcOffset16(int frame) {
 
 // look modifiers //
 #define cloudBottom (300.0 + cloudAltitude)
-// Normal cloud top.
+// Normal cloud top
 #define cloudCumulusTop (470.0 + cloudAltitude)
-// Cumulonimbus
-#define cloudCumulonimbus
+
+// settings for varied cloud heights
+#define cloudHeightVar 0.55   // [0.15 0.25 0.35 0.45 0.55 0.7 0.85] how far heights vary
+#define cloudHeightFreq 0.35  // [0.15 0.22 0.30 0.35 0.45 0.60 0.80] size of the tall/short zones, higher = smaller i.e. more 'mixed'
+#define cloudHeightBias 0.50  // [0.40 0.45 0.50 0.55 0.60] noise midpoint, lower = more clouds are tall
+
+// height for the current column
+#define vcVariedTop (vcBase + (vcTopCu - vcBase) * vcHeightFac)
+
+// Break the coverage areas into separate rounded clouds instead of connected bands, this stops the speghetto look I've been hating.
+#define cloudPuff 0.38        // [0.00 0.20 0.30 0.38 0.50 0.65 0.80] gap depth between clouds
+// How often clouds merge into large connected masses, this has replaced the old crummy cumulonimbus clouds and is based on the actual cloud coverage noise
+#define cloudBigClouds 0.65   // [0.00 0.25 0.40 0.55 0.70 0.85 1.00] higher = more/bigger masses
+#define cloudBigMerge 0.26    // [0.10 0.18 0.26 0.34 0.45] how strongly a big zone fills in (threshold drop)
+// curl the stringy noise contours into distinct rounded clouds instead of long noodles, without this clouds are stupidly long connected strings
+#define cloudWarp 1.0         // [0.0 0.5 0.75 1.0 1.4 1.8] destringing swirl strength
+
+// Cumulonimbus (REDUNDANT, NEED TO REMOVE) //
 #define cloudCbTop (900.0 + cloudAltitude)      // tower ceiling
 // 'anvil' vertical profile, couldn't actually get the anvil shaping to work but this ended up looking good so...
 #define cloudCbWaist 0.40     // width at the middle
@@ -92,12 +110,14 @@ vec2 vcOffset16(int frame) {
 #define cloudCbThin 0.28     // how much thinner the top is
 #define cloudCbRough 1.20     // extra erosion at height on storms
 #define cloudCbCover 0.40     // the coverage above which a cloud towers into cumulonimbus
+#define cloudCbClumping 0.35   // [0.0 0.15 0.25 0.35 0.5 0.7] how strongly Cb cluster into regions
 
 // March ceiling
 #ifdef cloudCumulonimbus
 #define cloudTop cloudCbTop
 #else
-#define cloudTop cloudCumulusTop
+// include the headroom where taller clouds rise above the normal height, so they aren't clipped
+#define cloudTop (cloudCumulusTop + (cloudCumulusTop - cloudBottom) * cloudHeightVar)
 #endif
 
 #define cloudSelfshadow 0.5
@@ -113,7 +133,6 @@ vec2 vcOffset16(int frame) {
 #define cloudDetailDist 2500.0    // max distancefor the 3rd detail octave
 #define cloudDetail3Weight 0.10   // amplitude of the 3rd octave
 #define cloudDetail3EnvGate 0.60  // only run 3rd octave where env < this
-#define cloudDomainWarp 90.0      // coverage domain warp strength 0 = off
 #define cloudAnvilSpread 400.0    // how far the anvil dilates downwind 0 = off
 #define cloudAnvilFlatten 0.5     // <1 widens the anvil footprint (lower frequency)
 #define cloudShapeOct 0.5         // frequency of the low 'shape' octave
@@ -167,7 +186,7 @@ vec2 vcScrollXZ(vec3 wpos) {
 vec2 vcEvolveWarp(vec2 p) {
 	float t = frameTimeCounter * cloudEvolve;
 	return vec2(sin(dot(p, vec2(0.6, 0.4)) * 0.0009 + t * 0.02),
-	            cos(dot(p, vec2(-0.4, 0.6)) * 0.0009 + t * 0.02)) * 900.0;
+	            cos(dot(p, vec2(-0.4, 0.6)) * 0.0009 + t * 0.02)) * 450.0;
 }
 
 float vcCoverage(vec2 p) {
@@ -176,38 +195,54 @@ float vcCoverage(vec2 p) {
 	vec2 warp = vcEvolveWarp(p);
 	vec2 q = p + warp;
 
-#if cloudDomainWarp > 0.0
-	vec2 dw = texture2D(noisetex, q * (cloudScale * 0.05 / cloudSize)).xy - 0.5;
-	q += dw * cloudDomainWarp;
-#endif
+	// destring! this swirl curls the stringy contours of the coverage noise into distinct rounded clouds
+	float wf = 0.0032;
+	q += vec2(-sin(q.x * wf + 1.3) * cos(q.y * wf + 4.7),
+	           cos(q.x * wf + 1.3) * sin(q.y * wf + 4.7)) * (120.0 * cloudWarp);
 
-	float n = vcNoise(q * (cloudScale / cloudSize));
-	float cover = mix(cloudCoverage, 0.97, rainStrength) + 0.10 * sin(t * 0.006);
-    float th = 0.5 - cover * 0.5;
+	float freq = cloudScale / cloudSize;
+	float n0 = vcNoise(q * freq);
+	float n1 = vcNoise(q * freq * 2.3 + 4.7);
+	float n2 = vcNoise(q * freq * 5.1 + 8.1);
+	float n = n0 * 0.6 + n1 * 0.3 + n2 * 0.1;
+	float cover = mix(cloudCoverage, 0.80, rainStrength) + 0.10 * sin(t * 0.006);
+
+	// occasional large clouds that tower because of the height coupling
+	float broad  = vcNoise(q * (cloudScale * 0.18 / cloudSize) + 0.71);
+	float bigLo  = mix(1.05, 0.30, cloudBigClouds);
+	float bigZone = smoothstep(bigLo, bigLo + 0.16, broad);
+
+    float th = (0.5 - cover * 0.5) - bigZone * cloudBigMerge;
     float c = clamp((n - th) / max(1.0 - th, 0.001), 0.0, 1.0);
 
     float sep = mix(cloudSeparation, 0.55, rainStrength);
     c = pow(c, sep);
-	float broad = vcNoise(q * (cloudScale * 0.18 / cloudSize) + 0.71);
+
+	float gap = vcBil(n1) * 0.7 + vcBil(n2) * 0.3;
+	c = clamp(c - gap * cloudPuff * (1.0 - bigZone) * (1.0 - rainStrength * 0.6), 0.0, 1.0);
+
+	float region = vcNoise(p * (cloudScale * 0.06 / cloudSize) + 2.3);
+	c *= smoothstep(0.2, 0.7, region);
     c *= mix(1.0, 0.55 + broad * 0.9, rainStrength * 0.8);
     return max(c, rainStrength * 0.42);
 }
 
 float vcCloudType(vec2 p) {
 #ifdef cloudCumulonimbus
+	float region = vcNoise(p * (cloudScale * 0.06 / cloudSize) + 2.3);
 	p += vcEvolveWarp(p);
 	float n = vcNoise(p * (cloudScale * 0.25 / cloudSize) + 0.37);
-	float th = 1.0 - cloudCbAmount;
+	float th = (1.0 - cloudCbAmount) + (region - 0.5) * cloudCbClumping;
 	return smoothstep(th, min(th + 0.10, 0.999), n);
 #else
 	return 0.0;
 #endif
 }
 
-
 // Density Model //
 float vcStormOut = 0.0;
 float vcCoverageOut = 0.0;
+float vcHeightFac = 1.0;
 bool vcCheapLight = false;
 float vcReflectTrans = 1.0;
 
@@ -231,8 +266,9 @@ float vcEnvelope(float coverage, float relH, float storm) {
 	
 	if (rainStrength > 0.001) {
 		float slab = coverage
-		           * smoothstep(0.00, 0.20, relH)
-		           * (1.0 - smoothstep(0.42, 0.96, relH));
+		           * smoothstep(0.00, 0.28, relH)
+		           * (1.0 - smoothstep(0.55, 1.0, relH));
+			  slab *= 0.7 + 0.6 * coverage;  
 		env = mix(env, slab * 1.7, rainStrength * 0.70);
 	}
 
@@ -264,10 +300,17 @@ float vcDensity(vec3 wpos) {
 #else
 	float storm = 0.0;
 	vcStormOut = 0.0;
+	vcCoverageOut = coverage;
 #endif
 	if (coverage <= 0.0) return 0.0;
 
-	float localTop = mix(vcTopCu, cloudCbTop, pow(storm, 0.45));
+	float hn = vcNoise(vcScrollXZ(wpos) * (cloudScale * cloudHeightFreq / cloudSize) + 11.7);
+	float hz = smoothstep(cloudHeightBias - 0.20, cloudHeightBias + 0.20, hn);
+	float hc = smoothstep(0.10, 0.55, coverage);
+	float dev = clamp(mix(hc, hz, 0.5), 0.0, 1.0);
+	vcHeightFac = mix(1.0 - cloudHeightVar, 1.0 + cloudHeightVar, dev);
+
+	float localTop = mix(vcVariedTop, cloudCbTop, pow(storm, 0.45));
 	float relH = (wpos.y - vcBase) / (localTop - vcBase);
 	if (relH <= 0.0 || relH >= 1.0) return 0.0;
 
@@ -309,7 +352,7 @@ float vcDensity(vec3 wpos) {
 
 float vcDensityShadowFast(vec3 wpos, float coverage, float storm) {
     if (coverage <= 0.0) return 0.0;
-    float localTop = mix(vcTopCu, cloudCbTop, pow(storm, 0.45));
+    float localTop = mix(vcVariedTop, cloudCbTop, pow(storm, 0.45));
     float relH = (wpos.y - vcBase) / (localTop - vcBase);
     if (relH <= 0.0 || relH >= 1.0) return 0.0;
     float env = vcEnvelope(coverage, relH, storm);
@@ -337,7 +380,7 @@ float vcPhase(float c) {
 // Depth toward the sun through the eroded density
 float vcLightMarch(vec3 pos, vec3 sunDir, float coverage, float storm) {
 	if (rainStrength > 0.6) {
-        float localTop = mix(vcTopCu, cloudCbTop, pow(storm, 0.45));
+        float localTop = mix(vcVariedTop, cloudCbTop, pow(storm, 0.45));
         float toTop = max(localTop - pos.y, 0.0) / max(abs(sunDir.y), 0.15);
         return toTop * coverage * cloudDensity * cloudSelfshadow * 0.11 * (1.0 + rainStrength * 2.6);
     }
@@ -387,14 +430,15 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 	float cosT  = dot(worldDir, sunDir);
 	float phase = mix(vcPhase(cosT), cloudIso, rainStrength * 0.9);
 
-	vec3 sunColor = (atmSunHue * atmDN + atmMoonLight * atmMoon * 0.8)
+	vec3 sunColor = (atmSunHue * atmDN + atmMoonLight * atmMoon * 0.4)
               		* cloudSunBrightness * transitionFade * (1.0 - rainStrength * 0.97);
 
 	vec3 skyAmb = atmSkyAmbient(colortex15, res, sunDirTrue);
 	float ambL  = dot(skyAmb, vec3(0.2126, 0.7152, 0.0722));
-		 skyAmb = mix(skyAmb, vec3(ambL), 0.25);
+		 skyAmb = mix(skyAmb, vec3(ambL), 0.0);
 	vec3 ambTop = skyAmb * cloudAmbient * 1.35;
-	vec3 ambBot = skyAmb * cloudAmbient * 0.55;
+	float lowSun = 1.0 - smoothstep(0.0, 0.40, sunDirTrue.y);
+	vec3 ambBot = skyAmb * cloudAmbient * mix(0.55, 0.85, lowSun);
 	vec3 nightAmb = atmMoonSky(vec3(0.0, 1.0, 0.0), -sunDirTrue) * atmMoon;
 		 ambTop += nightAmb;
 		 ambBot += nightAmb * 0.55;
@@ -449,7 +493,7 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 		
         float extinction = density * cloudDensity * (1.0 + rainStrength * 1.1);
 
-		float ambTopY = mix(vcTopCu, cloudCbTop, pow(vcStormOut, 0.45));
+		float ambTopY = mix(vcVariedTop, cloudCbTop, pow(vcStormOut, 0.45));
 		float relH = clamp((pos.y - vcBase) / (ambTopY - vcBase), 0.0, 1.0);
 
 		float odSun = vcCheapLight ? density * cloudDensity * 24.0 : vcLightMarch(pos, sunDir, vcCoverageOut, vcStormOut);

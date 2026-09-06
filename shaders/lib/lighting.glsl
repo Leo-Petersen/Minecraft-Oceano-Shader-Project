@@ -280,8 +280,8 @@ vec3 calculateSSS(
           phase = mix(0.35, 1.0, phase);    
 
     vec3 sssContribution = lightColor * lightColor * phase * sssAmount * transmission * skyLight * 0.62;
-    sssContribution *= (1.0 - rainStrength * 0.5);
-    sssContribution *= sssValid * (1-distFactor);
+         sssContribution *= 1.0 - rainStrength * 0.65;
+         sssContribution *= sssValid * (1-distFactor);
     
     return sssContribution;
 }

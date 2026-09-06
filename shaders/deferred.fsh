@@ -330,7 +330,7 @@ void main() {
     } else
     #endif
     {
-        float filterSize = 0.0025 * filterStr * (1.0 + rainStrength * 0.6);
+        float filterSize = 0.0025 * filterStr * (1.0 + rainT * 1.2);
 
         float sinAngle = sin(angle);
         float cosAngle = cos(angle);
@@ -433,16 +433,18 @@ void main() {
     //// Apply Lighting ////
     #ifdef shadowMap 
         vec3 ambientCol = bounceLight * (1.0 - rainStrength * rainShadowStr);
-        float lightStrength = lightStr * 11.2 * (1.0 - darknessFactor * 0.9) * transitionFade * pow(ao, 0.2);
+        float lightStrength = lightStr * 11 * (1.0 - darknessFactor * 0.9) * transitionFade * pow(ao, 0.2);
 
         // Material flags
         float isGrass = float(material > 0.025 && material < 0.04);
         bool isFoliage = (material > 0.005 && material < 0.02);
 
-        // Direct sunlight
         if (isGrass == 1) Diffuse = mix(Diffuse, 0.3, distFactor);
-        vec3 finalShadow = sunlightCol * Diffuse * ShadowAccum * lightMap.t * lightStrength * (1.0 - rainStrength * 0.7);
-        finalShadow *= mix(1.0, 0.85, distFactor); // Reduce direct light on distant terrain to balance with fog and prevent harsh edges
+
+        vec3 directBeam = sunlightCol * Diffuse * ShadowAccum * lightMap.t * lightStrength * max(0.14, rainDirect);
+        //directBeam *= mix(1.0, 0.85, distFactor); // Reduce direct light on distant terrain to balance with fog and prevent harsh edges
+
+        vec3 finalShadow = directBeam;
 
         // Bounce mask, restrict bounce light to shadowed areas
         float bounceMask = 1.0 - smoothstep(0.0, 0.25, shadowLum * max(Diffuse, 0.0));
@@ -462,6 +464,10 @@ void main() {
         float distShadowMask = 1.0 - smoothstep(0.0, 0.15, shadowLum * Diffuse * transitionFade); // Using the full diffuse at distance makes distain terrain look too harsh, this achieves a good middle ground
         vec3 warmShadowDist = mix(shadowDistColor, sunlightCol * 0.4, 0.28) * mix(0.5, 1.0, transitionFade);
         finalAmbient = mix(finalAmbient, mix(finalAmbient, warmShadowDist * 2, distShadowMask), distFactor * undergroundBlend);
+
+        const float overcastStrength = 0.70;
+        vec3 flatRain = rainAmbient * overcastStrength * lightMap.t * pow(ao, 0.42) * textureAO * undergroundBlend;
+        finalAmbient = mix(finalAmbient, flatRain, rainScatter);
 
         // Underground ambient
         finalAmbient += vec3(0.025, 0.028, 0.035) * (1.0 - undergroundBlend) * pow(ao, 0.2) * textureAO * 5.0;
@@ -489,7 +495,7 @@ void main() {
         
         // PBR Specular
         vec3 specularBRDF = cookTorranceGGXBRDF(color, specularMap, lightMap.t, sunlightCol);
-        specularBRDF *= ShadowAccum * lightMap.t * lightStrength * (1.0 - rainStrength * 0.65) * transitionFade;
+        specularBRDF *= ShadowAccum * lightMap.t * lightStrength * rainDirect * transitionFade;
         //specularBRDF *= mix(1.0, 0.8, distFactor);
 
         // Combine lighting
@@ -506,7 +512,7 @@ void main() {
                 worldPos, worldNormal, sunDirWorld,
                 pow(lightMap.t, 0.5), iswater, shadowLum, causticTimeFactor
             );
-            reflCaust *= sunlightCol * transitionFade * (1.0 - rainStrength * 0.85);
+            reflCaust *= sunlightCol * transitionFade * rainDirect;
             color.rgb += albedo * reflCaust;
         }
         #endif
