@@ -442,7 +442,7 @@ void main() {
         if (isGrass == 1) Diffuse = mix(Diffuse, 0.3, distFactor);
 
         vec3 directBeam = sunlightCol * Diffuse * ShadowAccum * lightMap.t * lightStrength * max(0.14, rainDirect);
-        //directBeam *= mix(1.0, 0.85, distFactor); // Reduce direct light on distant terrain to balance with fog and prevent harsh edges
+             directBeam *= mix(1.0, 0.85, distFactor); // Reduce direct light on distant terrain to balance with fog and prevent harsh edges
 
         vec3 finalShadow = directBeam;
 
