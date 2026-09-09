@@ -105,11 +105,11 @@ float transparencyFactor =  0.5 * (time[0]) +
                             0.5 * (time[4]) +
                             0.3 * (time[5]);
 
-float shadowFactor =  0.65 * (time[0]) +
+float shadowFactor =  0.85 * (time[0]) +
                       1.0 * (time[1]) +
                       1.0 * (time[2]) +
                       1.0 * (time[3]) +
-                      0.65 * (time[4]) +
+                      0.85 * (time[4]) +
                       0.25 * (time[5]);
 
 float torchFactor =   1.00 * (time[0]) +
@@ -313,12 +313,12 @@ void main() {
     //// Shadow Sampling ////
     vec3 ShadowAccum = vec3(0.0);
 
-    #ifdef BounceColoredLight
-        vec3 flux = vec3(0.0);
-        float fluxRadius = 0.08;
-        float validSamples = 0.0;
-    #else
-        vec3 flux = vec3(0.4);
+    vec3 flux = vec3(0.4);
+    float fluxRadius = 0.08;
+    float validSamples = 0.0;
+
+    #ifdef BounceLight
+        flux = vec3(0.0);
     #endif
 
     #ifdef shadowMap
@@ -348,18 +348,6 @@ void main() {
             vec2 offset = dir * radius;
 
             ShadowAccum += TransparentShadowHardware(vec3(SampleCoords.xy + offset * filterSize, SampleCoords.z), transparencyFactor, shadowBias);
-
-            #ifdef BounceColoredLight
-            if ((i & 1) == 0) {
-                vec2 fluxCoord = SampleCoords.xy + offset * fluxRadius;
-                if (fluxCoord.x >= 0.0 && fluxCoord.x <= 1.0 &&
-                    fluxCoord.y >= 0.0 && fluxCoord.y <= 1.0) {
-                    vec4 fluxSample = texture2D(shadowcolor0, fluxCoord);
-                    flux += fluxSample.rgb * (1.0 - fluxSample.a);
-                    validSamples += 1.0;
-                }
-            }
-            #endif
 
             dir = vec2(
                 dir.x * goldenCos - dir.y * goldenSin,
@@ -391,11 +379,23 @@ void main() {
     float shadowLum = dot(ShadowAccum, vec3(0.2126, 0.7152, 0.0722));
     vec3 invShadowAccum = clamp(-ShadowAccum * Diffuse + vec3(0.4), vec3(0.0), vec3(1.0));
 
+
     //// Process Flux / Bounce Light ////
     #ifdef shadowMap
-        #ifdef BounceColoredLight
-            flux = (validSamples > 0.0) ? flux / validSamples : vec3(0.4);
+
+        #ifdef BounceLight
+            vec3 c = vec3(0.0);
+            float ang = fract(sin(dot(SampleCoords.xy, vec2(12.9898,78.233))) * 43758.5) * 6.2831;
+            vec2 d = vec2(cos(ang), sin(ang));
+            const float g = 2.39996323;
+            for (int i = 0; i < 3; i++) {
+                float r = sqrt((float(i)+0.5)/3.0) * 0.08;
+                c += texture2D(shadowcolor0, SampleCoords.xy + d*r).rgb;
+                d = vec2(d.x*cos(g)-d.y*sin(g), d.x*sin(g)+d.y*cos(g));
+            }
+            flux = c / 3.0;
         #endif
+        
     #endif
     
     flux = max(flux, vec3(0.0001));
@@ -429,7 +429,7 @@ void main() {
         float ambientStrength = 0.034 * pow(ao, 0.42);
         ShadowAccum = vec3(0.5);
     #endif
-    
+
     //// Apply Lighting ////
     #ifdef shadowMap 
         vec3 ambientCol = bounceLight * (1.0 - rainStrength * rainShadowStr);

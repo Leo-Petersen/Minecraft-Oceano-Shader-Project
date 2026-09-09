@@ -430,15 +430,38 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 	float cosT  = dot(worldDir, sunDir);
 	float phase = mix(vcPhase(cosT), cloudIso, rainStrength * 0.9);
 
-	vec3 sunColor = (atmSunHue * atmDN + atmMoonLight * atmMoon * 0.4)
-              		* cloudSunBrightness * transitionFade * (1.0 - rainStrength * 0.97);
+	vec3 sunColor = (atmSunHue * atmDN * transitionFade + atmMoonLight * atmMoon * 0.4)
+	          		* cloudSunBrightness * transitionFade * (1.0 - rainStrength * 0.97);
 
-	vec3 skyAmb = atmSkyAmbient(colortex15, res, sunDirTrue);
-	float ambL  = dot(skyAmb, vec3(0.2126, 0.7152, 0.0722));
-		 skyAmb = mix(skyAmb, vec3(ambL), 0.0);
-	vec3 ambTop = skyAmb * cloudAmbient * 1.35;
+	vec3 skyAmb  = atmSkyAmbient(colortex15, res, sunDirTrue);
+	float skyLum = max(dot(skyAmb, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
 	float lowSun = 1.0 - smoothstep(0.0, 0.40, sunDirTrue.y);
-	vec3 ambBot = skyAmb * cloudAmbient * mix(0.55, 0.85, lowSun);
+
+	float sunL   = max(dot(sunColor, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
+	vec3  sunHue = sunColor / sunL;
+
+	#define duskOnset  0.16   // warm colour begins fading in below this sun height
+	#define duskPeak   0.00   // warm is full at/below this
+	#define duskEnd   -0.12   // warm fades back out once the sun is well under
+
+	float goldenHour = smoothstep(duskOnset, duskPeak, sunDirTrue.y)
+	                 * smoothstep(duskEnd,   duskPeak, sunDirTrue.y);
+
+	vec3 ambBase = skyAmb;
+
+	float sunFacing = max(dot(normalize(vec3(worldDir.x,   0.0, worldDir.z)   + 1e-4),
+	                          normalize(vec3(sunDirTrue.x, 0.0, sunDirTrue.z) + 1e-4)), 0.0);
+
+	float warmDir = pow(sunFacing, 1.6); 
+	float duskAmt = goldenHour;
+	vec3  warmLit = sunHue * skyLum;
+
+	vec3 ambTop = ambBase * cloudAmbient * 1.35 * (1.0 - 0.6 * duskAmt);
+	     ambTop += warmLit * cloudAmbient * (2.6 * duskAmt);
+
+	vec3 ambBot = ambBase * cloudAmbient * mix(0.55, 0.85, lowSun);
+	    // ambBot += warmLit * (0.8 * duskAmt);
+
 	vec3 nightAmb = atmMoonSky(vec3(0.0, 1.0, 0.0), -sunDirTrue) * atmMoon;
 		 ambTop += nightAmb;
 		 ambBot += nightAmb * 0.55;
@@ -511,7 +534,7 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
         scatterSun *= mix(1.0, powder, cloudPowder * (1.0 - rainStrength));
 
 		vec3 ambient = mix(ambBot, ambTop, relH);
-		vec3 direct  = sunColor * scatterSun * 2.4;
+		vec3 direct = sunColor * scatterSun * (2.4 + 2.2 * goldenHour);
 		vec3 luminance = ambient + direct;
 
 		float stepT = exp(-extinction * fineT);

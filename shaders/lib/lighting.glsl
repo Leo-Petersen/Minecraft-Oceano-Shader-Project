@@ -62,19 +62,13 @@ float fakeCloudShadow(vec3 worldPos, float distFactor) {
 }
 
 ////Bounce Light////
-#ifdef BounceLight
-    vec3 backLight(vec3 bounceColor) {
-        vec3 scaledBounce = bounceColor * 2.0;
-        vec3 scaledSunlight = sunlightCol * 2.0;
-        float upVector = -dot(upVec, viewNormal);
-        vec3 backLight = (scaledSunlight + scaledBounce) * (upVector + 7.0);
-        return (backLight + scaledSunlight);
-    }
-#else
-    vec3 backLight(vec3 bounceColor) {
-        return vec3(20.0);
-    }
-#endif
+vec3 backLight(vec3 bounceColor) {
+    vec3 scaledBounce = bounceColor * 2.0;
+    vec3 scaledSunlight = sunlightCol * 2.0;
+    float upVector = -dot(upVec, viewNormal);
+    vec3 backLight = (scaledSunlight + scaledBounce) * 7;
+    return (backLight + scaledSunlight);
+}
 
 ////AmbientOcclusion////
 float ld(float dist) {

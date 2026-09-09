@@ -72,9 +72,11 @@ float Bayer4(vec2 a)  { return Bayer2(0.5 * a) * 0.25 + Bayer2(a); }
 float Bayer8(vec2 a)  { return Bayer4(0.5 * a) * 0.25 + Bayer2(a); }
 
 void main() {
+    #ifdef DISTANT_HORIZONS
     float dither = Bayer8(gl_FragCoord.xy);
     float minDist = (dither - 0.75) * 16.0 + far;
     if (dist >= minDist) discard;
+    #endif
 
     #ifdef Parallax
     vec2 parallaxedUV = calcParallax();

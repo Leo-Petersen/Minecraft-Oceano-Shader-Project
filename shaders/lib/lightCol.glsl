@@ -66,9 +66,16 @@ vec3 moonDisc = vec3(3, 3, 4)/255;
 vec3 sunCol   = (sunDisc * atmDN + moonDisc * atmMoon);
 
 //// Sunlight Colour ////
-float atmDayLum = mix(0.16, 0.58, smoothstep(0.05, 0.65, sunElevation));
+float sunMax = max(max(atmSunHue.r, atmSunHue.g), atmSunHue.b);
+float sunMin = min(min(atmSunHue.r, atmSunHue.g), atmSunHue.b);
+float sunChroma = (sunMax > 1e-4) ? (sunMax - sunMin) / sunMax : 0.0;
+
+#define sunAdapt 0.5	// 0 = raw physical hue, 1 = fully white-balanced
+vec3 atmSunHueAdapt = mix(atmSunHue, vec3(1.0), sunChroma * sunAdapt);
+#define atmSunDayLevel 0.58
+vec3 atmDayLight = atmSunHueAdapt * atmSunDayLevel;
+
 float atmMoonLum = mix(0.42, 1.0, smoothstep(-0.08, -0.22, atmSunTrue.y));
-vec3 atmDayLight  = atmSunHue * atmDayLum;
 vec3 atmMoonLight = vec3(40, 70, 115)/255 * 0.7 * atmMoonLum;
 
 vec3 sunlightClear = atmDayLight * atmDN + atmMoonLight * atmMoon;

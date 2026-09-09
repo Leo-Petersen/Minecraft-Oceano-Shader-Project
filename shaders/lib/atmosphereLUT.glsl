@@ -314,7 +314,7 @@ vec3 atmSkyFinish(vec3 sky, vec3 rd, vec3 sunDir, vec3 moonDir) {
     float night = smoothstep(0.02, -0.10, sunDir.y);
     sky += atmMoonSky(rd, moonDir) * night * (1.0 - rainStrength * 0.95);
     float luma = dot(sky, vec3(0.2126, 0.7152, 0.0722));
-    sky = mix(sky, vec3(luma), vec3(1.0 - 1.24));
+    sky = mix(sky, vec3(luma), vec3(1.0 - 1.32));
     return sky;
 }
 
@@ -335,7 +335,7 @@ vec3 atmSunColor(sampler2D transTex, vec2 res, vec3 sunDir) {
     float l1 = dot(balanced, vec3(0.2126, 0.7152, 0.0722));
     balanced *= (l1 > 1e-4) ? (l0 / l1) : 1.0;
 
-    float adapt = mix(0.1, 0.3, smoothstep(0.1, 0.7, sunDir.y));
+    float adapt = mix(0.15, 0.45, smoothstep(0.1, 0.7, sunDir.y));
     tr = mix(tr, balanced, adapt);
 
     return tr * atmosSunBrightness * below * (1.0 - rainStrength * 0.97);
@@ -387,50 +387,70 @@ vec3 atmSunsetTint(vec3 col, vec3 rd, vec3 sunDir, float clearness) {
 
 // aerial perspective //
 #define atmosApDensity 0.040
-#define atmosApHeight 90.0    // scale of density by height (in blocks), density halves about every 62 blocks up
-#define atmosApBaseY 63.0    // altitude where density is full (currently set to sea level)
+#define atmosApHeight 90.0
+#define atmosApBaseY 63.0
 #define atmosApSourceExposure 1.0
-#define atmosApLift 0.12  // how far above the horizon the fog samples
+#define atmosApLift 0.06
+#define atmosApMatchStart 0.6  
+#define atmosApMatchEnd   3.0 
+#define atmosApAchromatic 
 
 vec3 atmAerialPBR(vec3 surfaceColor, sampler2D skyViewTex, vec2 res,
                   vec3 rd, float distBlocks, vec3 sunDir, float clearness,
                   float camY, float fragY, out vec3 fogColorOut, float timeFix) {
-    float rain = 1.0 - clearness;
+    float rain    = 1.0 - clearness;
+    vec3  moonDir = -sunDir;
 
-    float apH = atmosApHeight * mix(1.0, 0.45, rain);
-    float avgY = 0.5 * (camY + fragY);
+    float apH        = atmosApHeight * mix(1.0, 0.45, rain);
+    float avgY       = 0.5 * (camY + fragY);
     float heightFall = exp(-max(avgY - atmosApBaseY, 0.0) / apH);
 
-    float aero = mix(1.0e-3, 6.0e-3, rain);
-    vec3 betaExt = mix(atmosRayS, vec3(0.010), rain * 0.9) + vec3(aero);
-    float apDens = atmosApDensity * mix(1.0, 2.2, rain);
+    float aero    = mix(1.0e-3, 6.0e-3, rain);
+    vec3  betaExt = mix(atmosRayS, vec3(0.010), rain * 0.9) + vec3(aero);
+    float apDens  = atmosApDensity * mix(1.0, 2.2, rain);
 
     float nearGuard = smoothstep(0.0, mix(80.0, 24.0, rain), distBlocks);
     nearGuard *= nearGuard;
-    vec3 tr = exp(-betaExt * (distBlocks * apDens * heightFall * nearGuard));
-    tr = max(tr, vec3(mix(0.30, 0.05, rain)));
 
-    float lift = atmosApLift * (1.0 - rain * 0.92);
-    vec3 rdLift = normalize(vec3(rd.x, max(rd.y, 0.0) * (1.0 - rain * 0.8) + lift, rd.z));
+    float column   = distBlocks * apDens * heightFall * nearGuard;
+    float colScalar = length(betaExt) * column;
+
+    float keep = 1.0 - smoothstep(atmosApMatchStart, atmosApMatchEnd, colScalar);
+
+    vec3 betaUse = betaExt;
+    #ifdef atmosApAchromatic
+        vec3 betaGrey = vec3(max(betaExt.r, max(betaExt.g, betaExt.b)));
+        betaUse = mix(betaGrey, betaExt, keep);
+    #endif
+
+    vec3 trRaw = exp(-betaUse * column);
+
+    // Floor keeps distant terrain readable in mid-range haze
+    float floorAmt = mix(0.30, 0.05, rain) * keep;
+    vec3  tr = max(trRaw, vec3(floorAmt));
+
+    float lift     = atmosApLift * (1.0 - rain * 0.92) * keep;
+    vec3  rdHaze   = normalize(vec3(rd.x, max(rd.y, 0.0) * (1.0 - rain * 0.8) + lift, rd.z));
+    vec3  rdSample = normalize(mix(rd, rdHaze, keep));
 
     atmWantBand = false;
-    vec3 skyC = atmSky(skyViewTex, res, rdLift, sunDir) * atmosApSourceExposure;
+    vec3 skyC = atmSky(skyViewTex, res, rdSample, sunDir);
     atmWantBand = true;
 
-    float night    = smoothstep(0.02, -0.10, sunDir.y);
-    float moonRise = smoothstep(-0.08, -0.22, sunDir.y);
-    vec3  moonDir  = -sunDir;
+    skyC = atmSkyFinish(skyC, rdSample, sunDir, moonDir);
+    skyC *= atmosApSourceExposure;
 
-    vec3 nightSky  = atmosApNightSky * (1.0 - rainStrength * 0.6) * night;
-    nightSky      += atmMoonSky(rdLift, moonDir) * (1.0 - rainStrength * 0.95) * moonRise;
-    skyC          += nightSky * atmosApSourceExposure;
+    float night = smoothstep(0.02, -0.10, sunDir.y);
+    skyC += atmosApNightSky * (1.0 - rainStrength * 0.6) * night * keep * atmosApSourceExposure;
 
     float apNight = 1.0 - smoothstep(-0.10, 0.06, sunDir.y);
-    skyC *= mix(1.0 - rainStrength * 0.15, 1.0, apNight) * timeFix;
+    float dim     = mix(1.0 - rainStrength * 0.15, 1.0, apNight) * timeFix;
+    skyC *= mix(1.0, dim, keep);
 
     skyC = atmSunsetTint(skyC, rd, sunDir, clearness * clearness);
+
     vec3 nightFloor = mix(atmosApNightSky * 4.0, atmosOvercastTint * 0.03, rain);
-    skyC = max(skyC, nightFloor * atmosApSourceExposure);
+    skyC = max(skyC, nightFloor * atmosApSourceExposure * keep);
 
     fogColorOut = skyC;
     return surfaceColor * tr + skyC * (1.0 - tr);
