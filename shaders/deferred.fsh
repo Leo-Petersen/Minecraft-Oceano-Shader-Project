@@ -105,11 +105,11 @@ float transparencyFactor =  0.5 * (time[0]) +
                             0.5 * (time[4]) +
                             0.3 * (time[5]);
 
-float shadowFactor =  0.85 * (time[0]) +
+float shadowFactor =  0.75 * (time[0]) +
                       1.0 * (time[1]) +
                       1.0 * (time[2]) +
                       1.0 * (time[3]) +
-                      0.85 * (time[4]) +
+                      0.75 * (time[4]) +
                       0.25 * (time[5]);
 
 float torchFactor =   1.00 * (time[0]) +
