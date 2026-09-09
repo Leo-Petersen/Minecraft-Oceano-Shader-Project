@@ -158,7 +158,7 @@
         #define cloudSunBrightness 2.5      // [1.0 2.0 3.0 4.0 5.0 6.0 8.0 10.0]
         #define cloudAmbient 2.5            // [0.0 0.4 0.8 1.0 1.2 1.6 2.0 2.5 3.0]
         #define cloudTransitionDim 0.15     // [0.00 0.05 0.10 0.15 0.20 0.30 0.40 0.50]
-        #define cloudWindSpeed 8            // [0 1 2 3 4 5 6 7 8 9 10 20 50 100 200 300 400 500] wind speed in m/s
+        #define cloudWindSpeed 5            // [0 1 2 3 4 5 6 7 8 9 10 20 50 100 200 300 400 500] wind speed in m/s
         #define cloudEvolve 0.2     // [0.0 0.1 0.2 0.3 0.4 0.5 0.8 1.0] Shape change over time
         
 //Dimensions//

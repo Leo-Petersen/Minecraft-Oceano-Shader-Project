@@ -79,9 +79,9 @@ vec3 getWaterDepthFog(vec3 color, vec3 fragpos, vec3 fragpos2, float iswater, fl
     vec3 rainyWaterColor = mix(baseWaterColor, vec3(deepwaterR, deepwaterG, deepwaterB)/255, rainStrength * 0.85);
     baseWaterColor = mix(baseWaterColor, rainyWaterColor * 0.32, rainStrength);
     
-    float fogStr = 0.65 * time[0] + 1.0 * time[1] + 1.0 * time[2] + 
-                   1.0 * time[3] + 0.65 * time[4] + 0.22 * time[5];
-    fogStr *= lightMap * (0.3 + 0.7 * transitionFade) * 1.42;
+    float fogStr = 1 * time[0] + 1.0 * time[1] + 1.0 * time[2] + 
+                   1.0 * time[3] + 1 * time[4] + 0.22 * time[5];
+    fogStr *= lightMap * (0.3 + 0.7 * transitionFade);
     
     #ifdef volumetricFog
     #ifdef volumetricLight
@@ -140,7 +140,7 @@ vec3 getWaterDepthFog(vec3 color, vec3 fragpos, vec3 fragpos2, float iswater, fl
             vec3 causticSamplePos = currentWorldPos + lightDir * distToSurface;
             causticSamplePos.y = waterSurfaceWorldPos.y;
             vec3 causticValue = waterCaustics(causticSamplePos, 1.0);
-            float causticIntensity = pow(causticValue.x, 1.5) * 2.0;
+            float causticIntensity = pow(causticValue.x, 1.5) * 8.0;
             
             float depthFalloff = exp(-dist * 0.08);
             causticIntensity *= depthFalloff;
