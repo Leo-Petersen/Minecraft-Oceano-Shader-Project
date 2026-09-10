@@ -106,9 +106,9 @@ float transparencyFactor =  0.5 * (time[0]) +
                             0.3 * (time[5]);
 
 float shadowFactor =  0.75 * (time[0]) +
-                      1.0 * (time[1]) +
-                      1.0 * (time[2]) +
-                      1.0 * (time[3]) +
+                      0.90 * (time[1]) +
+                      0.90 * (time[2]) +
+                      0.90 * (time[3]) +
                       0.75 * (time[4]) +
                       0.25 * (time[5]);
 
@@ -127,11 +127,11 @@ float photonicsTorchFactor =   1.00 * (time[0]) +
                                2.50 * (time[5]);
 
 // Fixes bounce light being too strong at sunrise/sunset
-float bounceDesaturation = 0.9 * (time[0]) +
+float bounceDesaturation = 0.3 * (time[0]) +
                            0.0 * (time[1]) +
                            0.0 * (time[2]) +
                            0.0 * (time[3]) +
-                           0.9 * (time[4]) +
+                           0.3 * (time[4]) +
                            0.7 * (time[5]);
 
 float causticTimeFactor =  0.6 * (time[0]) +
