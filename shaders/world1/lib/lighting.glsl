@@ -66,8 +66,7 @@ float fakeCloudShadow(vec3 worldPos) {
     vec3 backLight(vec3 bounceColor) {
         vec3 scaledBounce = bounceColor * 2.0;
         vec3 scaledSunlight = sunlightCol * 2.0;
-        float upVector = -dot(upVec, viewNormal);
-        vec3 backLight = (scaledSunlight + scaledBounce) * (upVector + 7.0);
+        vec3 backLight = (scaledSunlight + scaledBounce) * 7.0;
         return (backLight + scaledSunlight);
     }
 #else
