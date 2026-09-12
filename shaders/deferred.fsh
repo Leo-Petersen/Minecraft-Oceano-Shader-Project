@@ -350,7 +350,7 @@ void main() {
     if (fromDH) {
         float dhSh = GetDHShadow(viewPos.xyz, normalize(shadowLightPosition), IGN);
         dhSh *= fakeCloudShadow(worldPos, clouddistFactor);
-        ShadowAccum = mix(shadowDistColor * 0, sunlightCol*Diffuse*transitionFade*3, dhSh);
+        ShadowAccum = mix(shadowDistColor * 0, sunlightCol*Diffuse*transitionFade*4*mix(1.0, 0.85, distFactor), dhSh);
     } else
     #endif
     {
