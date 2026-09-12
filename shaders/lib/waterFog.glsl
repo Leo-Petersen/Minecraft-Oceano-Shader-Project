@@ -79,8 +79,8 @@ vec3 getWaterDepthFog(vec3 color, vec3 fragpos, vec3 fragpos2, float iswater, fl
     vec3 rainyWaterColor = mix(baseWaterColor, vec3(deepwaterR, deepwaterG, deepwaterB)/255, rainStrength * 0.85);
     baseWaterColor = mix(baseWaterColor, rainyWaterColor * 0.32, rainStrength);
     
-    float fogStr = 1 * time[0] + 1.0 * time[1] + 1.0 * time[2] + 
-                   1.0 * time[3] + 1 * time[4] + 0.22 * time[5];
+    float fogStr = 1.2 * time[0] + 1.2 * time[1] + 1.2 * time[2] + 
+                   1.2 * time[3] + 1.2 * time[4] + 0.42 * time[5];
     fogStr *= lightMap * (0.3 + 0.7 * transitionFade);
     
     #ifdef volumetricFog
@@ -232,7 +232,7 @@ vec3 getUnderwaterFog(vec3 color, vec3 viewPos, float lightMapSky) {
     baseWaterColor = mix(baseWaterColor, rainyWaterColor * 0.32, rainStrength);
     
     float fogStr = 0.55 * time[0] + 1.0 * time[1] + 1.0 * time[2] + 
-                   1.0 * time[3] + 0.55 * time[4] + 0.45 * time[5];
+                   1.0 * time[3] + 0.55 * time[4] + 0.22 * time[5];
     fogStr = max(fogStr, 0.25);
     
     vec3 surfaceToCameraAtten = exp(-underwaterExtinction * distSurfaceToCamera * 0.12);
