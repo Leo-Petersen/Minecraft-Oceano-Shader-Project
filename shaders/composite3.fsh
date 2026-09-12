@@ -567,6 +567,7 @@ void main() {
 				}
 			}
 		}
+
 		// Velocity gated neighbourhood clamp
 		float camVel = length(cameraPosition - previousCameraPosition) / max(frameTime, 1e-4);
 		float uvVel = length(prevUV - texcoord) * max(viewWidth, viewHeight);
@@ -587,6 +588,29 @@ void main() {
 			hi = 0.5 * (hi + max(max(max(hi,a1), max(c1,g1)), i1));
 			history = mix(history, clamp(history, lo, hi), velFactor);
 		}
+
+		// This version of the velocity gated neighbourhood clamp is more aggressive and removes the 'tails' behind clouds, 
+		// BUT it can cause obvious pixelation in the clouds even at slow wind speeds... unused for now
+		// // Neighbourhood AABB clip
+		// float uvVel = length(prevUV - texcoord) * max(viewWidth, viewHeight);
+		// {
+		// 	vec4 e1 = current;	// centre fresh sample
+		// 	vec4 b1 = texelFetch(colortex12, src + ivec2( 0,-1), 0);
+		// 	vec4 d1 = texelFetch(colortex12, src + ivec2(-1, 0), 0);
+		// 	vec4 f1 = texelFetch(colortex12, src + ivec2( 1, 0), 0);
+		// 	vec4 h1 = texelFetch(colortex12, src + ivec2( 0, 1), 0);
+		// 	vec4 a1 = texelFetch(colortex12, src + ivec2(-1,-1), 0);
+		// 	vec4 c1 = texelFetch(colortex12, src + ivec2( 1,-1), 0);
+		// 	vec4 g1 = texelFetch(colortex12, src + ivec2(-1, 1), 0);
+		// 	vec4 i1 = texelFetch(colortex12, src + ivec2( 1, 1), 0);
+		// 	vec4 lo = min(min(min(b1,d1), min(e1,f1)), h1);
+		// 	lo = 0.5 * (lo + min(min(min(lo,a1), min(c1,g1)), i1));
+		// 	vec4 hi = max(max(max(b1,d1), max(e1,f1)), h1);
+		// 	hi = 0.5 * (hi + max(max(max(hi,a1), max(c1,g1)), i1));
+		// 	// Proportional padding
+		// 	vec4 pad = (hi - lo) * 0.25 + 1e-4;
+		// 	history = clamp(history, lo - pad, hi + pad);
+		// }
 
 		// Checkerboard
 		ivec2 off0 = dst - src * UP;

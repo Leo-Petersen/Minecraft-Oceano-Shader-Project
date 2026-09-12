@@ -28,6 +28,8 @@
         #define aoStrength 1.5 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0 3.1 3.2 3.3 3.4 3.5 3.6 3.7 3.8 3.9 4.0]
     #define SubsurfaceScattering
         #define SSS_Quality 8 // [1 2 3 4 5 6 7 8 9 10 11 12]
+    //#define PixelLockedShadows // Make shadows pixel-locked to the world grid, like Bedrock shaders
+        #define shadowPixelResolution 16 // [16 32 64 128 256 512 1024 2048 4096] grid cells per block. Match to texture pack resolution / preference
 
 //BounceLight//
     #define BounceLight
@@ -71,7 +73,7 @@
         #define parallaxShadowDepth  0.50 // [0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00] 'Technically' this should match parallaxDepth, but double the value of parallaxDepth looks more correct
         #define parallaxShadowStrength 12 // [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
     #define materialEmission 
-        #define emissionStrength 15 // [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50]
+        #define emissionStrength 25 // [0 25 50 75 100 150 200 250 300 400 500 600 700 800 900 1000 1500 2000]
 
 //BRDF//
     #define CookTorranceGGXBRDF

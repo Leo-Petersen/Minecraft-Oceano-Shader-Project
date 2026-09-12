@@ -3,8 +3,20 @@ const bool shadowHardwareFiltering1 = true;
 const bool shadowcolor0Nearest = true;
 const bool shadowcolor1Nearest = true;
 
+//// Pixel-Locked (i.e. Block-Aligned) Shadows ////
+
 float Depth = texture2D(depthtex0, texcoord).r;
 vec3 viewNormal = normalize(decodeNormal(texture2D(colortex1, texcoord).xy));
+
+// Snaps camera-relative world position to the block-pixel grid
+#ifdef PixelLockedShadows
+vec3 snapShadowPos(vec3 worldPos) {
+    vec3 camOffset = fract(cameraPosition);
+    vec3 pos = worldPos + camOffset;
+    vec3 cellCenter = (floor(pos * shadowPixelResolution + 0.01) + 0.5) / shadowPixelResolution;
+    return cellCenter - camOffset;
+}
+#endif
 
 vec4 ShadowSpace(vec3 worldPos) {
     vec4 ShadowSpace = shadowProjection * shadowModelView * vec4(worldPos, 1.0);

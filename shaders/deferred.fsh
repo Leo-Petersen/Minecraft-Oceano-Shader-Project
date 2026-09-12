@@ -181,7 +181,27 @@ void main() {
 
     vec3 worldNormal = mat3(gbufferModelViewInverse) * normal;
     float NdotL = max(dot(normal, normalize(shadowLightPosition)), 0.0);
-    vec3 shadowWorldPos = worldPos + worldNormal * 0.04 * (1.0 - NdotL);
+
+    vec3 shadowBasePos = worldPos;
+    #ifdef PixelLockedShadows
+        vec3 snapSrcPos = worldPos;
+        #ifdef TAA
+        if (!fromDH) {
+            const vec2 taaJitterSeq[8] = vec2[8](
+                vec2( 0.5,  -0.333333), vec2(-0.25,  0.333333),
+                vec2( 0.75,  0.111111), vec2( 0.125, -0.777778),
+                vec2(-0.375, 0.555556), vec2( 0.625, -0.111111),
+                vec2(-0.125, 0.777778), vec2( 0.875, -0.555556));
+            vec2 uvJitter = 0.5 * taaJitterSeq[frameCounter & 7] / vec2(viewWidth, viewHeight);
+
+            bool dhUnused;
+            vec3 viewUnjit = reconstructViewPos(texcoord - uvJitter, Depth, dhUnused);
+            snapSrcPos = mat3(gbufferModelViewInverse) * viewUnjit + gbufferModelViewInverse[3].xyz;
+        }
+        #endif
+        shadowBasePos = snapShadowPos(snapSrcPos);
+    #endif
+    vec3 shadowWorldPos = shadowBasePos + worldNormal * 0.04 * (1.0 - NdotL);
 
     float distNorm = 120.0;
     #ifdef DISTANT_HORIZONS
@@ -310,6 +330,10 @@ void main() {
 
     float angle = IGN * 6.28318530718; // full rotation
 
+    #ifdef PixelLockedShadows
+        angle = 0.0;
+    #endif
+
     //// Shadow Sampling ////
     vec3 ShadowAccum = vec3(0.0);
 
@@ -372,7 +396,6 @@ void main() {
         #endif
     }
     #else
-        // flux already declared above; nothing to declare here now.
         ShadowAccum = sunlightCol;
     #endif
 
