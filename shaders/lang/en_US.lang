@@ -19,6 +19,22 @@ option.fakecloudshadow=Fake Cloud Shadows
 
 option.SSS_Quality = SSS Quality
 
+# LightMap #
+option.shadowMapResolution = Shadow Map Resolution
+option.shadowDistance = Shadow Distance
+    option.shadowDistance.comment = The distance at which shadows are rendered. Lower values improve performance, but can cause shadows to pop in and out of view. 256 is a good value, highly recommended to use Distant Horizons rather than increasing the shadow distance / mc render distance.
+option.sunPathRotation = Sun Path Rotation
+option.torchLightMap = Emissives Lightmap
+    screen.torchColors = Emissives Colors
+        screen.torchColors.comment = Changes the color of the Emissives lightmap, only works when Voxel Lighting is disabled
+    option.torchR = Red
+    option.torchG = Green
+    option.torchB = Blue
+option.shadowMap = Shadow Map
+    option.shadowMap.comment = Enables/disables the shadow map, the shader is not built for having the shadow map disabled, this options exists just for customizability (huge performance gain, but many features will break)
+option.skyLightMap = Sky Lightmap
+
+# Lighting #
 screen.FillLight = Fake GI Fill Light
     option.BounceLight = Fake GI Fill Light
     option.BounceLight.comment = Adds a fill ('bounced') light to the scene to fake global illumination using psuedo values and surrounding texture colors. Can cause subtle color bleeding on shadows cast by 'saturated' blocks when colored is enabled.
@@ -27,10 +43,19 @@ screen.FillLight = Fake GI Fill Light
     option.bounceQuality = Quality
     option.BounceLightStr = Strength
 
+option.VoxelLighting = Voxel Lighting
+    option.VoxelLighting.comment = Enables/disables the voxel lighting system, this provides coloured emissive lighting. LOW FPS COST
+
 screen.AO = Ambient Occlusion
     option.aoRadius = Occlusion Radius
     option.aoQuality = Occlusion Quality
     option.aoStrength = Occlusion Strength
+
+option.SubsurfaceScattering = Subsurface Scattering
+
+screen.PixelShadows = Pixel Shadows
+    option.PixelLockedShadows = Pixel Locked Shadows
+    option.shadowPixelResolution = Shadow Pixel Resolution
 
 screen.Reflections = Water
     option.rainReflection = Puddles
@@ -45,7 +70,10 @@ option.materialReflections = Material Reflections (WIP)
 
 option.parallaxTAA=Parallax TAA
     option.parallaxTAA.comment= Smooths imperfections in Parallax. Disable then increase parallaxQuality & parallaxShadowQuality to obtain higher quality parallax
-# Volumetric Clouds #
+
+# Atmosphere #
+option.atmosphereFog = Atmosphere Fog
+    option.atmosApDensity = Atmosphere Density
 
 screen.VolumetricClouds = Volumetric Clouds
     option.VolumetricClouds = Volumetric Clouds
@@ -115,5 +143,3 @@ screen.VolumetricClouds = Volumetric Clouds
             option.cloudWindSpeed.comment = Speed the clouds drift across the sky.
             option.cloudEvolve = Evolution Speed
             option.cloudEvolve.comment = How quickly cloud shapes change over time.
-            option.cloudCbAmount = Cumulonimbus Amount
-            option.cloudCbAmount.comment = Coverage of tall cumulonimbus (storm) clouds.

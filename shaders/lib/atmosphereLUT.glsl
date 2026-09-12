@@ -386,7 +386,6 @@ vec3 atmSunsetTint(vec3 col, vec3 rd, vec3 sunDir, float clearness) {
 }
 
 // aerial perspective //
-#define atmosApDensity 0.040
 #define atmosApHeight 90.0
 #define atmosApBaseY 63.0
 #define atmosApSourceExposure 1.0

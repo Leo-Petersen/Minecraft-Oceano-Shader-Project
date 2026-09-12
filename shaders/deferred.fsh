@@ -354,7 +354,12 @@ void main() {
     } else
     #endif
     {
+
+        #ifdef PixelLockedShadows
+        float filterSize = 0.0025 * max(filterStr - 0.40, 0.0) * (1.0 + rainT * 1.2);
+        #else
         float filterSize = 0.0025 * filterStr * (1.0 + rainT * 1.2);
+        #endif
 
         float sinAngle = sin(angle);
         float cosAngle = cos(angle);
@@ -560,7 +565,7 @@ void main() {
     #else
         float lightStrength = lightStr;
         vec3 ambientCol = bounceLight * (1.0 - rainStrength * rainShadowStr);
-             color *= Diffuse * ShadowAccum * clamp(pow(lightMap.t, 4.0), 0.24, 1.0) * lightStrength * (1.0 - rainStrength * 0.2) + ambientStrength * ambientCol;
+             color *= Diffuse * ShadowAccum * clamp(pow(lightMap.t, 4.0), 0.24, 1.0) * lightStrength * (1.0 - rainStrength * 0.2) + ambientStrength * ambientCol * pow(shadowFactor, 2.0);
     #endif
     
     //// Photonics Raytraced Lighting ////
