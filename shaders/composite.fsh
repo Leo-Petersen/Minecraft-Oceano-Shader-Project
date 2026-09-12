@@ -272,7 +272,7 @@ void main() {
 		color.rgb = getWaterDepthFog(color.rgb, viewPos.xyz, fragpos2, iswater, lightMap.t, rawSkyLightMap);
 	}
 
-	#ifdef Fog
+	#ifdef volumetricLight
 	if (!isSky(texcoord, Depth)) {
 		color.rgb = getFog(color.rgb, cameraPosition, worldPos, fogColor, iswater, glare, sunCol, transitionFade, skyColor, sunAngleCosine);
 	}

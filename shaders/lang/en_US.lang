@@ -42,7 +42,6 @@ option.DOF = DOF [experimental]
 option.BLOOM = Bloom
 
 option.materialReflections = Material Reflections (WIP)
-option.volumetricCloudFog = Cloud Fog (WIP)
 
 option.parallaxTAA=Parallax TAA
     option.parallaxTAA.comment= Smooths imperfections in Parallax. Disable then increase parallaxQuality & parallaxShadowQuality to obtain higher quality parallax
@@ -62,6 +61,7 @@ screen.VolumetricClouds = Volumetric Clouds
             value.cloudQuality.2=Default
             value.cloudQuality.3=High
             value.cloudQuality.4=Ultra
+            value.cloudQuality.5=Full Resolution
         option.cloudQuality.comment = Overall quality of the clouds. Higher looks cleaner but costs performance.
         option.cloudReflSteps = Reflection Steps
         option.cloudReflSteps.comment = Raymarch steps used when clouds are drawn in reflections.

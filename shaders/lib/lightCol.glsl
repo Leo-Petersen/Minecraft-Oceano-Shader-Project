@@ -76,7 +76,7 @@ vec3 atmSunHueAdapt = mix(atmSunHue, vec3(1.0), sunChroma * sunAdapt);
 vec3 atmDayLight = atmSunHueAdapt * atmSunDayLevel;
 
 float atmMoonLum = mix(0.42, 1.0, smoothstep(-0.08, -0.22, atmSunTrue.y));
-vec3 atmMoonLight = vec3(40, 70, 115)/255 * 0.7 * atmMoonLum;
+vec3 atmMoonLight = vec3(40, 70, 115)/255 * 0.8 * atmMoonLum;
 
 vec3 sunlightClear = atmDayLight * atmDN + atmMoonLight * atmMoon;
 vec3 sunlightCol = mix(sunlightClear, rainAmbient, rainT);
