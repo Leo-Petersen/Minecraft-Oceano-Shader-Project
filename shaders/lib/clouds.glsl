@@ -516,10 +516,12 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 		
         float extinction = density * cloudDensity * (1.0 + rainStrength * 1.1);
 
-		float ambTopY = mix(vcVariedTop, cloudCbTop, pow(vcStormOut, 0.45));
+		float ambTopY = vcVariedTop;
 		float relH = clamp((pos.y - vcBase) / (ambTopY - vcBase), 0.0, 1.0);
 
-		float odSun = vcCheapLight ? density * cloudDensity * 24.0 : vcLightMarch(pos, sunDir, vcCoverageOut, vcStormOut);
+		float odSun = (vcCheapLight || transmittance < 0.2)
+		            ? density * cloudDensity * 24.0
+		            : vcLightMarch(pos, sunDir, vcCoverageOut, vcStormOut);
 
 		// Multiple scattering
 		float phMid = mix(phase, cloudIso, 0.5);
