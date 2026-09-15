@@ -1,145 +1,315 @@
-# Values #
-
+# Profiles #
 profile.VeryLow=Very Low
+profile.Low=Low
+profile.Default=Default
+profile.High=High
 
+
+# Mods #
 option.PHOTONICS_ENABLED=Photonics (Very WIP)
 option.PHOTONICS_ENABLED.comment=Enable Photonics raytracing. Requires the Photonics mod. Implementation currently unfinished, very WIP, many bugs
 
-value.ToneMap.0=Minecraft
-value.ToneMap.1=ACES
-value.ToneMap.2=Filmic_Hejl2015
-value.ToneMap.3=Oceano (Legacy ToneMap)
-value.ToneMap.4=AgX
 
-option.exposure=Exposure
-option.tonemapSaturation=Saturation
-option.saturation=Saturation Strength
-option.filmGrain=Grain Strength
-option.fakecloudshadow=Fake Cloud Shadows
+# Light Map #
+screen.LightMap=Light Map
 
-option.SSS_Quality = SSS Quality
+option.shadowMap=Shadow Map
+    option.shadowMap.comment=Enables/disables the shadow map, the shader is not built for having the shadow map disabled, this options exists just for customizability (huge performance gain, but many features will break)
+option.shadowMapResolution=Shadow Map Resolution
+option.shadowDistance=Shadow Distance
+    option.shadowDistance.comment=The distance at which shadows are rendered. Lower values improve performance, but can cause shadows to pop in and out of view. 256 is a good value, highly recommended to use Distant Horizons rather than increasing the shadow distance / mc render distance.
+option.sunPathRotation=Sun Path Rotation
 
-# LightMap #
-option.shadowMapResolution = Shadow Map Resolution
-option.shadowDistance = Shadow Distance
-    option.shadowDistance.comment = The distance at which shadows are rendered. Lower values improve performance, but can cause shadows to pop in and out of view. 256 is a good value, highly recommended to use Distant Horizons rather than increasing the shadow distance / mc render distance.
-option.sunPathRotation = Sun Path Rotation
-option.torchLightMap = Emissives Lightmap
-    screen.torchColors = Emissives Colors
-        screen.torchColors.comment = Changes the color of the Emissives lightmap, only works when Voxel Lighting is disabled
-    option.torchR = Red
-    option.torchG = Green
-    option.torchB = Blue
-option.shadowMap = Shadow Map
-    option.shadowMap.comment = Enables/disables the shadow map, the shader is not built for having the shadow map disabled, this options exists just for customizability (huge performance gain, but many features will break)
-option.skyLightMap = Sky Lightmap
+option.torchLightMap=Emissives Lightmap
+    screen.torchColors=Emissives Colors
+        screen.torchColors.comment=Changes the color of the Emissives lightmap, only works when Voxel Lighting is disabled
+        option.torchR=Red
+        option.torchG=Green
+        option.torchB=Blue
+option.skyLightMap=Sky Lightmap
+
 
 # Lighting #
-screen.FillLight = Fake GI Fill Light
-    option.BounceLight = Fake GI Fill Light
-    option.BounceLight.comment = Adds a fill ('bounced') light to the scene to fake global illumination using psuedo values and surrounding texture colors. Can cause subtle color bleeding on shadows cast by 'saturated' blocks when colored is enabled.
-    option.BounceColoredLight = Colored Fake GI
-    option.BounceColoredLight.comment = Toggles whether the fake GI fill light should be colored by the surrounding texture colors or just use the sun color. Can cause more noticeable color bleeding on shadows cast by 'saturated' blocks.
-    option.bounceQuality = Quality
-    option.BounceLightStr = Strength
+screen.Lighting=Lighting
 
-option.VoxelLighting = Voxel Lighting
-    option.VoxelLighting.comment = Enables/disables the voxel lighting system, this provides coloured emissive lighting. LOW FPS COST
+option.lightingQuality=Lighting Quality
+    option.lightingQuality.comment=Number of samples used when filtering the lighting. Higher is cleaner but costs performance.
+option.lightStr=Sunlight Strength
+option.sunStrength=Sun Intensity
+    option.sunStrength.comment=Raw brightness of direct sunlight before tonemapping.
+option.min_skyLightMap=Minimum Sky Light
+    option.min_skyLightMap.comment=Lowest sky lightmap value; raises the darkest indoor/night ambient floor.
+option.filterStr=Denoiser Strength
+    option.filterStr.comment=Strength of the lighting denoise filter. Higher removes more noise but softens detail.
+option.ambientStr=Ambient Strength
 
-screen.AO = Ambient Occlusion
-    option.aoRadius = Occlusion Radius
-    option.aoQuality = Occlusion Quality
-    option.aoStrength = Occlusion Strength
+option.VoxelLighting=Voxel Lighting
+    option.VoxelLighting.comment=Enables/disables the voxel lighting system, this provides coloured emissive lighting. LOW FPS COST
 
-option.SubsurfaceScattering = Subsurface Scattering
+option.SubsurfaceScattering=Subsurface Scattering
+option.SSS_Quality=SSS Quality
 
-screen.PixelShadows = Pixel Shadows
-    option.PixelLockedShadows = Pixel Locked Shadows
-    option.shadowPixelResolution = Shadow Pixel Resolution
+    # Ambient Occlusion #
+    screen.AO=Ambient Occlusion
+        option.AO=Ambient Occlusion
+        option.aoRadius=Occlusion Radius
+        option.aoQuality=Occlusion Quality
+        option.aoStrength=Occlusion Strength
 
-screen.Reflections = Water
-    option.rainReflection = Puddles
-    option.reflectedCaustics = Caustics Reflections
-    option.reflectedCausticsStrength = Strength
-    option.CookTorranceGGXBRDF = Specular Reflections
+    # Fake GI Fill Light #
+    screen.FillLight=Fake GI Fill Light
+        option.BounceLight=Fake GI Fill Light
+        option.BounceLight.comment=Adds a fill ('bounced') light to the scene to fake global illumination using psuedo values and surrounding texture colors. Can cause subtle color bleeding on shadows cast by 'saturated' blocks when colored is enabled.
+        option.bounceQuality=Quality
+        option.BounceLightStr=Strength
 
-option.DOF = DOF [experimental]
-option.BLOOM = Bloom
+    # Pixel Shadows #
+    screen.PixelShadows=Pixel Shadows
+        option.PixelLockedShadows=Pixel Locked Shadows
+        option.PixelLockedShadows.comment=Snaps shadows to the world pixel grid, like Bedrock shaders.
+        option.shadowPixelResolution=Shadow Pixel Resolution
+        option.shadowPixelResolution.comment=Grid cells per block. Match to texture pack resolution / preference.
 
-option.materialReflections = Material Reflections (WIP)
-
-option.parallaxTAA=Parallax TAA
-    option.parallaxTAA.comment= Smooths imperfections in Parallax. Disable then increase parallaxQuality & parallaxShadowQuality to obtain higher quality parallax
 
 # Atmosphere #
-option.atmosphereFog = Atmosphere Fog
-    option.atmosApDensity = Atmosphere Density
+screen.Atmosphere=Atmosphere
 
-screen.VolumetricClouds = Volumetric Clouds
-    option.VolumetricClouds = Volumetric Clouds
-    option.VolumetricClouds.comment = Enables raymarched volumetric clouds.
-    option.cloudReflections = Cloud Reflections
-    option.cloudReflections.comment = Renders the volumetric clouds in reflective surfaces such as water.
+option.atmosphereFog=Atmosphere Fog
+option.atmosApDensity=Atmosphere Density
+option.fogBlur=Fog Blur
+option.BorderFog=Border Fog
+    option.BorderFog.comment=Fades the far edge of the render distance into fog.
+option.caveFog=Cave Fog
+option.caveFogStrength=Cave Fog Strength
 
-    screen.CloudQuality = Quality
-        option.cloudUpscale = Upscale Factor
-        option.cloudUpscale.comment = Renders clouds at a lower resolution then upscales. Higher is faster but softer.
-        option.cloudQuality = Cloud Quality
+    # Volumetric Light #
+    screen.VolumetricLight=Volumetric Light
+        option.volumetricLight=Volumetric Light
+        option.volumetricLight.comment=Enables raymarched god rays / light shafts.
+        option.volumetricFogQuality=Quality
+            option.volumetricFogQuality.comment=Raymarch step count for volumetric fog and light. Higher is smoother but costs performance.
+        option.FogAltitude=Fog Altitude
+            option.FogAltitude.comment=World height around which the ground fog layer settles.
+        option.FogStrength=Fog Strength
+
+    # Volumetric Clouds #
+    screen.VolumetricClouds=Volumetric Clouds
+        option.VolumetricClouds=Volumetric Clouds
+        option.VolumetricClouds.comment=Enables raymarched volumetric clouds.
+        option.cloudQuality=Cloud Quality
             value.cloudQuality.1=Low
             value.cloudQuality.2=Default
             value.cloudQuality.3=High
             value.cloudQuality.4=Ultra
             value.cloudQuality.5=Full Resolution
-        option.cloudQuality.comment = Overall quality of the clouds. Higher looks cleaner but costs performance.
-        option.cloudReflSteps = Reflection Steps
-        option.cloudReflSteps.comment = Raymarch steps used when clouds are drawn in reflections.
+            option.cloudQuality.comment=Overall quality of the clouds; controls raymarch steps and internal upscale factor. Higher looks cleaner but costs performance.
+        option.cloudReflections=Cloud Reflections
+            option.cloudReflections.comment=Renders the volumetric clouds in reflective surfaces such as water.
+        option.cloudReflSteps=Reflection Steps
+            option.cloudReflSteps.comment=Raymarch steps used when clouds are drawn in reflections.
 
-    screen.CloudParameters = Parameters
+        # Shape & Coverage #
+        screen.CloudShape=Shape & Coverage
+            option.cloudAltitude=Altitude
+            option.cloudAltitude.comment=Altitude offset for the cloud layer. Has a small performance impact.
+            option.cloudScale=Noise Scale
+            option.cloudScale.comment=World space scale of the base cloud noise. Smaller values make larger cloud formations.
+            option.cloudSize=Size
+            option.cloudSize.comment=Overall scale of the clouds.
+            option.cloudThickness=Thickness
+            option.cloudThickness.comment=Vertical thickness of the cloud layer.
+            option.cloudCoverage=Coverage
+            option.cloudCoverage.comment=How much of the sky the clouds fill.
+            option.cloudSeparation=Separation
+            option.cloudSeparation.comment=Spacing between individual cloud formations.
+            option.cloudDensity=Density
+            option.cloudDensity.comment=Overall opacity of the clouds.
+            option.cloudTopFall=Top Falloff
+            option.cloudTopFall.comment=Softness of the cloud tops.
+            option.cloudBaseFlat=Base Flatten
+            option.cloudBaseFlat.comment=Flattens the underside of the clouds.
 
-        screen.CloudShape = Shape & Coverage
-            option.cloudAltitude = Altitude
-            option.cloudAltitude.comment = Altitude offset for the cloud layer. Has a small performance impact.
-            option.cloudScale = Noise Scale
-            option.cloudScale.comment = World space scale of the base cloud noise. Smaller values make larger cloud formations.
-            option.cloudSize = Size
-            option.cloudSize.comment = Overall scale of the clouds.
-            option.cloudThickness = Thickness
-            option.cloudThickness.comment = Vertical thickness of the cloud layer.
-            option.cloudCoverage = Coverage
-            option.cloudCoverage.comment = How much of the sky the clouds fill.
-            option.cloudSeparation = Separation
-            option.cloudSeparation.comment = Spacing between individual cloud formations.
-            option.cloudDensity = Density
-            option.cloudDensity.comment = Overall opacity of the clouds.
-            option.cloudTopFall = Top Falloff
-            option.cloudTopFall.comment = Softness of the cloud tops.
-            option.cloudBaseFlat = Base Flatten
-            option.cloudBaseFlat.comment = Flattens the underside of the clouds.
+        # Masses & Height #
+        screen.CloudMasses=Masses & Height
+            option.cloudBigClouds=Big Cloud Masses
+            option.cloudBigClouds.comment=Higher values produce more and bigger cloud masses.
+            option.cloudBigMerge=Mass Merge
+            option.cloudBigMerge.comment=How strongly a big cloud zone fills itself in (coverage threshold drop).
+            option.cloudWarp=Domain Warp
+            option.cloudWarp.comment=Swirl applied to the cloud field to break up stringy, repetitive shapes.
+            option.cloudPuff=Puffiness
+            option.cloudPuff.comment=Depth of the gaps carved between neighbouring clouds.
+            option.cloudHeightVar=Height Variation
+            option.cloudHeightVar.comment=How far individual cloud tops vary in height.
+            option.cloudHeightFreq=Height Zone Size
+            option.cloudHeightFreq.comment=Size of the tall/short zones. Higher is smaller, i.e. more mixed heights.
+            option.cloudHeightBias=Height Bias
+            option.cloudHeightBias.comment=Noise midpoint for height. Lower makes more clouds tall.
 
-        screen.CloudDetail = Detail & Noise
-            option.cloudDetail = Detail Carve Depth
-            option.cloudDetail.comment = Depth of the billow detail carved into the cloud shape.
-            option.cloudDetailCell = Detail Cell Size
-            option.cloudDetailCell.comment = Scale of the fine detail noise.
-            option.cloudDetailVaspect = Detail Vertical Aspect
-            option.cloudDetailVaspect.comment = Vertical stretch of the detail noise.
-            option.cloudSwirl = Billow Swirl
-            option.cloudSwirl.comment = Amount of swirl applied to the billow detail.
+        # Detail & Noise #
+        screen.CloudDetail=Detail & Noise
+            option.cloudDetail=Detail Carve Depth
+            option.cloudDetail.comment=Depth of the billow detail carved into the cloud shape.
+            option.cloudDetailCell=Detail Cell Size
+            option.cloudDetailCell.comment=Scale of the fine detail noise.
+            option.cloudDetailVaspect=Detail Vertical Aspect
+            option.cloudDetailVaspect.comment=Vertical stretch of the detail noise.
+            option.cloudSwirl=Billow Swirl
+            option.cloudSwirl.comment=Amount of swirl applied to the billow detail.
 
-        screen.CloudLighting = Lighting & Scattering
-            option.cloudSunBrightness = Sun Brightness
-            option.cloudSunBrightness.comment = Brightness of direct sunlight on the clouds.
-            option.cloudAmbient = Ambient Light
-            option.cloudAmbient.comment = Ambient sky light contribution on the clouds.
-            option.cloudTransitionDim = Twilight Dimming
-            option.cloudTransitionDim.comment = Dims the clouds during sunrise and sunset transitions.
-            option.cloudMs = Multiple Scattering
-            option.cloudMs.comment = Multiple scattering fill light inside the clouds.
-            option.cloudPowder = Powder Effect
-            option.cloudPowder.comment = Strength of the powder / dark edge effect.
+        # Lighting & Scattering #
+        screen.CloudLighting=Lighting & Scattering
+            option.cloudSunBrightness=Sun Brightness
+            option.cloudSunBrightness.comment=Brightness of direct sunlight on the clouds.
+            option.cloudAmbient=Ambient Light
+            option.cloudAmbient.comment=Ambient sky light contribution on the clouds.
+            option.cloudTransitionDim=Twilight Dimming
+            option.cloudTransitionDim.comment=Dims the clouds during sunrise and sunset transitions.
+            option.cloudMs=Multiple Scattering
+            option.cloudMs.comment=Multiple scattering fill light inside the clouds.
+            option.cloudPowder=Powder Effect
+            option.cloudPowder.comment=Strength of the powder / dark edge effect.
 
-        screen.CloudWeather = Weather & Motion
-            option.cloudWindSpeed = Wind Speed
-            option.cloudWindSpeed.comment = Speed the clouds drift across the sky.
-            option.cloudEvolve = Evolution Speed
-            option.cloudEvolve.comment = How quickly cloud shapes change over time.
+        # Weather & Motion #
+        screen.CloudWeather=Weather & Motion
+            option.cloudWindSpeed=Wind Speed
+            option.cloudWindSpeed.comment=Speed the clouds drift across the sky.
+            option.cloudEvolve=Evolution Speed
+            option.cloudEvolve.comment=How quickly cloud shapes change over time.
+
+
+# Reflections / Water #
+screen.Reflections=Water
+
+option.ParallaxWater=Parallax Water
+    option.ParallaxWater.comment=Adds parallax-mapped wave depth to water surfaces.
+option.WaterDepth=Wave Depth
+option.rainReflection=Puddles
+option.Caustics=Caustics
+option.reflectedCaustics=Caustics Reflections
+option.reflectedCausticsStrength=Strength
+option.CookTorranceGGXBRDF=Specular Reflections
+
+
+# Water Colours #
+screen.WaterColors=Water Colours
+
+option.shallowwaterR=Shallow Red
+option.shallowwaterG=Shallow Green
+option.shallowwaterB=Shallow Blue
+option.deepwaterR=Deep Red
+option.deepwaterG=Deep Green
+option.deepwaterB=Deep Blue
+option.AbsorptionCoeffR=Absorption Red
+    option.AbsorptionCoeffR.comment=Per-channel light absorption in water. Higher absorbs more red, shifting deep water bluer.
+option.AbsorptionCoeffG=Absorption Green
+option.AbsorptionCoeffB=Absorption Blue
+
+
+# Materials #
+screen.Materials=Materials
+
+option.Parallax=Parallax Occlusion
+    option.Parallax.comment=Adds real depth to textures using the height/normal map.
+option.CookTorranceGGXBRDF=Specular (GGX BRDF)
+option.materialReflections=Material Reflections (WIP)
+option.materialEmission=Material Emission
+option.emissionStrength=Emission Strength
+option.pstrength=Specular Strength
+option.pshininess=Specular Shininess
+
+    # Parallax Settings #
+    screen.ParallaxSettings=Parallax Settings
+        option.parallaxQuality=Parallax Quality
+        option.parallaxTAA=Parallax TAA
+            option.parallaxTAA.comment=Smooths imperfections in Parallax. Disable then increase parallaxQuality & parallaxShadowQuality to obtain higher quality parallax
+        option.MAX_PARALLAX_STEPS=Max Steps
+            option.MAX_PARALLAX_STEPS.comment=Upper limit of raymarch steps for parallax at close range.
+        option.MIN_PARALLAX_STEPS=Min Steps
+            option.MIN_PARALLAX_STEPS.comment=Lower limit of raymarch steps for parallax at distance.
+        option.parallaxDepth=Depth
+        option.parallaxNearDist=Near Distance
+        option.parallaxFarDist=Far Distance
+        option.ParallaxShadow=Parallax Shadows
+
+        # Shadow Settings #
+        screen.ShadowSettings=Parallax Shadow Settings
+            option.parallaxShadowQuality=Shadow Quality
+            option.parallaxShadowDepth=Shadow Depth
+            option.parallaxShadowStrength=Shadow Strength
+
+
+# Post Processing #
+screen.Post=Post Processing
+
+option.TAA=TAA
+    option.TAA.comment=Temporal anti-aliasing. Smooths edges and stabilises the image over frames.
+option.BLOOM=Bloom
+option.PURKINJE_SHIFT=Purkinje Shift
+    option.PURKINJE_SHIFT.comment=Shifts colours toward blue in very dark scenes to mimic low-light human vision.
+option.screenSunGlare=Screen Sun Glare
+
+    # Tone Mapping #
+    screen.ToneMap=Tone Mapping
+        option.ToneMap=Tonemap Operator
+            value.ToneMap.0=Minecraft
+            value.ToneMap.1=ACES
+            value.ToneMap.2=Filmic_Hejl2015
+            value.ToneMap.3=Oceano (Legacy ToneMap)
+            value.ToneMap.4=AgX
+        option.exposure=Exposure
+        option.tonemapSaturation=Saturation
+        option.saturation=Saturation Strength
+        option.FilmGrain=Film Grain
+        option.filmGrain=Grain Strength
+        option.colorTemp=Colour Temperature
+            option.colorTemp.comment=Enables white-balance adjustment via colour temperature.
+        option.colorTemperature=Temperature (K)
+        option.inverseKaris=Inverse Karis
+            option.inverseKaris.comment=Alternate bloom weighting that preserves bright highlights.
+
+    # Depth of Field #
+    screen.Depth_of_Field=Depth of Field
+        option.DOF=DOF [experimental]
+        option.Focal=Focal Distance
+
+    # Sharpening #
+    screen.Sharpen=Sharpening
+        option.Sharpen=Sharpen
+        option.SharpenStr=Sharpen Strength
+
+
+# Waving Foliage #
+screen.WavingFoliage=Waving Foliage
+
+option.wavingFoliage=Waving Foliage
+option.windDirectionX=Wind Direction X
+option.windDirectionY=Wind Direction Y
+option.foliageWindSpeed=Wind Speed
+option.foliageWindWaveLength=Wind Wavelength
+option.foliageWindSharpness=Wind Sharpness
+    option.foliageWindSharpness.comment=Higher values give sharper, gustier wind waves.
+option.foliageWindFloor=Wind Floor
+    option.foliageWindFloor.comment=Minimum sway so foliage never fully stops.
+option.foliageFlutterSpeed=Flutter Speed
+option.foliageFlutterScale=Flutter Scale
+
+
+# Misc #
+screen.misc=Misc
+
+option.whiteWorld=White World
+    option.whiteWorld.comment=Replaces all albedo with white; useful for debugging lighting.
+option.alwaysPuddles=Always Puddles
+option.grassHeight=Grass Height
+
+    # Nether Heat Haze #
+    screen.Nether=Nether
+        option.netherHeatHaze=Heat Haze
+            option.netherHeatHaze.comment=Rising heat distortion in the Nether.
+        option.heatHazeStrength=Haze Strength
+        option.HEAT_STEPS=Haze Samples
+            option.HEAT_STEPS.comment=Ray-march samples through the heat volume.
+        option.RISE_DECAY=Rise Decay
+        option.RISE_SPREAD=Rise Spread
+        option.RISE_BUOYANCY=Rise Buoyancy

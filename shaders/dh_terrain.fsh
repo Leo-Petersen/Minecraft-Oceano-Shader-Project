@@ -56,7 +56,7 @@ void main() {
 
     float emission = 0.0;
     #ifdef DH_BLOCK_ILLUMINATED
-    if (dhMat == DH_BLOCK_ILLUMINATED) emission = 1.0;
+    if (dhMat == DH_BLOCK_ILLUMINATED) emission = 0.0; // come back to, what is a correct value here?
     #endif
 
     vec3 worldNormal = mat3(gbufferModelViewInverse) * viewNormal;

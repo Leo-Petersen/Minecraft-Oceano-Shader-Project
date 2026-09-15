@@ -12,6 +12,20 @@ const mat2 rotationMatrix2 = mat2(
     -0.29552021, 0.95533649
 );
 
+float rainRipple(vec2 uv, float t) {
+    vec2 id = floor(uv);
+    vec2 gv = fract(uv) - 0.5;
+    float n = fract(sin(dot(id, vec2(127.1, 311.7))) * 43758.5453);
+    float life = fract(t + n);
+    float d    = length(gv);
+    float front = life * 0.7;
+    float ring = sin(40.0 * (d - front));
+    float mask = smoothstep(0.5, 0.0, d)
+               * (1.0 - life)
+               * smoothstep(front + 0.08, front, d);
+    return ring * mask;
+}
+
 float getWaterBump(vec2 posxz, float waveM, float waveZ, float iswater, float viewDist) {
     float rainDrop = mix(1.0, 5.0, step(0.945, iswater));
 
@@ -55,6 +69,16 @@ float getWaterBump(vec2 posxz, float waveM, float waveZ, float iswater, float vi
     #endif
 
     wave *= mix(0.3, 1.0, iswater) * 0.05;
+
+    #ifdef RainRipples
+        if (iswater > 0.5 && rainStrength > 0.01) {
+            float rt = frameTimeCounter;
+            float rings = rainRipple(posxz * 1.4, rt)
+                        + rainRipple(posxz * 1.4 + 41.7, rt * 1.17) * 0.7;
+            float ripFade = 1.0 - smoothstep(24.0, 70.0, viewDist);   // kill shimmer far away
+            wave += rings * 0.006 * rainStrength * ripFade;
+        }
+    #endif
 
     return wave;
 }

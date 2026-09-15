@@ -74,6 +74,10 @@ varying vec3 upVec;
 
 #include "/lib/encode.glsl"
 
+// This is here otherwise the setting will not show up in the user settings
+#ifdef cloudReflections
+#endif
+
 vec3 viewNormal = normalize(decodeNormal(texture2D(colortex1, texcoord).st));
 float rainMask = 1;
 vec2 specularMap = texture2D(colortex1, texcoord).ba;
@@ -268,67 +272,57 @@ void main() {
 		float fogDepth2 = pow(length(worldPos.xz) / 18, 1.0);
 			  fogDepth2 = clamp(1/exp(1.2 * fogDepth2), 0.0, 1.0);
 
-		float eta;
-		if (isEyeInWater > 0.5) {
-			eta = 1.333 / 1.0;  // Underwater looking out
-		} else if (isglass == 1.0) {
-			eta = 1.0 / 1.0;    // Glass (Should be 1.5, off for now, broken)
-		} else {
-			eta = 1.0 / 1.333;  // Water
-		}
-			
-		vec3 refractDir = refract(viewDir, waterNormal, eta);
-		
-		vec3 bedViewPos = reconstructViewPosOpaque(texcoord, Depth1);
+		// float eta;
+		// if (isEyeInWater > 0.5) {
+		// 	eta = 1.333 / 1.0;  // Underwater looking out
+		// } else if (isglass == 1.0) {
+		// 	eta = 1.0 / 1.0;    // Glass (Should be 1.5, off for now, broken)
+		// } else {
+		// 	eta = 1.0 / 1.333;  // Water
+		// }
+					
+		vec3  bedViewPos      = reconstructViewPosOpaque(texcoord, Depth1);
 		float depthDifference = max((-bedViewPos.z) - (-viewPos.z), 0.0);
 
-		vec2 refractOffset = (refractDir.xy - viewDir.xy);
-		float offsetScale = clamp(depthDifference * 0.45, 0.0, 0.30);
-		refractOffset *= offsetScale;
+		// Distortion vector
+		float aspectRatio = viewWidth / viewHeight;
+		float fovScale    = gbufferProjection[1][1] / 1.37;
+		vec2  distort     = (waterNormal.xy - viewNormal.xy);
+		distort *= vec2(1.0 / aspectRatio, 1.0) * fovScale / max(length(viewPos.xyz), 8.0);
 
-		// Chromatic aberration
-		float chromaMaterial = 0.02;
-		//if (isglass == 1.0) chromaMaterial = 0.0; //off for now, broken
-		float chromaStrength = chromaMaterial * clamp(depthDifference * 0.1, 0.0, 1.0);
-		vec2 chromaOffset = waterNormal.xy * chromaStrength;
+		vec2 newCoord = texcoord + distort;
 
-		// GHOSTING FIX //
-		vec2 testCoord = clamp(texcoord + refractOffset, vec2(0.001), vec2(0.999));
-		float destFade = 1.0;
-		if (iswater == 1.0) {
-			float waterSurfaceAtRefract = texture2D(depthtex0, testCoord).r;
-			float terrainAtRefract = texture2D(depthtex1, testCoord).r;
-			float waterColumnRaw = terrainAtRefract - waterSurfaceAtRefract;
-			destFade = smoothstep(0.0, 0.025, waterColumnRaw);
-		 } //else if (isglass == 1.0) {
-		// 	float destMaterial = texture2D(colortex2, testCoord).p;
-		// 	float isGlassAtDest = float(destMaterial > 0.10 && destMaterial < 0.12);
-			
-		// 	float destTerrainDepth = texture2D(depthtex1, testCoord).r;
-		// 	float behindGlass = smoothstep(Depth - 0.0001, Depth + 0.0001, destTerrainDepth);
-			
-		// 	destFade = isGlassAtDest * behindGlass;
-		// }
+		float destMat   = texture2D(colortex2, clamp(newCoord, vec2(0.001), vec2(0.999))).p;
+		float destWater = float(destMat > 0.08 && destMat < 0.10);
 
-		refractOffset *= destFade;
-		chromaStrength *= destFade;
-		chromaOffset *= destFade;
-
-		vec2 refractCoord = clamp(texcoord + refractOffset, vec2(0.001), vec2(0.999));
+		vec2 refractCoord = (destWater > 0.5) ? clamp(newCoord, vec2(0.001), vec2(0.999)) : texcoord;
+		vec2 chromaOffset = waterNormal.xy * 0.008 * float(destWater > 0.5) * 0;
 
 		vec3 refractedColor;
-		if (isEyeInWater < 0.5) {
-			refractedColor.r = texture2D(colortex0, refractCoord + chromaOffset).r;
+		{
+			vec2 rC = clamp(refractCoord + chromaOffset, vec2(0.001), vec2(0.999));
+			vec2 bC = clamp(refractCoord - chromaOffset, vec2(0.001), vec2(0.999));
+
+			float rMat = texture2D(colortex2, rC).p;
+			float bMat = texture2D(colortex2, bC).p;
+			if (!(rMat > 0.08 && rMat < 0.10)) rC = refractCoord;
+			if (!(bMat > 0.08 && bMat < 0.10)) bC = refractCoord;
+
+			refractedColor.r = texture2D(colortex0, rC).r;
 			refractedColor.g = texture2D(colortex0, refractCoord).g;
-			refractedColor.b = texture2D(colortex0, refractCoord - chromaOffset).b;
-		} else {
-			refractedColor = color.rgb;
+			refractedColor.b = texture2D(colortex0, bC).b;
+
+			if (destWater > 0.5) {
+				vec3 bedRefr = reconstructViewPosOpaque(refractCoord, texture2D(depthtex1, refractCoord).r);
+				depthDifference = max((-bedRefr.z) - (-viewPos.z), 0.0);
+			}
 		}
-				
-		// Apply water absorption tint based on depth
-		vec3 waterAbsorption = vec3(0.6, 0.85, 0.9);
-		float absorptionFactor = exp(-depthDifference * 0.08);
-		refractedColor *= mix(waterAbsorption, vec3(1.0), absorptionFactor);
+
+		if (isEyeInWater < 0.5) {
+			vec3 waterAbsorption = vec3(0.6, 0.85, 0.9);
+			float absorptionFactor = exp(-depthDifference * 0.08);
+			refractedColor *= mix(waterAbsorption, vec3(1.0), absorptionFactor);
+		}
 		
 		float fresnel = pow(1.0 - normalDotEye, 5.0);
 			  fresnel = mix(0.02, 1.0, fresnel);

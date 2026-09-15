@@ -350,7 +350,8 @@ void main() {
     if (fromDH) {
         float dhSh = GetDHShadow(viewPos.xyz, normalize(shadowLightPosition), IGN);
         dhSh *= fakeCloudShadow(worldPos, clouddistFactor);
-        ShadowAccum = mix(shadowDistColor * 0, sunlightCol*Diffuse*transitionFade*4*mix(1.0, 0.85, distFactor), dhSh);
+        //ShadowAccum = mix(shadowDistColor, sunlightCol*Diffuse*transitionFade*4*mix(1.0, 0.85, distFactor), dhSh);
+        ShadowAccum = mix(vec3(0.0), sunlightCol*Diffuse*transitionFade*4*mix(1.0, 0.85, distFactor), dhSh);
     } else
     #endif
     {
@@ -390,7 +391,8 @@ void main() {
         if (shadowCoverage < 0.999) {
             float dhSh = GetDHShadow(viewPos.xyz, normalize(shadowLightPosition), IGN);
             dhSh *= fakeCloudShadow(worldPos, clouddistFactor);
-            vec3 dhShadowVal = mix(shadowDistColor * 0.0, sunlightCol * Diffuse * transitionFade * 5.0, dhSh);
+            //vec3 dhShadowVal = mix(shadowDistColor, sunlightCol * Diffuse * transitionFade * 5.0, dhSh);
+            vec3 dhShadowVal = mix(vec3(0.0), sunlightCol * Diffuse * transitionFade * 5.0, dhSh);
             // Blend from map shadow to DH trace
             ShadowAccum = mix(dhShadowVal, ShadowAccum, shadowCoverage);
         } else {

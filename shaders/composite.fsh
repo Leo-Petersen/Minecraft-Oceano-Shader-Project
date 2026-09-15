@@ -268,7 +268,7 @@ void main() {
 	}
 
 	////Fog////
-	if (iswater == 1.0){
+	if (iswater == 1.0 && isEyeInWater < 0.5){
 		color.rgb = getWaterDepthFog(color.rgb, viewPos.xyz, fragpos2, iswater, lightMap.t, rawSkyLightMap);
 	}
 

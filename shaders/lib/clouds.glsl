@@ -91,9 +91,9 @@ vec2 vcOffset16(int frame) {
 #define cloudCumulusTop (470.0 + cloudAltitude)
 
 // settings for varied cloud heights
-#define cloudHeightVar 0.55   // [0.15 0.25 0.35 0.45 0.55 0.7 0.85] how far heights vary
-#define cloudHeightFreq 0.35  // [0.15 0.22 0.30 0.35 0.45 0.60 0.80] size of the tall/short zones, higher = smaller i.e. more 'mixed'
-#define cloudHeightBias 0.50  // [0.40 0.45 0.50 0.55 0.60] noise midpoint, lower = more clouds are tall
+#define cloudHeightVar 0.55   // [0.15 0.20 0.25 0.30 0.35 0.45 0.50 0.55 0.60 0.70 0.80 0.90 1.00] how far heights vary
+#define cloudHeightFreq 0.35  // [0.15 0.20 0.25 0.30 0.35 0.45 0.50 0.60 0.70 0.80 0.90 1.00] size of the tall/short zones, higher = smaller i.e. more 'mixed'
+#define cloudHeightBias 0.50  // [0.0 0.15 0.20 0.25 0.30 0.35 0.45 0.50 0.60 0.70 0.80] noise midpoint, lower = more clouds are tall
 
 // height for the current column
 #define vcVariedTop (vcBase + (vcTopCu - vcBase) * vcHeightFac)
