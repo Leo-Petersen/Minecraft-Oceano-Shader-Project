@@ -478,7 +478,7 @@ void main() {
 
         // Distance shadow transition (fade out of fake bouncelighting)
         //float distShadowDiffuse = mix(Diffuse, 1.0, isGrass); //Remove diffuse on grass with distance, not 'correct' but looks like artifacting otherwise
-        finalAmbient = mix(finalAmbient, finalAmbient*0.7, distFactor * undergroundBlend);
+        finalAmbient = mix(finalAmbient, finalAmbient*distAmbient, distFactor * undergroundBlend);
 
         const float overcastStrength = 0.70;
         vec3 flatRain = rainAmbient * overcastStrength * lightMap.t * pow(ao, 0.42) * textureAO * undergroundBlend;

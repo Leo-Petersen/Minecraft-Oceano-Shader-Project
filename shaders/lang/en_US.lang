@@ -42,6 +42,7 @@ option.min_skyLightMap=Minimum Sky Light
 option.filterStr=Shadow Filter Strength
     option.filterStr.comment=Strength of the lighting denoise filter. Higher removes more noise but softens detail.
 option.ambientStr=Ambient Strength
+option.distAmbient=Distant Ambient Strength
 
 option.VoxelLighting=Voxel Lighting
     option.VoxelLighting.comment=Enables/disables the voxel lighting system, this provides coloured emissive lighting. LOW FPS COST
