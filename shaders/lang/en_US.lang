@@ -39,7 +39,7 @@ option.sunStrength=Sun Intensity
     option.sunStrength.comment=Raw brightness of direct sunlight before tonemapping.
 option.min_skyLightMap=Minimum Sky Light
     option.min_skyLightMap.comment=Lowest sky lightmap value; raises the darkest indoor/night ambient floor.
-option.filterStr=Denoiser Strength
+option.filterStr=Shadow Filter Strength
     option.filterStr.comment=Strength of the lighting denoise filter. Higher removes more noise but softens detail.
 option.ambientStr=Ambient Strength
 

@@ -347,6 +347,24 @@ void main() {
         }
 
 		vec3 reflectionCol = mix(reflSky, waterreflection.rgb, waterreflection.a);
+
+			#ifdef atmosphereFog
+				if (reflHitDepth >= 0.0) {
+					vec4 hClip = vec4(reflHitUV, reflHitDepth, 1.0) * 2.0 - 1.0;
+					vec4 hView = gbufferProjectionInverse * hClip; hView /= hView.w;
+					float reflExtra = length(hView.xyz - viewPos.xyz);
+					float reflDayF  = clamp(max(smoothstep(-0.12, 0.02, atmSunDir.y), rainStrength * 2.0), 0.0, 1.0);
+
+					float apDens  = atmosApDensity * mix(1.0, 2.2, rainStrength);
+					float aero    = mix(1.0e-3, 6.0e-3, rainStrength);
+					vec3  betaExt = mix(atmosRayS, vec3(0.010), rainStrength * 0.9) + vec3(aero);
+
+					vec3 trRefl = exp(-betaExt * (reflExtra * apDens));
+					trRefl = mix(vec3(1.0), trRefl, reflDayF);
+					reflectionCol = mix(reflSky, reflectionCol, trRefl);
+				}
+			#endif
+			
 			#ifdef BorderFog
 				#ifndef DISTANT_HORIZONS
 				// Fog the reflection by the distance to what it REFLECTS, not the water surface!!

@@ -9,7 +9,6 @@
 
 //Lighting//
     #define shadowMap // WIP, broke this at one point, will re-visit
-        //#define disableRainShadows // Broke this at one point, will re-visit
     #define VoxelLighting
     #define skyLightMap
     #define torchLightMap

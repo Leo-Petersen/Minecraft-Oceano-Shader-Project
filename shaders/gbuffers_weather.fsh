@@ -12,7 +12,7 @@ void main() {
 	vec4 color = texture2D(texture, texcoord) * glcolor;
 	color *= texture2D(lightmap, lmcoord);
 	color.rgb *= skyColor;
-	color.rgb *= 2;
+	color.rgb *= 1.5;
 	color.a *= 0.4;
 
 /* DRAWBUFFERS:0 */

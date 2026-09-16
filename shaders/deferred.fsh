@@ -126,14 +126,6 @@ float photonicsTorchFactor =   1.00 * (time[0]) +
                                1.00 * (time[4]) +
                                2.50 * (time[5]);
 
-// Fixes bounce light being too strong at sunrise/sunset
-float bounceDesaturation = 0.3 * (time[0]) +
-                           0.0 * (time[1]) +
-                           0.0 * (time[2]) +
-                           0.0 * (time[3]) +
-                           0.3 * (time[4]) +
-                           0.7 * (time[5]);
-
 float causticTimeFactor =  0.6 * (time[0]) +
                            1.0 * (time[1]) +
                            1.0 * (time[2]) +
@@ -356,11 +348,7 @@ void main() {
     #endif
     {
 
-        #ifdef PixelLockedShadows
-        float filterSize = 0.0025 * max(filterStr - 0.40, 0.0) * (1.0 + rainT * 1.2);
-        #else
         float filterSize = 0.0025 * filterStr * (1.0 + rainT * 1.2);
-        #endif
 
         float sinAngle = sin(angle);
         float cosAngle = cos(angle);
@@ -412,44 +400,40 @@ void main() {
 
     //// Process Flux / Bounce Light ////
     #ifdef shadowMap
-
         #ifdef BounceLight
             vec3 c = vec3(0.0);
-            float ang = fract(sin(dot(SampleCoords.xy, vec2(12.9898,78.233))) * 43758.5) * 6.2831;
+            float ang = fract(sin(dot(SampleCoords.xy, vec2(12.9898, 78.233))) * 43758.5) * 6.2831;
             vec2 d = vec2(cos(ang), sin(ang));
             const float g = 2.39996323;
             for (int i = 0; i < 3; i++) {
-                float r = sqrt((float(i)+0.5)/3.0) * 0.08;
-                c += texture2D(shadowcolor0, SampleCoords.xy + d*r).rgb;
-                d = vec2(d.x*cos(g)-d.y*sin(g), d.x*sin(g)+d.y*cos(g));
+                float r = sqrt((float(i) + 0.5) / 3.0) * 0.08;
+                c += texture2D(shadowcolor0, SampleCoords.xy + d * r).rgb;
+                d = vec2(d.x * cos(g) - d.y * sin(g), d.x * sin(g) + d.y * cos(g));
             }
             flux = c / 3.0;
         #endif
-        
     #endif
-    
-    flux = max(flux, vec3(0.0001));
-    flux *= (1.0 - rainStrength * 0.88);
-    flux /= dot(vec3(0.2126, 0.7152, 0.0722), flux);
-    if (Depth < 0.56) flux /= dot(vec3(0.2126, 0.7152, 0.0722), flux) + rainStrength * 0.5;
+
+    const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
+
+    flux  = max(flux, vec3(0.0001));
+    flux /= dot(LUMA, flux);
 
     vec3 bounceLight = backLight(flux);
-    bounceLight = mix(shadowCol, bounceLight, dot(vec3(0.2126, 0.7152, 0.0722), flux) + 0.5);
+    bounceLight = mix(shadowCol, bounceLight, dot(LUMA, flux) + 0.5);
     bounceLight *= 0.55 * BounceLightStr;
-    float bounceLum = dot(bounceLight, vec3(0.2126, 0.7152, 0.0722));
-          bounceLight = mix(bounceLight, vec3(bounceLum), mix(bounceDesaturation, 0.9, rainStrength)); // Fixes bounce light being too strong at sunrise / sunset
+
+    float bounceLum = dot(bounceLight, LUMA);
+    bounceLight = mix(bounceLight, vec3(bounceLum), time[5]);
+
+    float bounceNight = smoothstep(-0.08, 0.0, atmSunTrue.y);
+    float bounceRain  = 1.0 - rainStrength;
+    bounceLight *= bounceNight * bounceRain;
 
     float undergroundBlend = smoothstep(0.0, 1.0, pow(rawSkyLight, 0.5));
 
     #ifdef skyLightMap
         bounceLight = mix(ambientShadowColor, bounceLight, undergroundBlend);
-    #endif
-
-    //// Rain Shadow Strength ////
-    #ifdef disableRainShadows
-        float rainShadowStr = 24.0;
-    #else
-        float rainShadowStr = 0.55;
     #endif
 
     //// Setup Ambient ////
@@ -462,7 +446,7 @@ void main() {
 
     //// Apply Lighting ////
     #ifdef shadowMap 
-        vec3 ambientCol = bounceLight * (1.0 - rainStrength * rainShadowStr);
+        vec3 ambientCol = bounceLight;
         float lightStrength = lightStr * 11 * (1.0 - darknessFactor * 0.9) * transitionFade * pow(ao, 0.2);
 
         // Material flags
@@ -472,7 +456,7 @@ void main() {
         if (isGrass == 1) Diffuse = mix(Diffuse, 0.3, distFactor);
 
         vec3 directBeam = sunlightCol * Diffuse * ShadowAccum * lightMap.t * lightStrength * max(0.14, rainDirect);
-             directBeam *= mix(1.0, 0.85, distFactor); // Reduce direct light on distant terrain to balance with fog and prevent harsh edges
+             directBeam *= mix(1.0, 0.9, distFactor); // Reduce direct light on distant terrain to balance with fog and prevent harsh edges
 
         vec3 finalShadow = directBeam;
 
@@ -482,18 +466,19 @@ void main() {
 
         // Ambient components
         float ambientShadowFactorFixed = mix(0.5, shadowFactor, undergroundBlend);
-        vec3 flatAmbient = pow(shadowCol, vec3(0.3)) * (1.0 - rainStrength * 0.2) * undergroundBlend;
+        vec3 flatAmbient   = pow(shadowCol, vec3(0.3)) * (1.0 - rainStrength * 0.2) * undergroundBlend;
         vec3 shadowAmbient = shadowCol * 3.0 * invShadowAccum * (1.0 - rainStrength * 0.7) * undergroundBlend;
-        vec3 baseAmbient = mix(flatAmbient, shadowAmbient, transitionFade);
-        vec3 bounceAmbient = ambientStrength * ambientCol * ambientShadowFactorFixed * (1.0 - rainStrength * 0.14) * bounceMask;
+        vec3 baseAmbient   = mix(flatAmbient, shadowAmbient, transitionFade);
+        vec3 bounceAmbient = ambientStrength * ambientCol * ambientShadowFactorFixed * bounceMask;
 
-        vec3 finalAmbient = (baseAmbient + bounceAmbient) * 0.25 * pow(ao, 0.42) * textureAO;
+        // Sky/moon ambient
+        vec3 nightAmbient = ambientShadowColor * 2.0 * atmNight * undergroundBlend;
+
+        vec3 finalAmbient = (baseAmbient + bounceAmbient + nightAmbient) * 0.25 * pow(ao, 0.42) * textureAO;
 
         // Distance shadow transition (fade out of fake bouncelighting)
         //float distShadowDiffuse = mix(Diffuse, 1.0, isGrass); //Remove diffuse on grass with distance, not 'correct' but looks like artifacting otherwise
-        float distShadowMask = 1.0 - smoothstep(0.0, 0.15, shadowLum * Diffuse * transitionFade); // Using the full diffuse at distance makes distain terrain look too harsh, this achieves a good middle ground
-        vec3 warmShadowDist = mix(shadowDistColor, sunlightCol * 0.4, 0.28) * mix(0.5, 1.0, transitionFade);
-        finalAmbient = mix(finalAmbient, mix(finalAmbient, warmShadowDist * 2, distShadowMask), distFactor * undergroundBlend);
+        finalAmbient = mix(finalAmbient, finalAmbient*0.7, distFactor * undergroundBlend);
 
         const float overcastStrength = 0.70;
         vec3 flatRain = rainAmbient * overcastStrength * lightMap.t * pow(ao, 0.42) * textureAO * undergroundBlend;
@@ -566,7 +551,7 @@ void main() {
         #endif
     #else
         float lightStrength = lightStr;
-        vec3 ambientCol = bounceLight * (1.0 - rainStrength * rainShadowStr);
+        vec3 ambientCol = bounceLight;
              color *= Diffuse * ShadowAccum * clamp(pow(lightMap.t, 4.0), 0.24, 1.0) * lightStrength * (1.0 - rainStrength * 0.2) + ambientStrength * ambientCol * pow(shadowFactor, 2.0);
     #endif
     

@@ -80,7 +80,7 @@ vec3 getWaterDepthFog(vec3 color, vec3 fragpos, vec3 fragpos2, float iswater, fl
     baseWaterColor = mix(baseWaterColor, rainyWaterColor * 0.32, rainStrength);
     
     float fogStr = 1.0 * time[0] + 1.2 * time[1] + 1.2 * time[2] + 
-                   1.2 * time[3] + 1.0 * time[4] + 0.42 * time[5];
+                   1.2 * time[3] + 1.0 * time[4] + 0.22 * time[5];
     fogStr *= lightMap * (0.3 + 0.7 * transitionFade);
     
     #ifdef volumetricLight
