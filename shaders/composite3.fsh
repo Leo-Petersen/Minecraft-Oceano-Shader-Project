@@ -385,9 +385,10 @@ void main() {
 			float waveShadeStrength = 0.8;
 			color.rgb *= clamp(1.0 + towardSun * waveShadeStrength, 0.65, 1.5);
 		} else {
-			//color.rgb = mix(refractedColor, reflectionCol, fresnel * 0.3);
-			color.rgb += (vec3(shallowwaterR, shallowwaterG, shallowwaterB)/255) * waterSSS * 0.5 * fogDepth2; 
-			color.rgb += (vec3(deepwaterR, deepwaterG, deepwaterB)/255) * frontGlow * 0.3 * fogDepth2;            
+			color.rgb = refractedColor;
+
+			color.rgb += (vec3(shallowwaterR, shallowwaterG, shallowwaterB)/255) * waterSSS * 0.25 * fogDepth2;
+			color.rgb += (vec3(deepwaterR, deepwaterG, deepwaterB)/255)  * frontGlow * 0.20 * fogDepth2;
 		}
 	}
 
