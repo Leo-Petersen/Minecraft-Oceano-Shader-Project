@@ -81,6 +81,9 @@ vec3 atmMoonLight = vec3(40, 70, 115)/255 * atmMoonLum;
 vec3 sunlightClear = atmDayLight * atmDN + atmMoonLight * atmMoon;
 vec3 sunlightCol = mix(sunlightClear, rainAmbient, rainT);
 
+//// Water Fog Colour ////
+float waterDayLight = max(atmDN, 0.20);
+
 //// Ambient Shadow Colour ////
 vec3 ambientShadowColor = vec3(20, 30, 55)/255;
 

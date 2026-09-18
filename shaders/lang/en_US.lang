@@ -190,7 +190,8 @@ option.Caustics=Caustics
 option.reflectedCaustics=Caustics Reflections
 option.reflectedCausticsStrength=Strength
 option.CookTorranceGGXBRDF=Specular Reflections
-
+option.depthFogStr=Water Fog Strength
+option.underFogStr=Underwater Fog Strength
 
 # Water Colours #
 screen.WaterColors=Water Colours
