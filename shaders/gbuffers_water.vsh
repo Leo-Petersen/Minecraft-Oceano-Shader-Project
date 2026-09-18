@@ -82,9 +82,9 @@ void main() {
 		//viewpos.y += (cos((worldpos.x + worldpos.z) + frameTimeCounter * 2.0) * 0.5 + 0.5) * (sin(frameTimeCounter) * 0.5 + 0.5) * 0.05;
 		//viewpos.y += (sin((worldpos.x - worldpos.z) + frameTimeCounter * 3.0) * 0.5 + 0.5) * 0.07;
 
-		viewpos.y += (cos((worldpos.x + worldpos.z) + frameTimeCounter * 2.0) * 0.15 + 0.15) * (sin(frameTimeCounter) * 0.5 + 0.5) * 0.14;
-		viewpos.y += (cos((worldpos.x + worldpos.z) + frameTimeCounter * 2.0) * 0.1 + 0.1) * 0.14;
-		viewpos.y += (sin((worldpos.x - worldpos.z) + frameTimeCounter * 3.0) * 0.15 + 0.15) * 0.14;
+		viewpos.y += (cos((worldpos.x + worldpos.z) + frameTimeCounter * 2.0) * 0.15 + 0.15) * (sin(frameTimeCounter) * 0.5 + 0.5) * 0.07;
+		viewpos.y += (cos((worldpos.x + worldpos.z) + frameTimeCounter * 2.0) * 0.1 + 0.1) * 0.07;
+		viewpos.y += (sin((worldpos.x - worldpos.z) + frameTimeCounter * 3.0) * 0.15 + 0.15) * 0.07;
 	}
 
 	viewpos = transMAD(gbufferModelView, viewpos);

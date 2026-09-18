@@ -227,8 +227,8 @@ void main() {
 	vec3 reflWorldDir = normalize(mat3(gbufferModelViewInverse) * reflViewDir);
 
 	if (iswater > 0.5) {
-		// Subhorizon rays reflect more water, i.e. the bright horizon band. Fold, don't clamp!
 		if (reflWorldDir.y < 0.0) reflWorldDir.y *= -0.25;
+		reflWorldDir.y = mix(reflWorldDir.y, 0.13, smoothstep(0.10, 0.0, reflWorldDir.y));
 		reflWorldDir = normalize(reflWorldDir);
 	}
 
@@ -339,9 +339,10 @@ void main() {
 		vec4 waterreflection;
 		vec2 reflHitUV = vec2(0.5);
 		float reflHitDepth = -1.0;
+		vec3 reflHitViewPos = vec3(0.0);
 
         if (fresnel > 0.05) {
-            waterreflection = raytrace(reflSky, viewPos.xyz, reflNormalSurf, 6, reflHitUV, reflHitDepth);
+            waterreflection = raytrace(reflSky, viewPos.xyz, reflNormalSurf, 6, reflHitUV, reflHitDepth, reflHitViewPos);
         } else {
             waterreflection = vec4(reflSky, 0.0);
         }
@@ -350,9 +351,7 @@ void main() {
 
 			#ifdef atmosphereFog
 				if (reflHitDepth >= 0.0) {
-					vec4 hClip = vec4(reflHitUV, reflHitDepth, 1.0) * 2.0 - 1.0;
-					vec4 hView = gbufferProjectionInverse * hClip; hView /= hView.w;
-					float reflExtra = length(hView.xyz - viewPos.xyz);
+					float reflExtra = length(reflHitViewPos - viewPos.xyz);
 					float reflDayF  = clamp(max(smoothstep(-0.12, 0.02, atmSunDir.y), rainStrength * 2.0), 0.0, 1.0);
 
 					float apDens  = atmosApDensity * mix(1.0, 2.2, rainStrength);

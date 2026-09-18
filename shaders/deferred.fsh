@@ -79,7 +79,6 @@ vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue)
 #include "/lib/lightCol.glsl"
 #include "/lib/lighting.glsl"
 #include "/lib/brdf.glsl"
-#include "/lib/raytrace.glsl"
 #include "/lib/handlight.glsl"
 #include "/lib/waterBump.glsl"
 #include "/lib/caustics.glsl"

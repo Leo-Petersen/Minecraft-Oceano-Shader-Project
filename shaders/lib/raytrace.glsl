@@ -1,8 +1,8 @@
 const float stepSize = 1.0;        // Size of one step for ray tracing algorithm
 const float refinementMultiplier = 0.5; // Refinement multiplier
 const float incrementFactor = 1.5;  // Increment factor at each step
-const int maxRefinements = 3;       // Maximum number of refinements
-const int numSamples = 15;          // Number of samples
+const int maxRefinements = 5;       // Maximum number of refinements
+const int numSamples = 25;          // Number of samples
 
 vec3 normalizedVec3(vec4 pos) {
     return pos.xyz / pos.w;
@@ -14,6 +14,24 @@ vec4 normalizedVec4(vec3 pos) {
 
 float computeDistance(vec2 coord) {
     return max(abs(coord.x - 0.5), abs(coord.y - 0.5)) * 2.0;
+}
+
+bool sampleSurfaceViewPos(vec2 uv, out vec3 samplePosition, out bool outIsDH) {
+    outIsDH = false;
+    float vDepth = texture2D(depthtex1, uv).r;
+    if (vDepth < 1.0) {
+        samplePosition = normalizedVec3(gbufferProjectionInverse * normalizedVec4(vec3(uv, vDepth) * 2.0 - 1.0));
+        return true;
+    }
+    #ifdef DISTANT_HORIZONS
+    float dDepth = texture2D(dhDepthTex1, uv).r;
+    if (dDepth < 1.0) {
+        samplePosition = normalizedVec3(dhProjectionInverse * normalizedVec4(vec3(uv, dDepth) * 2.0 - 1.0));
+        outIsDH = true;
+        return true;
+    }
+    #endif
+    return false;
 }
 
 vec4 raytrace(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnelView) {
@@ -35,26 +53,29 @@ vec4 raytrace(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnelView) {
             break;
         }
 
-        vec3 samplePosition = vec3(position.st, texture2D(depthtex1, position.st).r);
-        samplePosition = normalizedVec3(gbufferProjectionInverse * normalizedVec4(samplePosition * 2.0 - 1.0));
+        vec3 samplePosition;
+        bool sampleIsDH;
+        bool hasSurface = sampleSurfaceViewPos(position.st, samplePosition, sampleIsDH);
 
-        dist = abs(dot(start - samplePosition, normal));
-        float error = length(fragmentPos - samplePosition);
+        if (hasSurface) {
+            dist = abs(dot(start - samplePosition, normal));
+            float error = length(fragmentPos - samplePosition);
 
-        float dynamicThreshold = length(stepVector) * pow(length(stepVector), 0.1) * 2.0; 
+            float dynamicThreshold = length(stepVector) * pow(length(stepVector), 0.1) * 2.0;
 
-        float hitMaterial = texture2D(colortex2, position.st).p;
-        bool hitIsWater = (hitMaterial > 0.08 && hitMaterial < 0.10);
+            float hitMaterial = texture2D(colortex2, position.st).p;
+            bool hitIsWater = (hitMaterial > 0.08 && hitMaterial < 0.10);
 
-        if (error < dynamicThreshold && texture2D(depthtex1, position.st).r < 1.0 && !hitIsWater) {
-            stepCount++;
-            if (stepCount >= maxRefinements) {
-                color = texture2D(colortex0, position.st);
-                color.a = 1.0 - pow(computeDistance(position.st), fresnelView);
-                break;
+            if (error < dynamicThreshold && !hitIsWater) {
+                stepCount++;
+                if (stepCount >= maxRefinements) {
+                    color = texture2D(colortex0, position.st);
+                    color.a = 1.0 - pow(computeDistance(position.st), fresnelView);
+                    break;
+                }
+                fragmentPos = oldPosition;
+                stepVector *= refinementMultiplier;
             }
-            fragmentPos = oldPosition;
-            stepVector *= refinementMultiplier;
         }
 
         stepVector *= incrementFactor;
@@ -66,11 +87,11 @@ vec4 raytrace(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnelView) {
 }
 
 // Overload, same as the raytrace() function above, but also reports the screen-space hit
-// This is to accomodate the borderFog on the water surface, which needs to know the hit location and depth for proper blending
-vec4 raytrace(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnelView, out vec2 hitUV, out float hitDepth) {
+vec4 raytrace(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnelView, out vec2 hitUV, out float hitDepth, out vec3 hitViewPos) {
     vec4 color = vec4(skyColor, 1.0);
-    hitUV = vec2(0.5);   // miss defaults
-    hitDepth = -1.0;     // -1.0 means "no hit" (falls back to the sky color)
+    hitUV = vec2(0.5);       // miss defaults
+    hitDepth = -1.0;         // -1.0 means "no hit" (falls back to the sky color)
+    hitViewPos = vec3(0.0);
 
     vec3 reflectionVector = normalize(reflect(normalize(fragmentPos), normalize(normal)));
     vec3 stepVector = stepSize * reflectionVector;
@@ -88,28 +109,32 @@ vec4 raytrace(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnelView, o
             break;
         }
 
-        vec3 samplePosition = vec3(position.st, texture2D(depthtex1, position.st).r);
-        samplePosition = normalizedVec3(gbufferProjectionInverse * normalizedVec4(samplePosition * 2.0 - 1.0));
+        vec3 samplePosition;
+        bool sampleIsDH;
+        bool hasSurface = sampleSurfaceViewPos(position.st, samplePosition, sampleIsDH);
 
-        dist = abs(dot(start - samplePosition, normal));
-        float error = length(fragmentPos - samplePosition);
+        if (hasSurface) {
+            dist = abs(dot(start - samplePosition, normal));
+            float error = length(fragmentPos - samplePosition);
 
-        float dynamicThreshold = length(stepVector) * pow(length(stepVector), 0.1) * 2.0;
+            float dynamicThreshold = length(stepVector) * pow(length(stepVector), 0.1) * 2.0;
 
-        float hitMaterial = texture2D(colortex2, position.st).p;
-        bool hitIsWater = (hitMaterial > 0.08 && hitMaterial < 0.10);
+            float hitMaterial = texture2D(colortex2, position.st).p;
+            bool hitIsWater = (hitMaterial > 0.08 && hitMaterial < 0.10);
 
-        if (error < dynamicThreshold && texture2D(depthtex1, position.st).r < 1.0 && !hitIsWater) {
-            stepCount++;
-            if (stepCount >= maxRefinements) {
-                color = texture2D(colortex0, position.st);
-                color.a = 1.0 - pow(computeDistance(position.st), fresnelView);
-                hitUV = position.st;                              // capture hit location
-                hitDepth = texture2D(depthtex1, position.st).r;  // capture hit depth
-                break;
+            if (error < dynamicThreshold && !hitIsWater) {
+                stepCount++;
+                if (stepCount >= maxRefinements) {
+                    color = texture2D(colortex0, position.st);
+                    color.a = 1.0 - pow(computeDistance(position.st), fresnelView);
+                    hitUV = position.st; 
+                    hitDepth = sampleIsDH ? 1.0 : texture2D(depthtex1, position.st).r;
+                    hitViewPos = samplePosition;
+                    break;
+                }
+                fragmentPos = oldPosition;
+                stepVector *= refinementMultiplier;
             }
-            fragmentPos = oldPosition;
-            stepVector *= refinementMultiplier;
         }
 
         stepVector *= incrementFactor;
@@ -155,54 +180,3 @@ vec4 raytracePuddles(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnel
 
     return color;
 }
-
-#ifdef DISTANT_HORIZONS
-// marches the DH depth buffer with dhProjection, so it can
-// reflect DH terrain that isn't in depthtex1
-// TO-DO: make this actually work lol, currently unused
-vec4 raytraceDH(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnelView) {
-    vec4 color = vec4(skyColor, 1.0);
-
-    vec3 reflectionVector = normalize(reflect(normalize(fragmentPos), normalize(normal)));
-    vec3 stepVector = stepSize * reflectionVector;
-    vec3 oldPosition = fragmentPos;
-    fragmentPos += stepVector;
-
-    int stepCount = 0;
-    vec3 start = fragmentPos;
-
-    for (int i = 0; i < numSamples; i++) {
-        // Project with DH projection
-        vec3 position = normalizedVec3(dhProjection * normalizedVec4(fragmentPos)) * 0.5 + 0.5;
-
-        if (position.x < -0.05 || position.x > 1.05 || position.y < -0.05 || position.y > 1.05) {
-            break;
-        }
-
-        // Sample DH depth
-        float dhd = texture2D(dhDepthTex0, position.st).r;
-        vec3 samplePosition = vec3(position.st, dhd);
-        samplePosition = normalizedVec3(dhProjectionInverse * normalizedVec4(samplePosition * 2.0 - 1.0));
-
-        float error = length(fragmentPos - samplePosition);
-        float dynamicThreshold = length(stepVector) * pow(length(stepVector), 0.1) * 2.0;
-
-        if (error < dynamicThreshold && dhd < 1.0) {
-            stepCount++;
-            if (stepCount >= maxRefinements) {
-                color = texture2D(colortex0, position.st);
-                color.a = 1.0 - pow(computeDistance(position.st), fresnelView);
-                break;
-            }
-            fragmentPos = oldPosition;
-            stepVector *= refinementMultiplier;
-        }
-
-        stepVector *= incrementFactor;
-        oldPosition = fragmentPos;
-        fragmentPos += stepVector;
-    }
-
-    return color;
-}
-#endif
