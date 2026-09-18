@@ -114,7 +114,7 @@ void main() {
 		skylightMap = clamp(skylightMap, min_skyLightMap, 1.0);
 		skylightMap = pow(skylightMap, 0.1);
 		
-		float transparencyFactor = 0.15 * getTransparencyFactor() * skylightMap;
+		float transparencyFactor = 0.35 * getTransparencyFactor() * skylightMap;
 		
 		color *= texture2D(lightmap, lmcoord);
 		if (isEyeInWater < 1.0) {
@@ -122,6 +122,7 @@ void main() {
 			color.rgb *= transparencyFactor;
 		} else {
 			color.rgb *= transparencyFactor;
+			color.a *= 0.5;
 		}
 	}
 	// Transparent Lighting //
