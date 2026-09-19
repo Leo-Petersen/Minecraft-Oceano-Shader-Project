@@ -490,7 +490,7 @@ void main() {
             #if defined(PHOTONICS) && defined(PHOTONICS_ENABLED)
                 color += albedo * emission * emissionStrength * 0.1;
             #else
-                color += albedo * emission * emissionStr * emissionStrength * 0.5;
+                color += albedo * emission * emissionStr * emissionStrength * 0.075;
             #endif
         #endif
     #else

@@ -90,7 +90,11 @@ uint getVoxelId(int entityId) {
     if (entityId == 10240 || entityId == 13040) return 21u;
     // End Portal Frame (ID 10241)
     if (entityId == 10241) return 22u;
-
+    // Copper Lantern (ID 10243)
+    if (entityId == 10243) return 27u;
+    // Copper Bulb lit (ID 10244)
+    if (entityId == 10244) return 28u;
+    
     return 0u; // Not an emissive block
 }
 

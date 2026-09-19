@@ -50,6 +50,10 @@ vec3 getBlocklightColor(int id) {
     else if (id == 23) color = vec3(0.2, 1.0, 0.3);
     // End Crystal (ID 24)
     else if (id == 24) color = vec3(0.9, 0.4, 0.9);
+    // Copper Lantern (ID 27)
+    else if (id == 27) color = vec3(0.525, 0.792, 0.349);
+    // Copper Bulb (ID 28)
+    else if (id == 28) color = vec3(1.0, 0.8, 0.55);
     
     return color;
 }

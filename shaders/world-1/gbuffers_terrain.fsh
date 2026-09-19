@@ -77,7 +77,7 @@ void main() {
     vec4 normalRaw = texture2D(normals, parallaxedUV);
     
     vec2 specularMap = specularData.rg;
-    float emission = specularData.a < 0.99 ? specularData.a : 0.0;
+    float emission = specularData.a < 1.0 ? clamp(specularData.a * 1.004 - 0.004, 0.0, 1.0) : 0.0;
 
     // LabPBR SSS extraction
     // Blue channel 0-64 = SSS, 65-255 = porosity
