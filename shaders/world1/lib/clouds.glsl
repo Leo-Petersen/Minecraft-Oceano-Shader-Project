@@ -76,7 +76,7 @@ vec2 vcOffset16(int frame) {
 #define bhCenterX      2000.0
 #define bhCenterZ      2000.0
 #define bhCenterXZ     vec2(bhCenterX, bhCenterZ)
-#define diskMidY      (-400.0 + cloudAltitude)
+#define diskMidY      -100.0
 #define diskBandHalf   100.0
 
 #define cloudBottom      (diskMidY - diskBandHalf)

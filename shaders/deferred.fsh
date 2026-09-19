@@ -111,12 +111,7 @@ float shadowFactor =  0.75 * (time[0]) +
                       0.75 * (time[4]) +
                       0.25 * (time[5]);
 
-float torchFactor =   1.00 * (time[0]) +
-                      0.33 * (time[1]) +
-                      0.33 * (time[2]) +
-                      0.33 * (time[3]) +
-                      1.00 * (time[4]) +
-                      1.00 * (time[5]);
+float torchFactor = mix(1.0, 0.33, smoothstep(-0.05, 0.12, atmSunTrue.y));
 
 float photonicsTorchFactor =   1.00 * (time[0]) +
                                0.33 * (time[1]) +
@@ -541,11 +536,11 @@ void main() {
 
         #ifdef materialEmission
             float emissionStr = mix(0.05, 1.0, torchFactor) + (1.0 - lightMap.t) * 0.5;
-            emissionStr = clamp(emissionStr, 0.0, 0.15);
+            emissionStr = clamp(emissionStr, 0.0, 1.0);
             #if defined(PHOTONICS) && defined(PHOTONICS_ENABLED)
                 color += albedo * emission * emissionStrength * 0.1;
             #else
-                color += albedo * emission * emissionStr * emissionStrength * 0.5;
+                color += albedo * emission * emissionStr * emissionStrength * 0.075;
             #endif
         #endif
     #else

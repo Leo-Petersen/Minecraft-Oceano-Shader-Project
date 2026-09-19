@@ -108,7 +108,7 @@ void main() {
 	// 	color = luminance(color, saturation);
 	// }
 
-    #ifdef PURKINJE_SHIFT
+    #ifdef purkinjeShift
         float sceneLum = dot(color, vec3(0.2126, 0.7152, 0.0722));
         float adaptationLum = sceneLum * 0.5 + 0.01; // Rough estimate
         

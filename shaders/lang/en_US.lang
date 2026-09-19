@@ -246,9 +246,10 @@ screen.Post=Post Processing
 
 option.TAA=TAA
     option.TAA.comment=Temporal anti-aliasing. Smooths edges and stabilises the image over frames.
-option.BLOOM=Bloom
-option.PURKINJE_SHIFT=Purkinje Shift
-    option.PURKINJE_SHIFT.comment=Shifts colours toward blue in very dark scenes to mimic low-light human vision.
+option.bloom=Bloom
+    option.bloomStrength= Bloom Strength
+option.purkinjeShift=Purkinje Shift
+    option.purkinjeShift.comment=Shifts colours toward blue in very dark scenes to mimic low-light human vision.
 option.screenSunGlare=Screen Sun Glare
 
     # Tone Mapping #
