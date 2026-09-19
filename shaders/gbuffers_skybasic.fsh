@@ -42,15 +42,11 @@ void main() {
     vec3 moonDir = normalize(mat3(gbufferModelViewInverse) * moonPosition);
 
     vec3 sky = atmSky(colortex15, res, rd, sunDir);
-	float night = smoothstep(0.02, -0.10, sunDir.y);
-	sky = atmSkyFinish(sky, rd, sunDir, moonDir);
+    float night = smoothstep(0.02, -0.10, sunDir.y);
+    sky = atmSkyFinish(sky, rd, sunDir, moonDir);
 
-    if (starData.a > 0.5) {
-        discard; // removes the stars *thumbs up emoji*
-    }
-	sky = max(sky, vec3(0.0));
+    sky = max(sky, vec3(0.0));
 
-/* DRAWBUFFERS:09 */
+/* DRAWBUFFERS:9 */
     gl_FragData[0] = vec4(sky, 1.0);
-    gl_FragData[1] = vec4(sky, 1.0);
 }

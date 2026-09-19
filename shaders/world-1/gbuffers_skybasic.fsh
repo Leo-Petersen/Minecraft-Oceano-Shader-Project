@@ -23,9 +23,9 @@ uniform vec3 moonPosition;
 
 varying vec2 texcoord;
 
-#include "/world-1/lib/time.glsl"
+#include "/lib/time.glsl"
 #include "/lib/settings.glsl"
-#include "/world-1/lib/atmosphereLUT.glsl"
+#include "/lib/atmosphereLUT.glsl"
 
 vec3 getSkyDir() {
     vec2 ndc = gl_FragCoord.xy / vec2(viewWidth, viewHeight) * 2.0 - 1.0;
@@ -42,15 +42,11 @@ void main() {
     vec3 moonDir = normalize(mat3(gbufferModelViewInverse) * moonPosition);
 
     vec3 sky = atmSky(colortex15, res, rd, sunDir);
-	float night = smoothstep(0.02, -0.10, sunDir.y);
-	sky = atmSkyFinish(sky, rd, sunDir, moonDir);
+    float night = smoothstep(0.02, -0.10, sunDir.y);
+    sky = atmSkyFinish(sky, rd, sunDir, moonDir);
 
-	if (starData.a > 0.5) {
-		sky += starData.rgb * 4.0 * night * transitionFade * (1.0 - rainStrength);
-	}
-	sky = max(sky, vec3(0.0));
+    sky = max(sky, vec3(0.0));
 
-/* DRAWBUFFERS:09 */
+/* DRAWBUFFERS:9 */
     gl_FragData[0] = vec4(sky, 1.0);
-    gl_FragData[1] = vec4(sky, 1.0);
 }
