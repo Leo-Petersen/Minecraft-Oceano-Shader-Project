@@ -5,11 +5,6 @@ profile.Default=Default
 profile.High=High
 
 
-# Mods #
-option.PHOTONICS_ENABLED=Photonics (Very WIP)
-option.PHOTONICS_ENABLED.comment=Enable Photonics raytracing. Requires the Photonics mod. Implementation currently unfinished, very WIP, many bugs
-
-
 # Light Map #
 screen.LightMap=Light Map
 

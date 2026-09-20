@@ -83,10 +83,6 @@ vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue)
 #include "/world-1/lib/handlight.glsl"
 #include "/world-1/lib/waterBump.glsl"
 #include "/world-1/lib/caustics.glsl"
-#if defined(PHOTONICS) && defined(PHOTONICS_ENABLED)
-#include "/photonics/ph_samplers.glsl"
-uniform sampler2D radiosity_indirect;
-#endif
 
 const vec3 voxelVolumeSize = vec3(VOXEL_VOLUME_SIZE, VOXEL_VOLUME_SIZE * 0.5, VOXEL_VOLUME_SIZE);
 

@@ -82,10 +82,6 @@ vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue)
 #include "/lib/handlight.glsl"
 #include "/lib/waterBump.glsl"
 #include "/lib/caustics.glsl"
-#if defined(PHOTONICS) && defined(PHOTONICS_ENABLED)
-#include "/photonics/ph_samplers.glsl"
-uniform sampler2D radiosity_indirect;
-#endif
 #include "/lib/dh.glsl"
 
 const vec3 voxelVolumeSize = vec3(VOXEL_VOLUME_SIZE, VOXEL_VOLUME_SIZE * 0.5, VOXEL_VOLUME_SIZE);
@@ -535,7 +531,7 @@ void main() {
         #endif
 
         #ifdef materialEmission
-            float emissionStr = mix(0.05, 1.0, torchFactor) + (1.0 - lightMap.t) * 0.5;
+            float emissionStr = mix(0.05, 0.6, torchFactor) + (1.0 - lightMap.t) * 0.5;
             emissionStr = clamp(emissionStr, 0.0, 1.0);
             #if defined(PHOTONICS) && defined(PHOTONICS_ENABLED)
                 color += albedo * emission * emissionStrength * 0.1;

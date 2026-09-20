@@ -7,6 +7,7 @@
     const float shadowDistortion = 0.85; // [0.70 0.75 0.80 0.85 0.90 0.95] Distortion of shadow map
     const float shadowDistanceRenderMul = 1.0;
 
+
 //Lighting//
     #define shadowMap // WIP, broke this at one point, will re-visit
     #define VoxelLighting
@@ -31,10 +32,12 @@
     //#define PixelLockedShadows // Make shadows pixel-locked to the world grid, like Bedrock shaders
         #define shadowPixelResolution 16 // [16 32 64 128 256 512 1024 2048 4096] grid cells per block. Match to texture pack resolution / preference
 
+
 //BounceLight//
     #define BounceLight
         #define bounceQuality 4 //[2 3 4 5 6]
         #define BounceLightStr 1.00 //[0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.25 1.50 1.75 2.00]
+
 
 //Water//
     #define Reflections // currently not functional, will revisit
@@ -61,6 +64,7 @@
     #define depthFogStr 1.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
     #define underFogStr 1.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
     
+
 //Parallax&Materials//
     //#define Parallax
         #define parallaxQuality 48 // [8 16 24 32 48 64 96 128 256] // 48 has less artifacts than other values due to how the parallaxTAA works, technically 64 (or anything > 48) should be better but causes more artifacts.
@@ -77,11 +81,13 @@
     #define materialEmission 
         #define emissionStrength 25 // [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100]
 
+
 //BRDF//
     #define CookTorranceGGXBRDF
         #define pshininess 1.00 //[0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.25 1.50 1.75 2.00 2.25 2.40 2.75 3.00 3.25 3.50 3.75 4.00 4.25 4.50 4.75 5.00 5.50 6.00 6.50 7.00 7.50 8.00 8.50 9.00 9.50 10.00]
         #define pstrength 1.00 //[0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.25 1.50 1.75 2.00 2.25 2.40 2.75 3.00 3.25 3.50 3.75 4.00 4.25 4.50 4.75 5.00 5.50 6.00 6.50 7.00 7.50 8.00 8.50 9.00 9.50 10.00]
     //#define materialReflections
+
 
 //Fog//
     #define atmosphereFog
@@ -98,6 +104,7 @@
     #define BorderFog
     #define caveFog
         #define caveFogStrength 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0 3.1 3.2 3.3 3.4 3.5 3.6 3.7 3.8 3.9 4.0]
+
 
 //Post//
     //#define heatHaze
@@ -118,6 +125,7 @@
     //#define screenSunGlare
     #define purkinjeShift
 
+
 //Waving Foliage//
 #define wavingFoliage
     #define windDirectionX     0.78  // [-1.0 -0.8 -0.6 -0.4 -0.2 0.0 0.2 0.4 0.6 0.78 0.8 1.0]
@@ -128,6 +136,7 @@
     #define foliageWindFloor     0.25  // [0.0 0.1 0.15 0.2 0.25 0.3 0.4 0.5 0.6]
     #define foliageFlutterSpeed  2.2   // [0.5 1.0 1.5 2.0 2.2 2.5 3.0 4.0 5.0]
     #define foliageFlutterScale  0.9   // [0.2 0.4 0.6 0.8 0.9 1.2 1.5 2.0]
+
 
 //Volumetric Clouds//
     #define VolumetricClouds
@@ -163,6 +172,8 @@
         #define cloudWindSpeed 5            // [0 1 2 3 4 5 6 7 8 9 10 20 50 100 200 300 400 500] wind speed in m/s
         #define cloudEvolve 0.2     // [0.0 0.1 0.2 0.3 0.4 0.5 0.8 1.0] Shape change over time
         
+
+//TO DO: add more dimension options, then add to user settings//
 //Dimensions//
     //Nether//
         //#define NetherShadowMap
@@ -176,8 +187,6 @@
             #define heatHazeSpeed    1.5    // how fast it shimmers
     //End//
 
-//Mods//
-    //#define PHOTONICS_ENABLED
 
 //misc//
     //#define defaultClouds
