@@ -216,10 +216,6 @@ void main() {
 	// This is done so the sky reflection actually follow the surface, water looks flat otherwise
 	vec3 reflNormalSurf = viewNormal;
 	if (iswater > 0.5) {
-		float viewDist = length(viewPos.xyz);
-
-		// Screen space slope variance
-		// It's accurate up close, but eh far away because the stored wave normal is itself undersampled
 		reflRough = clamp(waveSlopeVar * waveReflFilter, 0.0, 1.0);
 		reflNormalSurf = normalize(mix(viewNormal, waterNormal, 1.0 - reflRough));
 	}

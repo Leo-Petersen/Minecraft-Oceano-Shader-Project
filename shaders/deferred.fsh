@@ -455,11 +455,11 @@ void main() {
         bounceMask *= bounceMask * transitionFade;
 
         // Ambient components
-        float ambientShadowFactorFixed = mix(0.5, shadowFactor, undergroundBlend);
+        float ambientShadowFactor = mix(0.5, shadowFactor, undergroundBlend);
         vec3 flatAmbient   = pow(shadowCol, vec3(0.3)) * (1.0 - rainStrength * 0.2) * undergroundBlend;
         vec3 shadowAmbient = shadowCol * 3.0 * invShadowAccum * (1.0 - rainStrength * 0.7) * undergroundBlend;
         vec3 baseAmbient   = mix(flatAmbient, shadowAmbient, transitionFade);
-        vec3 bounceAmbient = ambientStrength * ambientCol * ambientShadowFactorFixed * bounceMask;
+        vec3 bounceAmbient = ambientStrength * ambientCol * ambientShadowFactor * bounceMask;
 
         // Sky/moon ambient
         vec3 nightAmbient = ambientShadowColor * 2.0 * atmNight * undergroundBlend;

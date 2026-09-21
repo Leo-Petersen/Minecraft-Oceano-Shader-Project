@@ -93,7 +93,6 @@ vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunTrue);
 vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue);
 #define atmosphereSun
 #include "/lib/lightCol.glsl"
-#include "/lib/raytrace.glsl"
 #include "/lib/waterShadow.glsl"
 #include "/lib/waterBump.glsl"
 #include "/lib/caustics.glsl"
