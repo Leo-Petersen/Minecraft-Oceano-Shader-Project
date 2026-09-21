@@ -268,7 +268,7 @@ option.screenSunGlare=Screen Sun Glare
 
     # Depth of Field #
     screen.Depth_of_Field=Depth of Field
-        option.DOF=DOF [experimental]
+        option.DOF=Depth of Field
         option.Focal=Focal Distance
 
     # Sharpening #
