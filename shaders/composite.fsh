@@ -25,6 +25,7 @@ uniform sampler2D noisetex;
 uniform mat4 shadowModelView;
 uniform mat4 shadowProjection;
 
+uniform int frameCounter;
 uniform int isEyeInWater;
 uniform int heldBlockLightValue;
 uniform int heldBlockLightValue2;
@@ -54,12 +55,12 @@ varying vec2 lmcoord;
 varying vec3 viewVector;
 
 /*
-const bool colortex7Clear = false;
 const int colortex7Format = RGBA16F;
 const int  colortex8Format = RGBA16F;
 const int colortex9Format = R11F_G11F_B10F;
 const int colortex14Format = RGBA16F;
 const int colortex15Format = RGBA16F;
+const bool colortex7Clear = false;
 const bool colortex8Clear  = false;
 const bool colortex14Clear = false;
 const bool colortex15Clear = false;
