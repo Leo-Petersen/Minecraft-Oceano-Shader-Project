@@ -56,7 +56,6 @@ option.SSS_Quality=SSS Quality
     screen.FillLight=Fake GI Fill Light
         option.BounceLight=Fake GI Fill Light
         option.BounceLight.comment=Adds a fill ('bounced') light to the scene to fake global illumination using psuedo values and surrounding texture colors. Can cause subtle color bleeding on shadows cast by 'saturated' blocks when colored is enabled.
-        option.bounceQuality=Quality
         option.BounceLightStr=Strength
 
     # Pixel Shadows #
