@@ -304,6 +304,7 @@ option.grassHeight=Grass Height
     screen.Nether=Nether
         option.netherHeatHaze=Heat Haze
             option.netherHeatHaze.comment=Rising heat distortion in the Nether.
+        option.overworldHeatHaze= Overworld Heat Haze
         option.heatHazeStrength=Haze Strength
         option.HEAT_STEPS=Haze Samples
             option.HEAT_STEPS.comment=Ray-march samples through the heat volume.

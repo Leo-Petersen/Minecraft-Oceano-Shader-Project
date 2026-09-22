@@ -188,6 +188,7 @@
 
 
 //misc//
+    //#define overworldHeatHaze
     //#define defaultClouds
     //#define VHS
     //#define whiteWorld

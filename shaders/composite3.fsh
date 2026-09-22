@@ -513,6 +513,14 @@ void main() {
 		}
 	#endif
 
+	#ifdef overworldHeatHaze
+		if (isEyeInWater < 0.9 && Depth < 1.0) {
+			float heat = sampleHeat(worldPos);
+			float dist = length(viewPos.xyz);
+			if (heat > 0.001) color = netherHaze(color, texcoord, heat, dist);
+		}
+	#endif
+
 	//// Volumetric Clouds ////
 	vec4 cloudAccum   = vec4(0.0, 0.0, 0.0, 1.0);
 	vec4 cloudDataOut = vec4(1e6, 0.0, 0.0, 0.0);   // .x apparent dist, .y age

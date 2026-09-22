@@ -117,8 +117,8 @@ void main() {
         light = pow(emitColor, vec3(FLOODFILL_RADIUS));
     }
 
-    // Lava (5), Magma (10), Fire (6)
-    if (voxel == 5u || voxel == 10u || voxel == 6u) {
+    // Lava (5), Magma (10), Fire (6), SoulFire (11)
+    if (voxel == 5u || voxel == 10u || voxel == 6u || voxel == 11u) {
         heat = 1.0;
     }
 
