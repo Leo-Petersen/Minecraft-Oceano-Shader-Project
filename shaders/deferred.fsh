@@ -480,7 +480,7 @@ void main() {
         // Subsurface scattering
         #ifdef shadowMap
             #ifdef SubsurfaceScattering
-                if ((isFoliage || isGrass > 0.0) && sssAmount > 0.01) {
+                if (sssAmount > 0.01 && iswater < 0.5 && isglass < 0.5) {
                     vec3 viewDir = normalize(-viewPos.xyz);
                     vec3 lightDir = shadowLightPosition * 0.01;
                     float VdotL = dot(viewDir, lightDir);

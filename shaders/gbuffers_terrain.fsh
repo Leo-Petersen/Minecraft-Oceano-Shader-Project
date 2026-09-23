@@ -19,6 +19,7 @@ uniform float viewHeight;
 uniform float rainStrength;
 uniform float nightVision;             
 uniform float screenBrightness;
+uniform float wetness;
 
 uniform ivec2 atlasSize; 
 uniform vec3 shadowLightPosition;
@@ -49,6 +50,7 @@ varying mat3 tbnMatrix;
 #include "/lib/parallax.glsl"
 #include "/lib/encode.glsl"
 #include "/lib/time.glsl"
+#include "/lib/puddles.glsl"
 
 vec3 luminance(vec3 color, float strength) {
 	float luma = dot(color, vec3(0.3086, 0.6094, 0.0820));
@@ -95,16 +97,17 @@ void main() {
     vec2 specularMap = specularData.rg;
     float emission = specularData.a < 1.0 ? clamp(specularData.a * 1.004 - 0.004, 0.0, 1.0) : 0.0;
 
-    // LabPBR SSS extraction
-    // Blue channel 0-64 = SSS, 65-255 = porosity
-    float labSSS = 0.0;
     float specularBlue = specularData.b * 255.0;
-    if (specularBlue <= 64.0) {
-        labSSS = specularBlue / 64.0;
+    float porosity = 0.0;
+    float labSSS   = 0.0;
+    if (specularBlue < 65.0) {
+        porosity = specularBlue / 64.0;          // 0 = sealed 1 = fully porous
+    } else {
+        labSSS = (specularBlue - 65.0) / 190.0;  // 0 = no SSS 1 = full SSS
     }
-    
-    // Default SSS for foliage materials without LabPBR data
-    bool isLeaves = (material > 0.005 && material < 0.02);
+
+    // Default SSS for foliage that ships no LabPBR SSS data
+    bool isLeaves     = (material > 0.005 && material < 0.02);
     bool isGrassBlock = (material > 0.025 && material < 0.04);
     if (labSSS < 0.01) {
         if (isLeaves)          labSSS = 0.75;
@@ -126,6 +129,50 @@ void main() {
     
     float textureAO = normalRaw.b;
     float surfaceHeight = textureGrad(normals, parallaxedUV, dFdxy[0], dFdxy[1]).a;
+
+    #ifdef rainReflection
+        float wetness01 = wetness;
+        #ifdef alwaysPuddles
+            wetness01 = 1.0;
+        #endif
+
+        vec3  worldNormal = normalize(mat3(gbufferModelViewInverse) * viewNormal);
+        float flatFace    = smoothstep(0.55, 0.95, worldNormal.y);
+
+        vec3  worldRel    = mat3(gbufferModelViewInverse) * fragpos + gbufferModelViewInverse[3].xyz;
+        vec2  wpos        = worldRel.xz + cameraPosition.xz;
+        float puddleField = getRainPuddles(wpos, wetness01);
+
+        #define POOL_FILL 0.90
+        float fillLevel   = POOL_FILL * puddleField;
+
+        float distFade    = 1.0 - smoothstep(64.0, 128.0, length(worldRel.xz));
+        float wetPresence = flatFace * smoothstep(0.0, 0.25, wetness01) * distFade;
+
+        float poolMask    = smoothstep(0.05, 0.35, puddleField) * wetPresence;
+
+        float underWater  = smoothstep(fillLevel + 0.012, fillLevel - 0.012, surfaceHeight) * wetPresence;
+        float waterDepth  = max(fillLevel - surfaceHeight, 0.0);
+
+        float wetFilm     = max(poolMask, underWater);
+
+        normalData = normalize(mix(normalData, viewNormal, underWater));
+
+        float soak        = mix(0.72, 0.30, porosity);
+        terrainColor.rgb *= mix(1.0, soak, wetFilm);
+
+        #define WATER_TINT    vec3(0.45, 0.62, 0.68) 
+        #define WATER_CLARITY 5.0
+        float absorb      = 1.0 - exp(-waterDepth * WATER_CLARITY);
+        terrainColor.rgb  = mix(terrainColor.rgb, terrainColor.rgb * WATER_TINT, absorb * underWater);
+
+        #define WET_FILM_SMOOTH 0.72
+        specularMap.r     = mix(specularMap.r, WET_FILM_SMOOTH, poolMask);   // normal wet puddle
+        specularMap.r     = mix(specularMap.r, 0.96, underWater);            // flat pool water
+        specularMap.g     = mix(specularMap.g, 0.04, wetFilm);              // water F0 across the whole footprint
+    #else
+        float wetFilm = 0.0;
+    #endif
 
     float shadowFactor = 1.0;
     #ifdef Parallax
@@ -159,7 +206,7 @@ void main() {
 	gl_FragData[0] = terrainColor;
 	gl_FragData[1] = vec4(encodeNormal(normalData), specularMap);
 	gl_FragData[2] = vec4(lightMap, material, shadowFactor);
-	gl_FragData[4] = vec4(emission, 1, textureAO, labSSS);
+	gl_FragData[4] = vec4(emission, wetFilm, textureAO, labSSS);
 #ifdef PHOTONICS_ENABLED
 	gl_FragData[5] = vec4(terrainColor.rgb, 1.0);
 	gl_FragData[6] = vec4(0.5 * viewNormal + 0.5, 1.0);

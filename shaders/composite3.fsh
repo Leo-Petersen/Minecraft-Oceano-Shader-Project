@@ -102,6 +102,7 @@ vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue)
 #include "/lib/lightCol.glsl"
 #include "/lib/raytrace.glsl"
 #include "/lib/waterBump.glsl"
+#define PUDDLE_REFLECTION
 #include "/lib/puddles.glsl"
 #include "/lib/caveFog.glsl"
 #include "/lib/clouds.glsl"
@@ -443,11 +444,12 @@ void main() {
 		  #ifdef alwaysPuddles
 	      iswet = 1.0;
 		  #endif
-		if (iswet > 0 && iswater != 1.0 && isglass != 1.0 && isParticle != 1.0 && Depth > 0.56) {
+		if (iswet > 0 && iswater != 1.0 && isglass != 1.0 && isParticle != 1.0 && Depth > 0.56 && !fromDH) {
 			float distFactor = length(worldPos.xz) / 120.0;
 				distFactor = pow(distFactor, 2.2);
 				distFactor = exp(-1.2 * distFactor);
-			color.rgb = puddles(color.rgb, worldPos, reflectedskyBoxCol, viewPos.xyz, lightMap, iswet, distFactor, 1);
+			float puddleMask = texture2D(colortex13, texcoord).g;
+			color.rgb = puddles(color.rgb, worldPos, reflectedskyBoxCol, viewPos.xyz, lightMap, iswet, distFactor, puddleMask);
 		}
 	#endif
 	

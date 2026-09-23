@@ -47,63 +47,58 @@ float raindropNoise(in vec2 x)
     return va;
 }
 
-float getRainPuddles(vec2 worldPos, float iswet){
-	worldPos *= 0.000325945241199;
-	
-	float noise = texture2D(noisetex, worldPos.xy).x;
-		  noise = 2.8 * texture2D(noisetex, worldPos.xy * 0.4).x + noise;
-		  noise = 0.2 * texture2D(noisetex, worldPos.xy * 1.0).x + noise;
-	
-	return clamp((0.98 * iswet) + (noise - 2.4), 0.0, 1.0);
+#define PUDDLE_BASE_FREQ 0.00013 
+#define PUDDLE_OCTAVES   2
+#define PUDDLE_SOFT      0.22
+
+float puddleFbm(vec2 wp){
+    float f = PUDDLE_BASE_FREQ;
+    float v = 0.0, a = 0.6, tot = 0.0;
+    for (int i = 0; i < PUDDLE_OCTAVES; i++){
+        v   += a * texture2D(noisetex, wp * f).x;
+        tot += a;
+        f   *= 2.0;   // lacunarity 2
+        a   *= 0.5;   // gain 0.5
+    }
+    return v / tot;   // ~0..1, smooth
 }
 
-vec3 puddles(in vec3 color, in vec3 worldPos, in vec3 reflectedskyBoxCol, in vec3 viewPos, in vec2 lightMap, float iswet, float distFactor, float surfaceHeight) {
-    vec2 dropPos = worldPos.xz + cameraPosition.xz;
+float getRainPuddles(vec2 worldPos, float iswet){
+    float field = puddleFbm(worldPos);
 
-    float puddle = getRainPuddles(dropPos, iswet);
-    
-    // Height masking, parallax areas have no puddles (Disabled for now, I broke it :( )
-    //float heightMask = smoothstep(1.0, 0.85, surfaceHeight);
-    float heightMask = 1.0;
-    #ifndef Parallax
-          heightMask = 1.0;
-    #endif
-    
-    // Raindrops
-    float noiseVal = raindropNoise(10.0 * dropPos);
-    float rainDistortion = noiseVal * 100.0;
-    vec3 rainDrop = vec3(-dFdx(rainDistortion), -dFdy(rainDistortion), 1.0);
-    rainDrop = normalize(rainDrop);
+    // Coverage rises with wetness.
+    float cover = mix(0.30, 0.60, clamp(iswet, 0.0, 1.0));
 
-    // Normal for puddles
-    vec3 rainDropNormal = mix(upVec, viewNormal, puddle);
-         rainDropNormal = mix(viewNormal, rainDropNormal, heightMask);
-    vec2 waveOffset = (worldPos.xz + cameraPosition.xz) * 10.0 - (worldPos.y + cameraPosition.y) * 10.0;
-         rainDropNormal.xy += getWaveHeight(waveOffset, 0.95, 0.0, dist).x;
+    // Smooth depth
+    float d = clamp((cover - field) / PUDDLE_SOFT, 0.0, 1.0);
+    return d * d * (3.0 - 2.0 * d);
+}
 
-    // Apply raindrop ripples where puddles exist
-    rainDropNormal.xy += rainDrop.xy * puddle * rainStrength * heightMask;
-    rainDropNormal = normalize(rainDropNormal);
+#ifdef PUDDLE_REFLECTION
+float rippleH(vec2 p){ return raindropNoise(10.0 * p); }
 
-    // Reflections
-    reflectedskyBoxCol *= 0.5 * (1.0 - time[5] * 0.84);
-    vec4 rainreflection = raytracePuddles(reflectedskyBoxCol, viewPos.xyz, rainDropNormal, 6);
-    float normalDotEyeRain = dot(viewNormal, -normalize(viewPos.xyz));
-    vec3 reflectionCol = mix(reflectedskyBoxCol, rainreflection.rgb, rainreflection.a);
+vec3 puddles(in vec3 color, in vec3 worldPos, in vec3 reflectedskyBoxCol, in vec3 viewPos, in vec2 lightMap, float iswet, float distFactor, float puddleMask) {
+    if (puddleMask < 0.001 || isEyeInWater > 0.9) return color;
 
-    // Modifiers
-    float rainModifier = pow(lightMap.t, 50.0) * 70.0 * mix(1.0, 0.42, puddle) * iswet 
-                         * clamp(dot(viewNormal, upVec), 0.0, 0.4);
+    vec2  rp = worldPos.xz + cameraPosition.xz;
+    float e  = 0.15;
+    float hx = rippleH(rp + vec2(e,0)) - rippleH(rp - vec2(e,0));
+    float hy = rippleH(rp + vec2(0,e)) - rippleH(rp - vec2(0,e));
 
-    // Apply reflection
-    if (rainMask != 0) {
-        if (isEyeInWater < 0.9) {
-            float reflectionFactor = pow(1.0 - normalDotEyeRain, 2.5) * rainModifier;
-                  reflectionFactor = mix(reflectionFactor * 0.65, reflectionFactor, heightMask);
-                  reflectionFactor *= distFactor;
-            color = mix(color, reflectionCol, reflectionFactor);
-        }
-    }
+    vec3  waterN = normalize(viewNormal + vec3(-hx, 0.0, -hy) * rainStrength * 0.6);
 
+    #define PUDDLE_SHEEN 0.06
+    float ndv     = clamp(dot(waterN, -normalize(viewPos.xyz)), 0.0, 1.0);
+    float fresnel = PUDDLE_SHEEN + (1.0 - PUDDLE_SHEEN) * pow(1.0 - ndv, 5.0);
+
+    reflectedskyBoxCol *= (1.0 - time[5] * 0.84);
+    vec4  refl    = raytracePuddles(reflectedskyBoxCol, viewPos.xyz, waterN, 6);
+    vec3  reflCol = mix(reflectedskyBoxCol, refl.rgb, refl.a);
+
+    float skyAccess = pow(lightMap.t, 8.0);          // no sky reflection indoors
+    float m = puddleMask * distFactor * skyAccess;
+
+    color = mix(color, reflCol, fresnel * m);
     return color;
 }
+#endif
