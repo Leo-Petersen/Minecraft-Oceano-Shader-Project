@@ -74,7 +74,7 @@ void main() {
 	
 	#ifdef DISTANT_HORIZONS
     float dither = Bayer8(gl_FragCoord.xy);
-    float minDist = (dither - 0.75) * 16.0 + far;
+    float minDist = dither * 16.0 + far;
     if (dist >= minDist) discard;
 	#endif
 
