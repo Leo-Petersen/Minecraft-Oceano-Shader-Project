@@ -101,15 +101,18 @@ void main() {
     float porosity = 0.0;
     float labSSS   = 0.0;
     if (specularBlue < 65.0) {
-        porosity = specularBlue / 64.0;          // 0 = sealed 1 = fully porous
+        porosity = specularBlue / 64.0;
     } else {
-        labSSS = (specularBlue - 65.0) / 190.0;  // 0 = no SSS 1 = full SSS
+        labSSS = (specularBlue - 65.0) / 190.0;
     }
 
-    // Default SSS for foliage that ships no LabPBR SSS data
     bool isLeaves     = (material > 0.005 && material < 0.02);
     bool isGrassBlock = (material > 0.025 && material < 0.04);
-    if (labSSS < 0.01) {
+
+    if (labSSS > 0.01) {
+        labSSS *= 0.6;
+        if (isGrassBlock) labSSS = min(labSSS, 0.45);
+    } else {
         if (isLeaves)          labSSS = 0.75;
         else if (isGrassBlock) labSSS = 0.45;
     }
