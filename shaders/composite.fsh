@@ -267,6 +267,15 @@ void main() {
 	////GlassLighting////
 	if (isglass == 1.0 || isslime == 1.0) {
 		color.rgb *= clamp(1 + ShadowVisibility, 1.0, 1.2);
+
+		#define TRANSLUCENT_SSS 0.9
+		float translucentSSS = texture2D(colortex3, texcoord).r;
+		vec3  lDir        = shadowLightPosition * 0.01;
+		vec3  vDir        = normalize(-viewPos.xyz);
+		float phase       = mix(0.3, 1.0, clamp(-dot(vDir, lDir) * 0.5 + 0.5, 0.0, 1.0)); // forward scatter
+		float backface    = clamp(1.0 - dot(viewNormal, lDir) * 2.0, 0.0, 1.0);           // light on the far side
+		float transmission = ShadowVisibility * phase * backface * lightMap.t * transitionFade * translucentSSS;
+		color.rgb += color.rgb * sunCol * transmission * TRANSLUCENT_SSS;
 	}
 
 	////Fog////

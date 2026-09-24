@@ -278,10 +278,18 @@ void main() {
 		color.a = 0.96; // temp fix to stop ice looking weird
 	}
 
+	float sssBlue = texture2D(specular, texcoord).b * 255.0;
+	float labSSS  = sssBlue >= 65.0 ? (sssBlue - 65.0) / 190.0 : 0.0;
+	if (labSSS < 0.01) {
+		if      (isglass > 0.5) labSSS = 0.5;
+		else if (ishoney > 0.5) labSSS = 0.8;
+		else if (isice   > 0.5) labSSS = 0.6;
+	}
+
 /* DRAWBUFFERS:01253 */
 	gl_FragData[0] = color;
 	gl_FragData[1] = vec4(encodeNormal((isglass > 0.5 || isice > 0.5 || ishoney > 0.5) ? glassNormal : viewNormal), pbrSmoothness, 1);
 	gl_FragData[2] = vec4(lmcoord, material, 1.0f);
 	gl_FragData[3] = normalTangentSpace;
-	gl_FragData[4] = vec4(vec3(0.0), packedWaveLight);
+	gl_FragData[4] = vec4(labSSS, 0.0, 0.0, packedWaveLight);
 }

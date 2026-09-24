@@ -11,7 +11,7 @@ varying vec4 glcolor;
 
 void main() {
 	vec4 color = texture2D(texture, texcoord) * glcolor;
-		 color.rgb *= 2.0;
+		 //color.rgb *= 2.0;
 
 /* DRAWBUFFERS:01 */
 	gl_FragData[0] = color; //colortex0
