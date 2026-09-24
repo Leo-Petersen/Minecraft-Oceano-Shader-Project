@@ -330,9 +330,11 @@ void main() {
     #ifdef shadowMap
     #ifdef DISTANT_HORIZONS
     if (fromDH) {
-        float dhSh = GetDHShadow(viewPos.xyz, normalize(shadowLightPosition), IGN);
-        dhSh *= fakeCloudShadow(worldPos, clouddistFactor);
-        //ShadowAccum = mix(shadowDistColor, sunlightCol*Diffuse*transitionFade*4*mix(1.0, 0.85, distFactor), dhSh);
+        float dhSh = 0.0;
+        if (Diffuse > 0.001) {
+            dhSh = GetDHShadow(viewPos.xyz, normalize(shadowLightPosition), IGN);
+            dhSh *= fakeCloudShadow(worldPos, clouddistFactor);
+        }
         ShadowAccum = mix(vec3(0.0), sunlightCol*Diffuse*transitionFade*4*mix(1.0, 0.85, distFactor), dhSh);
     } else
     #endif
@@ -367,8 +369,11 @@ void main() {
         ShadowAccum *= parallaxShadow;
         #ifdef DISTANT_HORIZONS
         if (shadowCoverage < 0.999) {
-            float dhSh = GetDHShadow(viewPos.xyz, normalize(shadowLightPosition), IGN);
-            dhSh *= fakeCloudShadow(worldPos, clouddistFactor);
+            float dhSh = 0.0;
+            if (Diffuse > 0.001) {
+                dhSh = GetDHShadow(viewPos.xyz, normalize(shadowLightPosition), IGN);
+                dhSh *= fakeCloudShadow(worldPos, clouddistFactor);
+            }
             //vec3 dhShadowVal = mix(shadowDistColor, sunlightCol * Diffuse * transitionFade * 5.0, dhSh);
             vec3 dhShadowVal = mix(vec3(0.0), sunlightCol * Diffuse * transitionFade * 5.0, dhSh);
             // Blend from map shadow to DH trace
@@ -480,21 +485,42 @@ void main() {
         // Subsurface scattering
         #ifdef shadowMap
             #ifdef SubsurfaceScattering
-                if (sssAmount > 0.01 && iswater < 0.5 && isglass < 0.5 && material > 0.001) {
-                    vec3 viewDir = normalize(-viewPos.xyz);
-                    vec3 lightDir = shadowLightPosition * 0.01;
-                    float VdotL = dot(viewDir, lightDir);
-                    float NdotL = dot(normal, lightDir);
+            if (sssAmount > 0.01 && iswater < 0.5 && isglass < 0.5 && material > 0.001) {
+                vec3 viewDir  = normalize(-viewPos.xyz);
+                vec3 lightDir = shadowLightPosition * 0.01;
+                float VdotL   = dot(viewDir, lightDir);
+                float NdotLs  = dot(normal, lightDir);
 
-                    vec3 sssContribution = calculateSSS(
-                        worldPos, color, sunlightCol,
-                        sssAmount,
-                        VdotL, NdotL, lightMap.t,
-                        IGN, distFactor
-                    );
-                    
-                    finalShadow += sssContribution * lightStrength * undergroundFix;
+                vec3 sssContribution = vec3(0.0);
+
+                #ifdef DISTANT_HORIZONS
+                float sssCoverage = fromDH ? 0.0 : shadowCoverage;
+                #else
+                float sssCoverage = 1.0;
+                #endif
+
+                if (sssCoverage > 0.001) {
+                    sssContribution = calculateSSS(worldPos, color, sunlightCol, sssAmount,
+                                                VdotL, NdotLs, lightMap.t, IGN, distFactor);
                 }
+
+                #ifdef DISTANT_HORIZONS
+                if (sssCoverage < 0.999) {
+                    float skyLevel   = rawSkyLight * 16.0;
+                    float canopyMask = clamp((skyLevel - (15.0 - DH_SSS_DEPTH)) / DH_SSS_DEPTH, 0.0, 1.0);
+                    canopyMask *= canopyMask;
+
+                    vec3 sssDH = vec3(0.0);
+                    if (canopyMask > 0.01) {
+                        sssDH = calculateSSS_DH(viewPos.xyz, normal, sunlightCol, sssAmount,
+                                                lightMap.t, IGN, distFactor) * canopyMask;
+                    }
+                    sssContribution = mix(sssDH, sssContribution, sssCoverage);
+                }
+                #endif
+
+                finalShadow += sssContribution * lightStrength * undergroundFix;
+            }
             #endif
         #endif
         

@@ -42,6 +42,8 @@ void main() {
     // float minDist = (dither - 0.75) * 16.0 + far;
     // if (dist <= minDist) discard;
 
+    vec3 worldNormal = mat3(gbufferModelViewInverse) * viewNormal;
+
     vec4 albedo = texture2D(texture, texcoord) * glcolor;
     if (albedo.a < 0.1) discard;
 
@@ -51,15 +53,19 @@ void main() {
 
     vec2 lm = clamp(lmcoord - 1.0 / 32.0, 0.0, 1.0);
 
-    // SSS is disabled on DH terrain
     float labSSS = 0.0;
+    #ifdef DH_BLOCK_LEAVES
+    if (dhMat == DH_BLOCK_LEAVES) labSSS = 0.75;
+    #endif
+    #ifdef DH_BLOCK_GRASS
+    if (dhMat == DH_BLOCK_GRASS) labSSS = 0.2 * smoothstep(0.5, 0.9, worldNormal.y);
+    #endif
 
     float emission = 0.0;
     #ifdef DH_BLOCK_ILLUMINATED
     if (dhMat == DH_BLOCK_ILLUMINATED) emission = 0.0; // come back to, what is a correct value here?
     #endif
-
-    vec3 worldNormal = mat3(gbufferModelViewInverse) * viewNormal;
+    
     float albedoLuma = dot(albedo.rgb, vec3(0.299, 0.587, 0.114));
     float noiseAmount = (1.0 - albedoLuma * albedoLuma) * 0.3;
     float n = GetBlueNoise3D(worldpos * 5.0, worldNormal);
