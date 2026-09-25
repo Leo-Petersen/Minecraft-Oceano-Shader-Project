@@ -150,7 +150,11 @@ void main() {
         float fillLevel   = POOL_FILL * puddleField;
 
         float distFade    = 1.0 - smoothstep(64.0, 128.0, length(worldRel.xz));
-        float wetPresence = flatFace * smoothstep(0.0, 0.25, wetness01) * distFade;
+
+        float rawSky      = clamp(lmcoord.t - 1.0 / 32.0, 0.0, 1.0);
+        float skyExposure = smoothstep(12.5 / 16.0, 14.75 / 16.0, rawSky);
+
+        float wetPresence = flatFace * smoothstep(0.0, 0.25, wetness01) * distFade * skyExposure;
 
         float poolMask    = smoothstep(0.05, 0.35, puddleField) * wetPresence;
 

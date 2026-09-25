@@ -49,7 +49,7 @@ float raindropNoise(in vec2 x)
 
 #define PUDDLE_BASE_FREQ 0.00013 
 #define PUDDLE_OCTAVES   2
-#define PUDDLE_SOFT      0.22
+#define PUDDLE_SOFT      0.42
 
 float puddleFbm(vec2 wp){
     float f = PUDDLE_BASE_FREQ;
@@ -67,7 +67,7 @@ float getRainPuddles(vec2 worldPos, float iswet){
     float field = puddleFbm(worldPos);
 
     // Coverage rises with wetness.
-    float cover = mix(0.30, 0.60, clamp(iswet, 0.0, 1.0));
+    float cover = mix(0.30, 0.80, clamp(iswet, 0.0, 1.0));
 
     // Smooth depth
     float d = clamp((cover - field) / PUDDLE_SOFT, 0.0, 1.0);
