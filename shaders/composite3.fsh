@@ -25,10 +25,11 @@ uniform sampler2D shadowtex1;
 uniform sampler3D floodfillSampler;
 uniform sampler3D floodfillSamplerCopy;
 
-/*
-const float 	wetnessHalflife 			= 70.0; //[0.0 10.0 20.0 30.0 40.0 50.0 60.0 70.0 80.0 90.0 100.0 110.0 120.0 130.0 140.0]
-const float 	drynessHalflife 			= 70.0; //[0.0 10.0 20.0 30.0 40.0 50.0 60.0 70.0 80.0 90.0 100.0 110.0 120.0 130.0 140.0]
 
+const float 	wetnessHalflife 			= 600; //[0 50 100 150 200 250 300 400 500 600 700 800 900 1000]
+const float 	drynessHalflife 			= 200; //[0 50 100 150 200 250 300 400 500 600 700 800 900 1000]
+
+/*
 const int colortex1Format = RGBA16;
 const int colortex5Format = RGBA16;
 const int colortex6Format = R11F_G11F_B10F;

@@ -74,6 +74,17 @@ float getRainPuddles(vec2 worldPos, float iswet){
     return d * d * (3.0 - 2.0 * d);
 }
 
+#define POOL_FILL_MIN  0.60 
+#define POOL_FILL_CAP  1.00 
+#define POOL_FILL_RAMP 1.30
+#define POOL_FILL_FREQ 0.5 
+
+float getPoolFill(vec2 worldPos){
+    float n = texture2D(noisetex, worldPos * PUDDLE_BASE_FREQ * POOL_FILL_FREQ + vec2(0.37, 0.83)).x;
+    n = smoothstep(0.2, 0.8, n);
+    return min(mix(POOL_FILL_MIN, POOL_FILL_RAMP, n), POOL_FILL_CAP);
+}
+
 #ifdef PUDDLE_REFLECTION
 float rippleH(vec2 p){ return raindropNoise(10.0 * p); }
 

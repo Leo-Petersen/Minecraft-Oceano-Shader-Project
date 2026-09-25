@@ -146,8 +146,7 @@ void main() {
         vec2  wpos        = worldRel.xz + cameraPosition.xz;
         float puddleField = getRainPuddles(wpos, wetness01);
 
-        #define POOL_FILL 0.90
-        float fillLevel   = POOL_FILL * puddleField;
+        float fillLevel   = getPoolFill(wpos) * puddleField;
 
         float distFade    = 1.0 - smoothstep(64.0, 128.0, length(worldRel.xz));
 
