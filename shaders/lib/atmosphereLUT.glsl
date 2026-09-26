@@ -365,7 +365,6 @@ vec3 atmAerial(sampler2D skyViewTex, sampler2D transTex, vec2 res,
 }
 
 // Sunrise/sunset tint, WIP, coloring of the sky at these times needs work.
-// Currently 'realistic' but that's boring, these numbers are a terrible temp fix //
 #define atmosSunsetSkyTint 0.3   // strength on sky/clouds
 #define atmosSunsetSkyTop 1.0    // how far up the tint reaches
 #define atmosSunsetPastel 0.38    // 0 = saturated 1 = near white

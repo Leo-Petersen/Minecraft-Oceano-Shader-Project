@@ -1,3 +1,6 @@
+// dimensions with no skylight at all would read as one giant cave, so skip them
+uniform bool hasSkylight;   // Iris dimension uniform https://shaders.properties/current/reference/uniforms/biome/#hasskylight-
+
 vec3 CaveFog(
     vec3 color,
     vec3 worldPos,
@@ -6,6 +9,8 @@ vec3 CaveFog(
     float density,
     float emission
 ) {
+    if (!hasSkylight) return color;
+
     float caveFactor = 1.0 - smoothstep(0.05, 0.5, rawSkyLight);
     if (caveFactor < 0.001) return color;
 

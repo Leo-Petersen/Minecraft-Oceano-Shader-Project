@@ -1,3 +1,10 @@
+// Dimension specific clouds //
+#if defined NETHER
+    #include "/lib/nether/clouds.glsl"
+#elif defined END
+    #include "/lib/end/clouds.glsl"
+#else
+
 #if cloudQuality == 1 // Low
   #define cloudUpscale 6
   #define cloudSteps 20
@@ -185,7 +192,7 @@ float vcCoverage(vec2 p) {
 	vec2 warp = vcEvolveWarp(p);
 	vec2 q = p + warp;
 
-	// destring! this swirl curls the stringy contours of the coverage noise into distinct rounded clouds
+	// destring! this swirl curls the stringy silhouette of the coverage noise into distinct rounded clouds
 	float wf = 0.0032;
 	q += vec2(-sin(q.x * wf + 1.3) * cos(q.y * wf + 4.7),
 	           cos(q.x * wf + 1.3) * sin(q.y * wf + 4.7)) * (120.0 * cloudWarp);
@@ -388,9 +395,9 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 	float sunL   = max(dot(sunColor, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
 	vec3  sunHue = sunColor / sunL;
 
-	#define duskOnset  0.16   // warm colour begins fading in below this sun height
-	#define duskPeak   0.00   // warm is full at/below this
-	#define duskEnd   -0.12   // warm fades back out once the sun is well under
+	#define duskOnset  0.16   // begins fading in below this sun height
+	#define duskPeak   0.00   // full at/below this
+	#define duskEnd   -0.12   // fades back out once the sun is well under
 
 	float goldenHour = smoothstep(duskOnset, duskPeak, sunDirTrue.y)
 	                 * smoothstep(duskEnd,   duskPeak, sunDirTrue.y);
@@ -550,3 +557,5 @@ vec3 vcReflectClouds(vec3 baseReflSky, vec3 reflWorldDir, float dither, float su
     vcReflectTrans = c.a;
     return baseReflSky * c.a + c.rgb;
 }
+
+#endif // overworld clouds

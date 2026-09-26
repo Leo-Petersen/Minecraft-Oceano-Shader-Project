@@ -1,1 +1,0 @@
-// This file just makes sure the shader loads without Photonics installed.

@@ -32,12 +32,20 @@ vec3 rainGrey(vec3 c, float amt) {
     return mix(c, vec3(l) * vec3(0.94, 0.97, 1.04), clamp(amt, 0.0, 1.0));
 }
 
-float atmDN    = smoothstep(-0.08, 0.08, sunElevation);
-float atmNight = 1.0 - atmDN;
-float atmGlow  = smoothstep(0.35, 0.05, sunElevation) 
-               * smoothstep(-0.10, 0.00, sunElevation); 
+#if defined NETHER || defined END
+    // No day/night cycle in the Nether or End
+    float atmDN    = 1.0;
+    float atmNight = 0.0;
+    float atmGlow  = 0.0;
+    float atmMoon  = 0.0;
+#else
+    float atmDN    = smoothstep(-0.08, 0.08, sunElevation);
+    float atmNight = 1.0 - atmDN;
+    float atmGlow  = smoothstep(0.35, 0.05, sunElevation) 
+                   * smoothstep(-0.10, 0.00, sunElevation); 
 
-float atmMoon = 1.0 - smoothstep(-0.22, -0.08, sunElevation);
+    float atmMoon = 1.0 - smoothstep(-0.22, -0.08, sunElevation);
+#endif
 
 mat2 time2 = mat2(vec2(
 				((clamp(ticks, 23000.0f, 25000.0f) - 23000.0f) / 1000.0f) + (1.0f - (clamp(ticks, 0.0f, 2000.0f)/2000.0f)),
@@ -59,6 +67,35 @@ const float rainAmbNgtLum = 0.10; // flat overcast level, night
 vec3  rainGreyHue = mix(atmAmbHue, vec3(1.0), rainDesat) * vec3(0.97, 0.99, 1.05);
 float rainAmbLum  = mix(rainAmbDayLum, rainAmbNgtLum, atmNight);
 vec3  rainAmbient = rainGreyHue * rainAmbLum;
+
+#if defined NETHER
+//// Nether palette ////
+vec3 sunlightCol        = vec3(0.95, 0.45, 0.22) * 0.85;
+vec3 sunCol             = vec3(1.00, 0.52, 0.28);
+vec3 ambientShadowColor = vec3(0.16, 0.07, 0.05);
+vec3 shadowCol          = vec3(0.22, 0.08, 0.05);
+vec3 shadowDistColor    = vec3(0.18, 0.08, 0.06);
+vec3 atmoColor          = vec3(0.28, 0.11, 0.07);
+vec3 fogCol             = vec3(0.22, 0.06, 0.04);
+vec3 fogColor           = vec3(0.22, 0.06, 0.04);
+vec3 cloudFogCol        = vec3(0.24, 0.09, 0.06);
+float waterDayLight     = 1.0;
+
+#elif defined END
+//// End palette ////
+vec3 sunlightCol        = vec3(0.55, 0.42, 0.78) * 0.85;  // pale violet "key" light
+vec3 sunCol             = vec3(0.70, 0.50, 0.92);         // used by getFog glare/tint
+vec3 ambientShadowColor = vec3(0.10, 0.08, 0.16);
+vec3 shadowCol          = vec3(0.12, 0.08, 0.22);
+vec3 shadowDistColor    = vec3(0.10, 0.09, 0.18);
+vec3 atmoColor          = vec3(0.14, 0.10, 0.22);
+vec3 fogCol             = vec3(0.06, 0.045, 0.11);
+vec3 fogColor           = vec3(0.06, 0.045, 0.11);         // dark void purple
+vec3 cloudFogCol        = vec3(0.08, 0.06, 0.14);
+float waterDayLight     = 1.0;
+
+#else
+//// Overworld palette ////
 
 //// Sun / Moon Disc Colour ////
 vec3 sunDisc  = atmTint(mix(vec3(255, 240, 214)/255, vec3(255, 140, 50)/255, atmGlow), atmSunHue, 0.85);
@@ -109,8 +146,6 @@ vec3 cloudWarm  = vec3(255, 160, 100)/255 * 0.95;
 vec3 cloudBase  = mix(mix(cloudNight, cloudDay, atmDN), cloudWarm, atmGlow);
 vec3 cloudFogCol = atmTint(mix(cloudBase, rainAmbient * 1.20, rainT), atmAmbHue, 0.6 * atmDN);
 
-float fogStrength = 0.3;
-
 vec3 fogColor = fogCol * (1.0 - atmNight * 0.6);
 
 //// Atmosphere Color ////
@@ -120,3 +155,6 @@ vec3 atmoWarm  = vec3(255, 178, 120)/255 * 0.60;
 vec3 atmoBase  = mix(mix(atmoNight, atmoDay, atmDN), atmoWarm, atmGlow);
 vec3 atmoClear = atmTint(atmoBase, atmAmbHue, 0.75 * atmDN) * clamp(transitionFade, 0.6, 1.0);
 vec3 atmoColor = mix(atmoClear, rainAmbient, rainT);
+#endif
+
+float fogStrength = 0.3;

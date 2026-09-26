@@ -66,7 +66,7 @@ vec3 reflectedWaterCaustics(
     float waterDist = length(waterHitPos - worldPos);
     if (waterDist > 8.0) return vec3(0.0);
 
-    // Bisection: refine the boundary between last non-water and first water sample
+    // Bisection, refine the boundary between last non-water and first water sample
     vec3 lo = lastAbovePos;
     vec3 hi = waterHitPos;
     for (int j = 0; j < 5; j++) {
@@ -82,7 +82,7 @@ vec3 reflectedWaterCaustics(
 
     if (waterY >= worldPos.y) return vec3(0.0);
 
-    // Compute reflection point 'W' on the water surface ('W' for water!!)
+    // Compute reflection point 'W' on the water surface ('W' for water!)
     float heightAboveWater = worldPos.y - waterY;
     float t = heightAboveWater / sunDirWorld.y;
     if (t <= 0.0 || t > 64.0) return vec3(0.0);

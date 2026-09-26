@@ -106,7 +106,7 @@ vec3 puddles(in vec3 color, in vec3 worldPos, in vec3 reflectedskyBoxCol, in vec
     vec4  refl    = raytracePuddles(reflectedskyBoxCol, viewPos.xyz, waterN, 6);
     vec3  reflCol = mix(reflectedskyBoxCol, refl.rgb, refl.a);
 
-    float skyAccess = pow(lightMap.t, 8.0);          // no sky reflection indoors
+    float skyAccess = pow(lightMap.t, 8.0);
     float m = puddleMask * distFactor * skyAccess;
 
     color = mix(color, reflCol, fresnel * m);
