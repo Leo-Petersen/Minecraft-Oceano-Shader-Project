@@ -19,7 +19,8 @@ float computeDistance(vec2 coord) {
 bool sampleSurfaceViewPos(vec2 uv, out vec3 samplePosition, out bool outIsDH) {
     outIsDH = false;
     float vDepth = texture2D(depthtex1, uv).r;
-    if (vDepth < 1.0) {
+    // <0.56 is the players hand, march past it
+    if (vDepth < 1.0 && vDepth >= 0.56) {
         samplePosition = normalizedVec3(gbufferProjectionInverse * normalizedVec4(vec3(uv, vDepth) * 2.0 - 1.0));
         return true;
     }
@@ -69,7 +70,7 @@ vec4 raytrace(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnelView) {
             if (error < dynamicThreshold && !hitIsWater) {
                 stepCount++;
                 if (stepCount >= maxRefinements) {
-                    color = texture2D(colortex0, position.st);
+                    color = textureLod(colortex0, position.st, 0.0);
                     color.a = 1.0 - pow(computeDistance(position.st), fresnelView);
                     break;
                 }
@@ -125,7 +126,7 @@ vec4 raytrace(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnelView, o
             if (error < dynamicThreshold && !hitIsWater) {
                 stepCount++;
                 if (stepCount >= maxRefinements) {
-                    color = texture2D(colortex0, position.st);
+                    color = textureLod(colortex0, position.st, 0.0);
                     color.a = 1.0 - pow(computeDistance(position.st), fresnelView);
                     hitUV = position.st; 
                     hitDepth = sampleIsDH ? 1.0 : texture2D(depthtex1, position.st).r;
@@ -166,7 +167,7 @@ vec4 raytracePuddles(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnel
         if (error < pow(length(stepVector), 1.35) && texture2D(depthtex1, position.st).r < 1.0) {
             stepCount++;
             if (stepCount >= maxRefinements) {
-                color = texture2D(colortex0, position.st);
+                color = textureLod(colortex0, position.st, 0.0);
                 color.a = 1.0 - pow(computeDistance(position.st), fresnelView);
                 break;
             }

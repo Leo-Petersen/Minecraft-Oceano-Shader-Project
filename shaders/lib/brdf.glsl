@@ -1,3 +1,5 @@
+#include "/lib/labpbr.glsl"
+
 #ifdef CookTorranceGGXBRDF
 
 #define specularAAStrength 0.5
@@ -100,8 +102,20 @@ vec3 cookTorranceGGXBRDF(vec3 albedo, vec2 specularMap, float skyMap, vec3 sunCo
     }
     NoV = max(NoV, 1e-3);
 
+    #ifdef HARDCODED_METALS
+    // Same LabPBR decode as the material reflections in composite3
+    LabMaterial pbrMat = decodeLabPBR(specularMap, albedo, skyMap, 0.0);
+    vec3  F  = SphericalGaussianFresnel(HoL, pbrMat.F0);
+    if (pbrMat.metalId >= 0) {
+        // Measured conductor Fresnel curve
+        vec3 mN = labMetalN[pbrMat.metalId], mK = labMetalK[pbrMat.metalId];
+        F = clamp(pbrMat.F0 * fresnelConductor(HoL, mN, mK) / max(fresnelConductor(1.0, mN, mK), vec3(1e-4)), 0.0, 1.0);
+    }
+    #else
+    // Original highlight (Hardcoded Metals off)
     vec3  F0 = mix(vec3(0.04), albedo, metalness);
     vec3  F  = SphericalGaussianFresnel(HoL, F0);
+    #endif
     float D  = GGXDistribution(NoHsqr, alpha);
     float G  = SchlickGGX(NoL, NoV, alpha);
 

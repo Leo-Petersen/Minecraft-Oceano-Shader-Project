@@ -162,13 +162,14 @@ void main() {
 		 atmoGlare *= (1-rainStrength);
 
 	//Reflected sun//
+		float moonOnWater = float(dot(shadowLightPosition, sunPosition) < 0.0) * iswater;
 		vec3 lightDir = shadowLightPosition * 0.01;
 		vec3 viewDir = normalize(-viewPos.xyz);
 		vec3 halfVec = normalize(lightDir + viewDir);
 		
 		float NdotH = max(dot(waterNormal, halfVec), 0.0);
 		
-		float sparkle = pow(NdotH, 256.0) * 3.0;
+		float sparkle = pow(NdotH, mix(256.0, 1024.0, moonOnWater)) * mix(3.0, 12.0, moonOnWater);
 		//sparkle *= lightMap.t; // Covered by water shadow, not needed
 		sparkle *= (1.0 - rainStrength*0.94) * 1.5 * transitionFade * ShadowVisibility; // Reduce in rain
 		vec3 reflectSun = sunCol * sparkle;

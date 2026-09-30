@@ -86,6 +86,13 @@
         #define pshininess 1.00 //[0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.25 1.50 1.75 2.00 2.25 2.40 2.75 3.00 3.25 3.50 3.75 4.00 4.25 4.50 4.75 5.00 5.50 6.00 6.50 7.00 7.50 8.00 8.50 9.00 9.50 10.00]
         #define pstrength 1.00 //[0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.25 1.50 1.75 2.00 2.25 2.40 2.75 3.00 3.25 3.50 3.75 4.00 4.25 4.50 4.75 5.00 5.50 6.00 6.50 7.00 7.50 8.00 8.50 9.00 9.50 10.00]
     //#define materialReflections
+        #define SSR_MAX_ALPHA 0.5 //[0.25 0.35 0.5 0.65] Surfaces rougher than this skip the reflection ray and use the environment only
+        #define REFL_CONE_SCALE 1.0 //[0.5 0.75 1.0 1.5 2.0] Blur of rough reflections
+        #define REFL_GROUND_ALBEDO 0.4 //[0.2 0.3 0.4 0.5 0.6 0.7 0.8] Brightness of the ground reflected below the horizon (sand ~0.8, grass/dirt ~0.3)
+        #define METAL_DIFFUSE 0.20 //[0.0 0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00] Lit colour kept under metal reflections
+        //#define HARDCODED_METALS // LabPBR measured metals (230 to 237), measured reflectance and Fresnel, tinted by albedo. (When Off: albedo is F0 for all metals)
+            #define HC_METAL_BRIGHTNESS 1.00 //[0.80 0.90 1.00 1.05 1.10 1.15 1.20 1.25 1.30 1.40 1.50 1.60 1.80 2.00] How much metals reflect (all metals, Hardcoded Metals on only). 1.0 is the measured value (iron ~53%, 1.15 ~60%, 1.3 ~70%)
+            #define HC_TINT_REF 0.8 //[0.5 0.6 0.7 0.8 0.9 1.0] Texture brightness that gets the measured reflectance as is. Lower is brighter
 
 
 //Fog//

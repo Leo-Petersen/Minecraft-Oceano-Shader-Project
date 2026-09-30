@@ -73,7 +73,7 @@ float Bayer4(vec2 a)  { return Bayer2(0.5 * a) * 0.25 + Bayer2(a); }
 float Bayer8(vec2 a)  { return Bayer4(0.5 * a) * 0.25 + Bayer2(a); }
 
 void main() {
-    #ifdef DISTANT_HORIZONS
+    #if defined DISTANT_HORIZONS && !defined NETHER
     float dither = Bayer8(gl_FragCoord.xy);
     float minDist = (dither - 0.75) * 16.0 + far;
     if (dist >= minDist) discard;
@@ -170,7 +170,8 @@ void main() {
         normalData = normalize(mix(normalData, viewNormal, underWater));
 
         float soak        = mix(0.72, 0.30, porosity);
-        terrainColor.rgb *= mix(1.0, soak, wetFilm);
+        bool  wetMetal    = specularMap.g * 255.0 > 229.5;
+        if (!wetMetal) terrainColor.rgb *= mix(1.0, soak, wetFilm);
 
         #define WATER_TINT    vec3(0.45, 0.62, 0.68) 
         #define WATER_CLARITY 5.0
@@ -178,9 +179,11 @@ void main() {
         terrainColor.rgb  = mix(terrainColor.rgb, terrainColor.rgb * WATER_TINT, absorb * underWater);
 
         #define WET_FILM_SMOOTH 0.72
+        if (!wetMetal) {
         specularMap.r     = mix(specularMap.r, WET_FILM_SMOOTH, poolMask);   // normal wet puddle
         specularMap.r     = mix(specularMap.r, 0.96, underWater);            // flat pool water
         specularMap.g     = mix(specularMap.g, 0.04, wetFilm);              // water F0 across the whole footprint
+        }
     #else
         float wetFilm = 0.0;
     #endif

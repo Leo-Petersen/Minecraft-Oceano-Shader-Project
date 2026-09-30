@@ -96,6 +96,10 @@ vec3 atmMoonDir = normalize(mat3(gbufferModelViewInverse) * moonPosition);
 vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
 
 #include "/lib/settings.glsl"
+#ifdef materialReflections
+// Rough reflection cone blur, only with Material Reflections
+const bool colortex0MipmapEnabled = true;
+#endif
 #include "/lib/dh.glsl"
 #include "/lib/time.glsl"
 #include "/lib/atmosphereLUT.glsl"
@@ -103,6 +107,7 @@ vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunDir);
 vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue);
 #include "/lib/lightCol.glsl"
 #include "/lib/raytrace.glsl"
+#include "/lib/labpbr.glsl"
 #include "/lib/waterBump.glsl"
 #define PUDDLE_REFLECTION
 #include "/lib/puddles.glsl"
@@ -198,7 +203,7 @@ vec3 netherHaze(vec3 color, vec2 uv, float heat, float dist) {
 	float amount = heat * clamp(dist / 24.0, 0.0, 0.6) * heatHazeStrength * 2;
 	vec2  offset = wobble * amount * 0.01;
 
-	return texture2D(colortex0, uv + offset).rgb;
+	return textureLod(colortex0, uv + offset, 0.0).rgb;
 }
 
 void main() {
@@ -220,8 +225,7 @@ void main() {
 
 	vec3 reflectedSun = texture2D(colortex6, texcoord).rgb;
 
-	vec3 color = texture2D(colortex0, texcoord).rgb;
-	float ShadowAccum = texture2D(colortex4, texcoord).a;
+	vec3 color = textureLod(colortex0, texcoord, 0.0).rgb;
 	float packedWaveLight = texture2D(colortex3, texcoord).a;
 	float waterSSS = max(0.0, (0.5 - packedWaveLight) * 2.0);   
 	float frontGlow = max(0.0, (packedWaveLight - 0.5) * 2.0);  
@@ -281,8 +285,9 @@ void main() {
      #endif
 	#endif
 
-	#ifdef heatHaze
-	if (isEyeInWater < 0.9 && Depth < 1.0) {
+	//// Heat Haze ////
+	#if defined heatHaze || (defined NETHER && defined netherHeatHaze) || (!defined NETHER && !defined END && defined overworldHeatHaze)
+	if (isEyeInWater < 0.9 && Depth < 1.0 && !isHand) {
 		float heat = sampleHeat(worldPos);
 		float dist = length(viewPos.xyz);
 		if (heat > 0.001) color = netherHaze(color, texcoord, heat, dist);
@@ -333,9 +338,9 @@ void main() {
 			if (!(rMat > 0.08 && rMat < 0.10)) rC = refractCoord;
 			if (!(bMat > 0.08 && bMat < 0.10)) bC = refractCoord;
 
-			refractedColor.r = texture2D(colortex0, rC).r;
-			refractedColor.g = texture2D(colortex0, refractCoord).g;
-			refractedColor.b = texture2D(colortex0, bC).b;
+			refractedColor.r = textureLod(colortex0, rC, 0.0).r;
+			refractedColor.g = textureLod(colortex0, refractCoord, 0.0).g;
+			refractedColor.b = textureLod(colortex0, bC, 0.0).b;
 
 			if (destWater > 0.5) {
 				vec3 bedRefr = reconstructViewPosOpaque(refractCoord, texture2D(depthtex1, refractCoord).r);
@@ -483,72 +488,114 @@ void main() {
 	
 
 	//// PBR Reflections (opaque surfaces) ////
+	// Split sum specular on top of the lit scene.
+	// E = specular albedo, Lenv = SSR hit or environment.
+	// dielectrics: color * (1 - E) + Lenv * E
 	#ifdef materialReflections
-		if (iswater < 0.5 && isglass < 0.5 && Depth < 1.0) {
-			float perceptualSmoothness = specularMap.r;
-			float metalness = specularMap.g;
-			
-			// Only reflect if there's PBR data worth reflecting
-			if (perceptualSmoothness > 0.1) {
-				float roughness = 1.0 - perceptualSmoothness;
-				
-				vec3 viewDir = normalize(viewPos.xyz);
-				float NdotV = max(dot(viewNormal, -viewDir), 0.001);
-				
-				vec3 F0;
-				float f0Raw = specularMap.g * 255.0;
+		// opaque surfaces only!!
+		if (iswater < 0.5 && isglass < 0.5 && Depth < 1.0 && Depth >= Depth1 && material > 0.0
+		    && (specularMap.r > 0.0 || specularMap.g > 0.0)) {
 
-				if (f0Raw >= 229.5) {
-					F0 = color.rgb; // Metal
-				} else if (f0Raw > 0.5) {
-					// Dielectric, cap f0 to realistic range (max ~0.17 = diamond)
-					F0 = vec3(min(specularMap.g, 0.17));
-				} else {
-					F0 = vec3(0.04); // Default dielectric
-				}
-				float metalness = float(f0Raw >= 229.5);
-				
-				// Fresnel with roughness consideration
-				vec3 fresnel = F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - NdotV, 5.0);
-				
-				float reflectionFade = (metalness > 0.5) ? 1.0 : smoothstep(0.1, 0.5, perceptualSmoothness);
-				fresnel *= reflectionFade;
-				//fresnel *= 1.0 - roughness * roughness * 0.7;
+			#ifdef HARDCODED_METALS
+			vec4 reflData    = texture2D(colortex4, texcoord);
+			vec3 envMiss     = reflData.rgb;
+			vec3 albedo      = unpackAlbedo(reflData.a);
+			LabMaterial mat = decodeLabPBR(specularMap, albedo, lightMap.t, wetness);
 
-				// Roughness-jittered reflection normal for blurry SSR (TAA resolves the noise)
-				vec3 reflNormal = viewNormal;
-				#ifdef TAA
-				float h1 = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
-				float h2 = fract(h1 * 3.321 + 0.7123);
-				h1 = fract(h1 + float(frameCounter % 8) * 0.125);
-				h2 = fract(h2 + float(frameCounter % 8) * 0.125);
-				vec3 tangent = normalize(cross(reflNormal, abs(reflNormal.y) > 0.99 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0)));
-				vec3 bitangent = cross(reflNormal, tangent);
-				float jitterStrength = roughness * roughness * 0.4;
-				reflNormal = normalize(reflNormal
-					+ tangent   * (h1 - 0.5) * jitterStrength
-					+ bitangent * (h2 - 0.5) * jitterStrength);
-				#endif
+			vec3  V   = -normalize(viewPos.xyz);
+			vec3  N   = viewNormal;
+			float NoV = max(dot(N, V), 1e-4);
+			vec3  E   = specularAlbedo(mat, NoV);
 
-				// SSR with sky fallback
-				vec4 pbrReflection = raytrace(reflectedskyBoxCol * lightMap.t, viewPos.xyz, reflNormal, 4);
-				vec3 reflectionCol = mix(reflectedskyBoxCol * lightMap.t, pbrReflection.rgb, pbrReflection.a);
-				
-				// Metals tint their reflection by their albedo
-				reflectionCol = mix(reflectionCol, reflectionCol * color.rgb, metalness);
-				
-				// Blend, metals replace diffuse, dielectrics add subtly
-				color.rgb += reflectionCol * fresnel;
+			vec3  R      = specularDominantDir(N, reflect(-V, N), mat.roughness);
+
+			#else
+			// (Hardcoded Metals off)
+			vec4 reflData    = texture2D(colortex4, texcoord);
+			vec3 openAmbient = reflData.rgb;
+			vec3 albedo      = unpackAlbedo(reflData.a);
+			LabMaterial mat = decodeLabPBR(specularMap, albedo, lightMap.t, wetness);
+
+			vec3  V   = -normalize(viewPos.xyz);
+			vec3  N   = viewNormal;
+			float NoV = max(dot(N, V), 1e-4);
+			vec3  E   = specularAlbedo(mat, NoV);
+
+			vec3  R      = specularDominantDir(N, reflect(-V, N), mat.roughness);
+			vec3  RWorld = normalize(mat3(gbufferModelViewInverse) * R);
+			vec3  Nw     = normalize(mat3(gbufferModelViewInverse) * N);
+			float roughBlend = smoothstep(0.1, 0.7, mat.roughness);
+
+			vec3 localRad = min(color.rgb / max(albedo, vec3(0.05)), vec3(16.0));
+			vec3 envMiss  = localRad;
+			#if !defined NETHER && !defined END
+			{
+				// Sky
+				vec3 skyDir = normalize(vec3(RWorld.x, max(RWorld.y, 0.02), RWorld.z));
+				vec3 skyR   = atmSky(colortex15, vec2(viewWidth, viewHeight), skyDir, atmSunTrue);
+				     skyR   = atmSkyFinish(skyR, skyDir, atmSunTrue, atmMoonDir);
+				     skyR   = mix(skyR, skyBoxCol, rainStrength);
+				vec3 skyAvg = mix(atmAmb, skyBoxCol, rainStrength);
+					 skyAvg *= clamp(openAmbient / max(skyAvg, vec3(1e-4)), vec3(0.02), vec3(20.0));
+
+				vec3 groundRad = REFL_GROUND_ALBEDO * (sunlightCol * sunlightCol * max(atmSunDir.y, 0.0) / PI
+				                                       * lightStr * 11.0 * transitionFade * max(0.14, rainDirect)
+				                                       + skyAvg);
+
+				vec3 envSmooth = mix(groundRad, skyR,   smoothstep(-0.08, 0.08, RWorld.y));
+				vec3 envRough  = mix(groundRad, skyAvg, clamp(0.5 + 0.5 * Nw.y, 0.0, 1.0));
+				vec3 envOpen   = mix(envSmooth, envRough, roughBlend);
+
+				envMiss = mix(localRad, envOpen, reflSkyAccess * reflSkyAccess);
 			}
-		}
-	#endif
+			#endif
 
-	//// Heat Haze ////
-	#if (defined NETHER && defined netherHeatHaze) || (!defined NETHER && !defined END && defined overworldHeatHaze)
-		if (isEyeInWater < 0.9 && Depth < 1.0) {
-			float heat = sampleHeat(worldPos);
-			float dist = length(viewPos.xyz);
-			if (heat > 0.001) color = netherHaze(color, texcoord, heat, dist);
+			#endif
+
+			vec3  Lenv = envMiss;
+			float ssrW = 0.0;
+			if (mat.alpha < SSR_MAX_ALPHA && !isHand) {
+				vec3  H = normalize(V + R);
+				vec2  hitUV; float hitDepth; vec3 hitViewPos;
+				vec4  ssr = raytrace(envMiss, viewPos.xyz, H, 4.0, hitUV, hitDepth, hitViewPos);
+
+				// Hit validation
+				vec3  flatN   = normalize(cross(dFdx(viewPos.xyz), dFdy(viewPos.xyz)));
+				if (dot(flatN, V) < 0.0) flatN = -flatN;
+				vec3  toHit   = hitViewPos - viewPos.xyz;
+				float minDist = max(0.1, 0.01 * length(viewPos.xyz));
+				bool validHit = hitDepth >= 0.0 && dot(toHit, flatN) > minDist;
+				if (validHit) {
+					vec3 hitN = normalize(decodeNormal(texture2D(colortex1, hitUV).st));
+					validHit  = dot(hitN, normalize(toHit)) < -0.05;
+				}
+				if (validHit) {
+					float rayLen   = length(toHit);
+					float coneTan  = mat.alpha * REFL_CONE_SCALE;
+					float radiusPx = coneTan * rayLen / max(-hitViewPos.z, 0.05)
+					               * gbufferProjection[1][1] * 0.5 * viewHeight;
+					float lod = clamp(log2(max(radiusPx, 1.0)), 0.0, 4.0);
+					vec3 hitCol = textureLod(colortex0, hitUV, lod).rgb;
+
+					ssrW = ssr.a * (1.0 - smoothstep(SSR_MAX_ALPHA * 0.6, SSR_MAX_ALPHA, mat.alpha));
+					// confidence fades
+					ssrW *= 1.0 - smoothstep(0.35, 0.85, dot(R, V));
+					ssrW *= smoothstep(minDist, minDist + 0.15, dot(toHit, flatN));
+					Lenv = mix(envMiss, hitCol, ssrW);
+				}
+			}
+
+			vec3 dielectric = color.rgb * (1.0 - E) + Lenv * E;
+			// Metals, deferred already removed their diffuse
+			#ifdef HARDCODED_METALS
+			vec3 metal      = color.rgb + (Lenv - envMiss) * E;
+			#else
+			// original
+			float metalKeep = max(1.0 - dot(E, vec3(0.2126, 0.7152, 0.0722)), 0.0);
+			vec3 metal      = color.rgb * metalKeep + Lenv * E;
+			#endif
+			color.rgb = max(mix(dielectric, metal, mat.metalness), 0.0);
+
 		}
 	#endif
 

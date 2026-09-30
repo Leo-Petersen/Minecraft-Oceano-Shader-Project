@@ -208,11 +208,31 @@ screen.Materials=Materials
 option.Parallax=Parallax Occlusion
     option.Parallax.comment=Adds real depth to textures using the height/normal map.
 option.CookTorranceGGXBRDF=Specular (GGX BRDF)
-option.materialReflections=Material Reflections (WIP)
+    option.CookTorranceGGXBRDF.comment=Sun highlights on LabPBR materials.
+option.materialReflections=Material Reflections
+    option.materialReflections.comment=Screen space and sky reflections on LabPBR materials.
 option.materialEmission=Material Emission
 option.emissionStrength=Emission Strength
-option.pstrength=Specular Strength
-option.pshininess=Specular Shininess
+
+    # Specular Settings #
+    screen.Specular=Specular Settings
+        option.pstrength=Specular Strength
+        option.pshininess=Specular Shininess
+
+    # Material Reflection Settings #
+    screen.MaterialReflections=Material Reflection Settings
+        option.HARDCODED_METALS=LabPBR Hardcoded Metals
+            option.HARDCODED_METALS.comment=Only with Material Reflections on. On: metals 230-237 use their measured reflectance and Fresnel curve from the LabPBR spec, tinted by the texture colour, and all metals lose their diffuse (see Metal Base Colour). Off: metals look exactly as they originally did.
+        option.HC_METAL_BRIGHTNESS=Metal Brightness
+            option.HC_METAL_BRIGHTNESS.comment=Only with LabPBR Hardcoded Metals on. Scales how much all metals reflect: 1.0 is the measured value for hardcoded metals (iron about 53%) and the texture colour for other metals (e.g. copper in many packs). Brightens the reflection itself, keeping it sharp.
+        option.METAL_DIFFUSE=Metal Base Colour
+            option.METAL_DIFFUSE.comment=Only with LabPBR Hardcoded Metals on. Keeps some of the normal lit colour under the reflection. 0.3 (recommended) matches the scene's lighting, higher softens metals but makes them brighter in the shade. 0.0 is 'physically accurate' but doesn't mesh well.
+        option.SSR_MAX_ALPHA=Reflection Ray Roughness Cutoff
+            option.SSR_MAX_ALPHA.comment=Surfaces rougher than this reflect the environment only, without a screen space ray. Lower is faster.
+        option.REFL_CONE_SCALE=Rough Reflection Blur
+            option.REFL_CONE_SCALE.comment=How much rough surfaces blur their reflections. 1.0 matches the GGX lobe.
+        option.REFL_GROUND_ALBEDO=Reflected Ground Brightness
+            option.REFL_GROUND_ALBEDO.comment=How bright the ground is that reflections show below the horizon when there is no screen space hit. Sand is about 0.8, grass and dirt about 0.3.
 
     # Parallax Settings #
     screen.ParallaxSettings=Parallax Settings

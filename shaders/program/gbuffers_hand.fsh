@@ -37,17 +37,20 @@ void main() {
 	#endif
 
 	vec4 color = texture2DGradARB(texture, parallaxedUV, dFdxy[0], dFdxy[1]) * glcolor;
+	if (color.a < 0.1) discard;
 
 	vec4 specularData = texture2D(specular, parallaxedUV);
 	vec2 specularMap = specularData.rg;
-	specularMap.g = 1;
-	float emission = specularData.a < 0.99 ? specularData.a : 0.0;
+	float emission = specularData.a < 1.0 ? clamp(specularData.a * 1.004 - 0.004, 0.0, 1.0) : 0.0;
+
+	float specularBlue = specularData.b * 255.0;
+	float labSSS = specularBlue < 65.0 ? 0.0 : (specularBlue - 65.0) / 190.0 * 0.6;
 
 	vec4 normalRaw = texture2D(normals, parallaxedUV);
 	
 	// LabPBR: RG = encoded normal XY, B = AO, A = height
 	vec2 normalXY = normalRaw.rg * 2.0 - 1.0;
-	vec3 normalData = vec3(normalXY, sqrt(1.0 - dot(normalXY, normalXY)));
+	vec3 normalData = vec3(normalXY, sqrt(max(1.0 - dot(normalXY, normalXY), 0.0)));
 		 normalData *= tbnMatrix;
 	
 	// LabPBR AO from blue channel
@@ -84,7 +87,7 @@ void main() {
 	gl_FragData[1] = vec4(encodeNormal(normalData), specularMap);
 	gl_FragData[2] = vec4(lightMap, material, shadowFactor);
 	gl_FragData[3] = vec4(0.0, 0.0, 0.0, 1.0); // No skybox reflection for hand, but write to buffer to fix issues
-	gl_FragData[4] = vec4(emission, surfaceHeight, textureAO, 1.0);
+	gl_FragData[4] = vec4(emission, 0.0, textureAO, labSSS);
 #ifdef PHOTONICS_ENABLED
 	gl_FragData[5] = vec4(color.rgb, 1.0);
 	gl_FragData[6] = vec4(0.5 * viewNormal + 0.5, 1.0);

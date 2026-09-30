@@ -24,7 +24,7 @@ attribute vec4 mc_midTexCoord;
 void main() {
 
     //Materials//
-        material = 1.0;
+        material = 0.97;
         //foliage//
         if (mc_Entity.x == 11050 ||
             mc_Entity.x == 11060 ||
