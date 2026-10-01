@@ -92,7 +92,7 @@ vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue)
 #include "/lib/caustics.glsl"
 #include "/lib/dh.glsl"
 
-const vec3 voxelVolumeSize = vec3(VOXEL_VOLUME_SIZE, VOXEL_VOLUME_SIZE * 0.5, VOXEL_VOLUME_SIZE);
+const vec3 voxelVolumeSize = vec3(voxelVolumeRes, voxelVolumeRes * 0.5, voxelVolumeRes);
 
 vec3 worldToVoxelUV(vec3 worldPos) {
     vec3 voxelPos = worldPos + fract(cameraPosition) + voxelVolumeSize * 0.5;
@@ -120,13 +120,6 @@ float shadowFactor =  0.75 * (time[0]) +
 #else
     float torchFactor = mix(1.0, 0.33, smoothstep(-0.05, 0.12, atmSunTrue.y));
 #endif
-
-float photonicsTorchFactor =   1.00 * (time[0]) +
-                               0.33 * (time[1]) +
-                               0.33 * (time[2]) +
-                               0.33 * (time[3]) +
-                               1.00 * (time[4]) +
-                               2.50 * (time[5]);
 
 float causticTimeFactor =  0.6 * (time[0]) +
                            1.0 * (time[1]) +
@@ -158,7 +151,10 @@ void main() {
     vec4 colortex1Map = texture2D(colortex1, texcoord); // .rg = ViewNormal, ba = specular/roughness
     float material = colortex2Map.p;
     float isglass = float(material > 0.10 && material < 0.12);
-    float parallaxShadow = colortex2Map.a;
+    // FORMAT: colortex2.a = parallax self shadow (high 4 bits) + sunk depth (low 4 bits, inverted)
+    float parallaxPacked    = floor(colortex2Map.a * 255.0 + 0.5);
+    float parallaxShadow    = floor(parallaxPacked / 16.0) / 15.0;
+    float parallaxSunkDepth = (15.0 - mod(parallaxPacked, 16.0)) / 15.0 * parallaxDepth;
     float iswater = float(material > 0.08 && material < 0.10);
     bool isHand = material > 0.96 && material < 0.98;
     
@@ -182,7 +178,22 @@ void main() {
     vec3 worldNormal = mat3(gbufferModelViewInverse) * normal;
     float NdotL = max(dot(normal, normalize(shadowLightPosition)), 0.0);
 
-    vec3 shadowBasePos = worldPos;
+    vec3 pomShadowOffset = vec3(0.0);
+    vec3 pomDpx = dFdx(worldPos), pomDpy = dFdy(worldPos);   // outside any branch
+    #ifdef Parallax
+    if (parallaxSunkDepth > 0.0) {
+        vec3 gN = cross(pomDpx, pomDpy);                      // geometric face normal, snapped to the block axis
+        vec3 aN = abs(gN);
+        gN = (aN.x > aN.y && aN.x > aN.z) ? vec3(sign(gN.x), 0.0, 0.0) : ((aN.y > aN.z) ? vec3(0.0, sign(gN.y), 0.0) : vec3(0.0, 0.0, sign(gN.z)));
+        vec3 Vw = mat3(gbufferModelViewInverse) * normalize(viewPos.xyz);
+        if (dot(gN, Vw) > 0.0) gN = -gN;
+        vec3 Lw = mat3(gbufferModelViewInverse) * normalize(shadowLightPosition);
+        float NdV = max(-dot(gN, Vw), 0.02);
+        float NdL = dot(gN, Lw);
+        if (NdL > 0.05) pomShadowOffset = Vw * (parallaxSunkDepth / NdV) + Lw * (parallaxSunkDepth / NdL);
+    }
+    #endif
+    vec3 shadowBasePos = worldPos + pomShadowOffset;
     #ifdef PixelLockedShadows
         vec3 snapSrcPos = worldPos;
         #ifdef TAA
@@ -199,7 +210,7 @@ void main() {
             snapSrcPos = mat3(gbufferModelViewInverse) * viewUnjit + gbufferModelViewInverse[3].xyz;
         }
         #endif
-        shadowBasePos = snapShadowPos(snapSrcPos);
+        shadowBasePos = snapShadowPos(snapSrcPos + pomShadowOffset);
     #endif
     vec3 shadowWorldPos = shadowBasePos + worldNormal * 0.04 * (1.0 - NdotL);
 
@@ -222,11 +233,11 @@ void main() {
 
     // LabPBR metals have no diffuse
     float isMetal = 0.0;
-    #if defined materialReflections && defined HARDCODED_METALS
+    #if defined materialReflections && defined hardcodedMetals
         // material > 0, entities, particles etc
         isMetal = float(specularMap.g * 255.0 > 229.5 && material > 0.0);
     #endif
-    float diffuseWeight = mix(1.0, METAL_DIFFUSE, isMetal);
+    float diffuseWeight = mix(1.0, metalDiffuse, isMetal);
     float roughness = clamp(1.0 - specularMap.r, 0.01, 0.99);
     
     float Diffuse = calculateDiffuse(shadowLightPosition * 0.01, normalize(-viewPos.xyz), normal, roughness);
@@ -263,7 +274,6 @@ void main() {
 
     float originalBlockLight = lightMap.s;
     float torchTimeBlend = mix(1.0, torchFactor, rawSkyLight);
-    float ph_torchTimeBlend = mix(1.0, photonicsTorchFactor, rawSkyLight);
     #if defined NETHER
         lightMap.s = max(pow(lightMap.s, 1.8), handlight);
         float torchIntensity = lightMap.s * lightMap.s * 5.2;
@@ -304,7 +314,7 @@ void main() {
             }
             
             // Convert from compressed to linear
-            vec3 voxelLight = pow(lightVolume, vec3(1.0 / FLOODFILL_RADIUS));
+            vec3 voxelLight = pow(lightVolume, vec3(1.0 / floodfillRadius));
             voxelStrength = length(voxelLight);
             
             // Normalize to get just the color
@@ -316,7 +326,7 @@ void main() {
             vec3 edgeDist = min(voxelUV, 1.0 - voxelUV);
             float edgeFade = smoothstep(0.0, 0.1, min(min(edgeDist.x, edgeDist.y), edgeDist.z));
             
-            voxelBlend = clamp(voxelStrength * FLOODFILL_BRIGHTNESS, 0.0, 1.0) * edgeFade;
+            voxelBlend = clamp(voxelStrength * floodfillBrightness, 0.0, 1.0) * edgeFade;
         }
     #else
         defaultTorchColor *= 1.5;
@@ -456,22 +466,22 @@ void main() {
         #endif
     #endif
 
-    const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
+    const vec3 lumaWeights = vec3(0.2126, 0.7152, 0.0722);
 
     flux  = max(flux, vec3(0.0001));
     #if defined NETHER || defined END
         flux *= (1.0 - rainStrength * 0.88);
     #endif
-    flux /= dot(LUMA, flux);
+    flux /= dot(lumaWeights, flux);
     #if defined NETHER || defined END
-        if (Depth < 0.56) flux /= dot(LUMA, flux) + rainStrength * 0.5;
+        if (Depth < 0.56) flux /= dot(lumaWeights, flux) + rainStrength * 0.5;
     #endif
 
     vec3 bounceLight = backLight(flux);
-    bounceLight = mix(shadowCol, bounceLight, dot(LUMA, flux) + 0.5);
+    bounceLight = mix(shadowCol, bounceLight, dot(lumaWeights, flux) + 0.5);
     bounceLight *= 0.55 * BounceLightStr;
 
-    float bounceLum = dot(bounceLight, LUMA);
+    float bounceLum = dot(bounceLight, lumaWeights);
     #if defined NETHER || defined END
        // bounceLight = mix(bounceLight, vec3(bounceLum), 0.9);
     #else
@@ -516,7 +526,9 @@ void main() {
 
         if (isGrass == 1) Diffuse = mix(Diffuse, 0.3, distFactor);
 
-        vec3 directBeam = sunlightCol * Diffuse * ShadowAccum * lightMap.t * lightStrength * max(0.14, rainDirect);
+        // a single infinite term turns 0 * inf into NaN, which renders black, SSS and specular are skipped instead. (fixes flashing black artifacts at sun/moon transition)
+        bool directLit = lightStrength > 0.0;
+        vec3 directBeam = directLit ? sunlightCol * Diffuse * ShadowAccum * lightMap.t * lightStrength * max(0.14, rainDirect) : vec3(0.0);
              directBeam *= mix(1.0, 0.9, distFactor); // Reduce direct light on distant terrain to balance with fog and prevent harsh edges
 
         vec3 finalShadow = directBeam;
@@ -551,7 +563,7 @@ void main() {
         // Subsurface scattering
         #ifdef shadowMap
             #ifdef SubsurfaceScattering
-            if (sssAmount > 0.01 && iswater < 0.5 && isglass < 0.5 && material > 0.001 && !isHand) {
+            if (directLit && sssAmount > 0.01 && iswater < 0.5 && isglass < 0.5 && material > 0.001 && !isHand) {
                 vec3 viewDir  = normalize(-viewPos.xyz);
                 vec3 lightDir = shadowLightPosition * 0.01;
                 float VdotL   = dot(viewDir, lightDir);
@@ -573,7 +585,7 @@ void main() {
                 #ifdef DISTANT_HORIZONS
                 if (sssCoverage < 0.999) {
                     float skyLevel   = rawSkyLight * 16.0;
-                    float canopyMask = clamp((skyLevel - (15.0 - DH_SSS_DEPTH)) / DH_SSS_DEPTH, 0.0, 1.0);
+                    float canopyMask = clamp((skyLevel - (15.0 - dhSssDepth)) / dhSssDepth, 0.0, 1.0);
                     canopyMask *= canopyMask;
 
                     vec3 sssDH = vec3(0.0);
@@ -591,8 +603,11 @@ void main() {
         #endif
         
         // PBR Specular
-        vec3 specularBRDF = cookTorranceGGXBRDF(color, specularMap, lightMap.t, sunlightCol);
-        specularBRDF *= ShadowAccum * lightMap.t * lightStrength * rainDirect * transitionFade;
+        vec3 specularBRDF = vec3(0.0);
+        if (directLit) {
+            specularBRDF = cookTorranceGGXBRDF(color, specularMap, lightMap.t, sunlightCol);
+            specularBRDF *= ShadowAccum * lightMap.t * lightStrength * rainDirect * transitionFade;
+        }
         //specularBRDF *= mix(1.0, 0.8, distFactor);
 
         // Combine lighting
@@ -622,27 +637,17 @@ void main() {
                 pow(lightMap.t, 0.5), iswater, shadowLum, causticTimeFactor
             );
             reflCaust *= sunlightCol * transitionFade * rainDirect;
+            if (!directLit) reflCaust = vec3(0.0);
             diffuseLight += reflCaust;
             color.rgb += albedo * reflCaust * diffuseWeight;
         }
         #endif
 
         // Emission
-        #if defined(PHOTONICS) && defined(PHOTONICS_ENABLED)
-            if (material > 0.06 && material < 0.08) {
-            float emissiveTimeScale = ph_torchTimeBlend * mix(lightMap.t * 0.5, 1.0, 1.0 - rawSkyLight);
-            color *= 3.0 * emissiveTimeScale;
-            }
-        #endif
-
         #ifdef materialEmission
             float emissionStr = mix(0.05, 0.6, torchFactor) + (1.0 - lightMap.t) * 0.5;
             emissionStr = clamp(emissionStr, 0.0, 1.0);
-            #if defined(PHOTONICS) && defined(PHOTONICS_ENABLED)
-                color += albedo * emission * emissionStrength * 0.1;
-            #else
-                color += albedo * emission * emissionStr * emissionStrength * 0.075;
-            #endif
+            color += albedo * emission * emissionStr * emissionStrength * 0.075;
         #endif
     #elif defined NETHER
         float lightStrength = lightStr;
@@ -657,21 +662,6 @@ void main() {
              color *= diffuseLight * diffuseWeight;
              openAmbient = ambientStrength * ambientCol * pow(shadowFactor, 2.0);
     #endif
-    
-    //// Photonics Raytraced Lighting ////
-    #if defined(PHOTONICS) && defined(PHOTONICS_ENABLED)
-    {
-        vec3 phDirect = sample_photonics_direct(texcoord);
-        vec3 phHandheld = sample_photonics_handheld(texcoord);
-
-        vec3 phColor = phDirect + phHandheld;
-        vec3 phTinted = albedo * phColor;
-        float phTimeScale = torchTimeBlend * mix(lightMap.t * 0.5, 1.0, 1.0 - rawSkyLight);
-        float phAO = textureAO * pow(ao, 0.4);
-        color += phTinted * phAO * phTimeScale * 5 * diffuseWeight;
-        diffuseLight += phColor * phAO * phTimeScale * 5.0;
-    }
-    #endif
 
     #ifdef skyLightMap
         color *= lightMap.t;
@@ -680,21 +670,14 @@ void main() {
 
     //// Block Light ////
     #ifdef torchLightMap
-        #if defined(PHOTONICS) && defined(PHOTONICS_ENABLED)
-            color += torchTotal * textureAO * 0.15 * diffuseWeight;
-            diffuseLight += finalBlockLightColor * torchIntensity * textureAO * 0.15;
-        #else
-            color += torchTotal * textureAO * diffuseWeight;
-            diffuseLight += finalBlockLightColor * torchIntensity * textureAO;
-        #endif
+        color += torchTotal * textureAO * diffuseWeight;
+        diffuseLight += finalBlockLightColor * torchIntensity * textureAO;
     #endif
 
     //// Material reflection environment ////
-    // what a reflection sees when there is no screen space hit
-    // built here (not in composite3) because deferred knows the surface's real incoming light
     vec3 albedoQ = floor(clamp(albedo, 0.0, 1.0) * 255.0 + 0.5);
     vec3 envMiss = vec3(0.0);
-    #if defined materialReflections && defined HARDCODED_METALS
+    #if defined materialReflections && defined hardcodedMetals
     if (material > 0.0 && (specularMap.r > 0.0 || specularMap.g > 0.0)) {
         LabMaterial pbr = decodeLabPBR(specularMap, albedoQ / 255.0, rawSkyLight, wetness);
         vec3  Vv   = -normalize(viewPos.xyz);
@@ -722,7 +705,7 @@ void main() {
             skyAvg *= clamp(openAmbient / max(skyAvg, vec3(1e-4)), vec3(0.02), vec3(20.0));
 
             // ground below the horizon
-            vec3 groundRad = REFL_GROUND_ALBEDO * (sunlightCol * sunlightCol * max(atmSunDir.y, 0.0) / PI
+            vec3 groundRad = reflGroundAlbedo * (sunlightCol * sunlightCol * max(atmSunDir.y, 0.0) / PI
                                                    * lightStr * 11.0 * transitionFade * max(0.14, rainDirect)
                                                    + skyAvg);
 
@@ -749,7 +732,7 @@ void main() {
 #ifdef materialReflections
 /* DRAWBUFFERS:04 */
     gl_FragData[0] = vec4(color, 1.0);
-    #ifdef HARDCODED_METALS
+    #ifdef hardcodedMetals
     gl_FragData[1] = vec4(envMiss, albedoQ.r * 65536.0 + albedoQ.g * 256.0 + albedoQ.b);
     #else
     gl_FragData[1] = vec4(openAmbient, albedoQ.r * 65536.0 + albedoQ.g * 256.0 + albedoQ.b);

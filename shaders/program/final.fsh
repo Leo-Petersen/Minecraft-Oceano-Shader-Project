@@ -3,9 +3,6 @@
 
 /*
 const int colortex0Format = R11F_G11F_B10F;
-#ifdef PHOTONICS_ENABLED
-const int colortex12Format = RGBA16F;   // Photonics: indirect GI
-#endif
 */
 
 uniform sampler2D noisetex;

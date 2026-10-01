@@ -259,7 +259,7 @@ vec3 calculateSSS(
     float gradNoise = fract(IGN + 1.618);
     float sssOcclusion = 0.0;
 
-    for (int i = 0; i < SSS_Quality; i++) {
+    for (int i = 0; i < sssQuality; i++) {
         gradNoise = fract(gradNoise + 1.618);
         float rot  = gradNoise * 6.283;
         float dist = (float(i) + gradNoise) / 12.0;
@@ -272,7 +272,7 @@ vec3 calculateSSS(
 
         sssOcclusion += shadow2D(shadowtex0, samplePos).r;
     }
-    sssOcclusion /= SSS_Quality;
+    sssOcclusion /= sssQuality;
     sssOcclusion *= sssOcclusion;
 
     // backface factor

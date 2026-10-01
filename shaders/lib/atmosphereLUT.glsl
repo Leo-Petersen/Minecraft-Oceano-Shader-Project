@@ -82,10 +82,10 @@ vec3 atmTransmittanceToTop(float r, float mu) {
     vec3 rd = vec3(sqrt(max(1.0 - mu * mu, 0.0)), mu, 0.0);
     float t = atmRaySphere(ro, rd, atmosRt);
     if (t <= 0.0) return vec3(1.0);
-    const int STEPS = 40;
-    float seg = t / float(STEPS);
+    const int atmSteps = 40;
+    float seg = t / float(atmSteps);
     vec3 od = vec3(0.0);
-    for (int i = 0; i < STEPS; i++) {
+    for (int i = 0; i < atmSteps; i++) {
         vec3 p = ro + rd * (float(i) + 0.5) * seg;
         float h = length(p) - atmosRg;
         vec3 rayS; float mieS; vec3 ext;
@@ -152,7 +152,7 @@ vec3 atmGenMultiScatter(vec2 uv) {
     vec3 ro = vec3(0.0, r, 0.0);
 
     const int SQ = 4;
-    const int STEPS = 12;
+    const int atmSteps = 12;
     vec3 lumTotal = vec3(0.0);
     vec3 fmsTotal = vec3(0.0);
     float invN = 1.0 / float(SQ * SQ);
@@ -170,12 +170,12 @@ vec3 atmGenMultiScatter(vec2 uv) {
         float tG = atmRaySphere(ro, rd, atmosRg);
         if (tG > 0.0) tEnd = min(tEnd, tG);
         if (tEnd <= 0.0) continue;
-        float seg = tEnd / float(STEPS);
+        float seg = tEnd / float(atmSteps);
 
         vec3 tr = vec3(1.0);
         vec3 lum = vec3(0.0);
         vec3 fms = vec3(0.0);
-        for (int s = 0; s < STEPS; s++) {
+        for (int s = 0; s < atmSteps; s++) {
             vec3 p = ro + rd * (float(s) + 0.5) * seg;
             float rp = length(p);
             float h = rp - atmosRg;
@@ -234,15 +234,15 @@ vec3 atmGenSkyView(vec2 uv, vec3 sunDir, float camAltKm, sampler2D transTex, sam
     if (tG > 0.0) tEnd = min(tEnd, tG);
     if (tEnd <= 0.0) tEnd = 1.0;
 
-    const int STEPS = 32;
-    float seg = tEnd / float(STEPS);
+    const int atmSteps = 32;
+    float seg = tEnd / float(atmSteps);
     float mu = dot(rd, sunDir);
     float pr = atmPhaseR(mu);
     float pm = atmPhaseM(mu, mix(atmosMieG, atmosRainG, rainStrength));
 
     vec3 tr = vec3(1.0);
     vec3 L = vec3(0.0);
-    for (int s = 0; s < STEPS; s++) {
+    for (int s = 0; s < atmSteps; s++) {
         vec3 p = ro + rd * (float(s) + 0.5) * seg;
         float rp = length(p);
         float h = rp - atmosRg;

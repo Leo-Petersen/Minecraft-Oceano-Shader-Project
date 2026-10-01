@@ -1,5 +1,6 @@
 
 #include "/lib/voxel_settings.glsl"
+#include "/lib/settings.glsl"
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
@@ -17,7 +18,7 @@ uniform sampler3D floodfillSamplerCopy;
 uniform vec3 cameraPosition;
 uniform vec3 previousCameraPosition;
 
-const ivec3 volumeMax = ivec3(VOXEL_VOLUME_SIZE - 1, VOXEL_VOLUME_SIZE / 2 - 1, VOXEL_VOLUME_SIZE - 1);
+const ivec3 volumeMax = ivec3(voxelVolumeRes - 1, voxelVolumeRes / 2 - 1, voxelVolumeRes - 1);
 
 ivec3 offsets[6] = ivec3[6](
     ivec3( 1,  0,  0),
@@ -78,7 +79,7 @@ float getHeatRising(sampler3D img, ivec3 pos, bool validPos) {
     }
     lat = (lc > 0.0) ? lat / lc : 0.0;
 
-    return clamp((below * RISE_BUOYANCY + lat * RISE_SPREAD) * RISE_DECAY, 0.0, 1.0);
+    return clamp((below * riseBuoyancy + lat * riseSpread) * riseDecay, 0.0, 1.0);
 }
 
 #include "/lib/vx/blocklightColor.glsl"
@@ -113,7 +114,7 @@ void main() {
     // Emissive blocks (IDs 2-199) emit their own color
     if (voxel >= 2u && voxel < 200u) {
         vec3 emitColor = getBlocklightColor(int(voxel));
-        light = pow(emitColor, vec3(FLOODFILL_RADIUS));
+        light = pow(emitColor, vec3(floodfillRadius));
     }
 
     // Lava (5), Magma (10), Fire (6), SoulFire (11)

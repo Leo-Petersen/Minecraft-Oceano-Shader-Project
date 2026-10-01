@@ -89,14 +89,14 @@ float fbm(vec2 p){
 
 //// Stars and nebula ////
 #if defined NETHER
-    #define NEBULA_COL_A vec3(0.22, 0.06, 0.04)
-    #define NEBULA_COL_B vec3(0.24, 0.09, 0.06)
+    #define nebulaColA vec3(0.22, 0.06, 0.04)
+    #define nebulaColB vec3(0.24, 0.09, 0.06)
 #elif defined END
-    #define NEBULA_COL_A vec3(0.35, 0.10, 0.55)
-    #define NEBULA_COL_B vec3(0.05, 0.30, 0.40)
+    #define nebulaColA vec3(0.35, 0.10, 0.55)
+    #define nebulaColB vec3(0.05, 0.30, 0.40)
 #else
-    #define NEBULA_COL_A vec3(0.04, 0.10, 0.55)
-    #define NEBULA_COL_B vec3(0.05, 0.30, 0.40)
+    #define nebulaColA vec3(0.04, 0.10, 0.55)
+    #define nebulaColB vec3(0.05, 0.30, 0.40)
 #endif
 
 vec3 Stars(vec3 dir){
@@ -123,7 +123,7 @@ vec3 Nebula(vec3 dir){
     vec2 w = vec2(fbm(q + t), fbm(q + vec2(5.2, 1.3) - t));
     float n = fbm(dir.xz * 3.0 + w * 1.5 + t) * fbm(dir.xy * 3.0 - w - t);
     n = pow(clamp(n * 1.8, 0.0, 1.0), 2.0);
-    vec3 neb = mix(NEBULA_COL_A, NEBULA_COL_B, fbm(dir.xz * 1.5 - t));
+    vec3 neb = mix(nebulaColA, nebulaColB, fbm(dir.xz * 1.5 - t));
     float up = clamp(dir.y * 0.5 + 0.5, 0.0, 1.0);
     return neb * n * up * 0.6;
 }

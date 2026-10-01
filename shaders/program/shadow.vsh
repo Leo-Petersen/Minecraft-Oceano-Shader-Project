@@ -20,6 +20,10 @@ uniform mat4 shadowProjection, shadowProjectionInverse;
 uniform mat4 shadowModelView, shadowModelViewInverse;
 
 writeonly uniform uimage3D voxel_img;
+#if defined Parallax && defined ParallaxSeams
+layout(r32ui) uniform uimage3D pom_face_img;
+#include "/lib/parallaxSeams.glsl"
+#endif
 
 #include "/lib/vertexDisplacement.glsl"
 #include "/lib/vx/voxelization.glsl"
@@ -130,6 +134,7 @@ bool isTransparent(int entityId) {
 void main() {
 
     vec4 position = shadowModelViewInverse * shadowProjectionInverse * ftransform();
+    vec3 pomPlayerVertex = position.xyz;
 
     #ifdef wavingFoliage
         position.xyz = doVertexDisplacement(position.xyz, position.xyz + cameraPosition);
@@ -170,6 +175,17 @@ void main() {
             updateVoxelMap(voxelId);
         } else if (!isTransparent(entityId)) {
             updateVoxelMap(1u);
+        }
+    }
+    #endif
+
+    #if defined Parallax && defined ParallaxSeams
+    if (gl_VertexID % 4 == 0 && dot(pomPlayerVertex, pomPlayerVertex) < float((parallaxFarDist + 2) * (parallaxFarDist + 2))) {
+        vec3 playerPos = pomPlayerVertex + at_midBlock / 64.0;
+        ivec3 cell = parallaxSeamCell(playerPos);
+        if (parallaxSeamInside(cell)) {
+            int face = parallaxFaceIndex(gl_Normal);
+            imageAtomicMax(pom_face_img, cell + ivec3(0, 0, face * pomSeamSizeZ), parallaxTileId(mc_midTexCoord.xy));
         }
     }
     #endif

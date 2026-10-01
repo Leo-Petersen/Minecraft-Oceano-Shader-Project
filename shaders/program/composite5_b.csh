@@ -1,8 +1,8 @@
 layout(local_size_x = 16, local_size_y = 16) in;
 const vec2 workGroupsRender = vec2(0.125, 0.125);
 #include "/lib/settings.glsl"
-#define PASS_DOWNSAMPLE
-#define DST_LEVEL 3
+#define passDownsample
+#define dstLevel 3
 #include "/lib/bloom.glsl"
 #include "/lib/bloom_compute.glsl"
 void main() {

@@ -39,6 +39,9 @@ varying vec2 lmcoord;
 varying vec2 texcoord;
 varying vec2 tileMin;
 varying vec2 tileMax;
+varying vec2 vtexcoord;
+varying vec4 vtexcoordam;
+varying float tangentW;
 
 varying vec3 viewNormal;
 varying vec3 viewVector;
@@ -57,6 +60,10 @@ vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
 #include "/lib/lightCol.glsl"
 #include "/lib/encode.glsl"
 #include "/lib/sharedLighting.glsl"
+
+vec3 parallaxViewVec = vec3(viewVector.x, viewVector.y * tangentW, viewVector.z);
+#define pomViewVector parallaxViewVec
+#include "/lib/parallax.glsl"
 
 vec3 toNDC(vec3 pos){
 	vec4 iProjDiag = vec4(gbufferProjectionInverse[0].x, gbufferProjectionInverse[1].y, gbufferProjectionInverse[2].zw);
@@ -83,7 +90,23 @@ void main() {
 	float isice = float(material > 0.14 && material < 0.16);
 	float isportal = float(material > 0.16 && material < 0.18);
 	float isTransparent = 1.0 - iswater; // Everything except water
-	float pbrSmoothness = texture2D(specular, texcoord).r;
+
+	mat3 pTBN = tbnMatrix;
+	pTBN[0].y *= tangentW; pTBN[1].y *= tangentW; pTBN[2].y *= tangentW;
+	vec2 surfUV = texcoord;
+	float pomShadow = 1.0;
+	float pomAO = 1.0;
+	#if defined Parallax && defined ParallaxTranslucents
+	if (iswater < 0.5 && isportal < 0.5 && material < 0.185) {
+		surfUV = calcParallax();
+		pomAO = parallaxAO();
+		#ifdef ParallaxShadow
+		pomShadow = parallaxShadow(pTBN * normalize(shadowLightPosition));
+		#endif
+	}
+	#endif
+
+	float pbrSmoothness = textureGrad(specular, surfUV, dFdxy[0], dFdxy[1]).r;
 	
 	vec3 fragpos = toNDC(vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z));
 	
@@ -104,7 +127,7 @@ void main() {
 	float waterTransparency = 1.0 - iswater * 0.3;
 	#endif
 
-	vec4 color = texture2D(texture, texcoord) * glcolor;
+	vec4 color = (iswater > 0.5 ? texture2D(texture, texcoord) : textureGrad(texture, surfUV, dFdxy[0], dFdxy[1])) * glcolor;
 	vec3 albedo = color.rgb;
 
 	// Water Lighting //
@@ -137,10 +160,10 @@ void main() {
 		vec3 shadowCol = vec3(0.08, 0.12, 0.18);
 		vec3 flatAmbient = pow(shadowCol, vec3(0.3)) * undergroundBlend * (1.0 - rainStrength * 0.2);
 		vec3 undergroundAmbient = vec3(0.025, 0.028, 0.035) * (1.0 - undergroundBlend) * 5.0;
-		vec3 ambient = (flatAmbient * 0.25 + undergroundAmbient);
+		vec3 ambient = (flatAmbient * 0.25 + undergroundAmbient) * pomAO;
 		
 		float lightStrength = lightStr * 4.0 * transparencyFactor * transitionFade;
-		vec3 sunLight = sunlightCol * diffuse * processedSkyLight * lightStrength * (1.0 - rainStrength * 0.65);
+		vec3 sunLight = sunlightCol * diffuse * processedSkyLight * lightStrength * (1.0 - rainStrength * 0.65) * pomShadow;
 		
 		vec3 torchLight = getTorchLighting(processedTorchLight, albedo);
 		
@@ -213,10 +236,16 @@ void main() {
 	// Reflections and normal map for water and glass //
 	vec3 glassNormal = viewNormal;
 	if (isglass > 0.5 || isice > 0.5 || ishoney > 0.5) {
-		vec4 normalRaw = texture2D(normals, texcoord);
+		vec4 normalRaw = textureGrad(normals, surfUV, dFdxy[0], dFdxy[1]);
 		vec2 normalXY = normalRaw.rg * 2.0 - 1.0;
-		vec3 normalData = vec3(normalXY, sqrt(1.0 - dot(normalXY, normalXY)));
+		vec3 normalData = vec3(normalXY, sqrt(max(1.0 - dot(normalXY, normalXY), 0.0)));
 		glassNormal = normalize(normalData * tbnMatrix);
+		#if defined Parallax && defined ParallaxTranslucents && defined ParallaxSlopeNormals
+		if (parallaxActive) {
+			vec3 slopeView = normalize(vec3(-parallaxGradientSmooth, 1.0)) * pTBN;
+			glassNormal = normalize(mix(glassNormal, slopeView, smoothstep(0.3, 1.2, length(parallaxGradient))));
+		}
+		#endif
 	}
 
 	#ifdef Reflections
@@ -277,7 +306,7 @@ void main() {
 		color.a = 0.96; // temp fix to stop ice looking weird
 	}
 
-	float sssBlue = texture2D(specular, texcoord).b * 255.0;
+	float sssBlue = textureGrad(specular, surfUV, dFdxy[0], dFdxy[1]).b * 255.0;
 	float labSSS  = sssBlue >= 65.0 ? (sssBlue - 65.0) / 190.0 : 0.0;
 	if (labSSS < 0.01) {
 		if      (isglass > 0.5) labSSS = 0.5;

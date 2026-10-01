@@ -102,7 +102,7 @@ vec3 cookTorranceGGXBRDF(vec3 albedo, vec2 specularMap, float skyMap, vec3 sunCo
     }
     NoV = max(NoV, 1e-3);
 
-    #ifdef HARDCODED_METALS
+    #ifdef hardcodedMetals
     // Same LabPBR decode as the material reflections in composite3
     LabMaterial pbrMat = decodeLabPBR(specularMap, albedo, skyMap, 0.0);
     vec3  F  = SphericalGaussianFresnel(HoL, pbrMat.F0);

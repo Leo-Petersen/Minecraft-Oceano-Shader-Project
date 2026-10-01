@@ -109,13 +109,13 @@ vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue)
 #include "/lib/raytrace.glsl"
 #include "/lib/labpbr.glsl"
 #include "/lib/waterBump.glsl"
-#define PUDDLE_REFLECTION
+#define puddleReflection
 #include "/lib/puddles.glsl"
 #include "/lib/caveFog.glsl"
 #include "/lib/clouds.glsl"
 #include "/lib/dimensionSky.glsl"
 
-const vec3 voxelVolumeSize = vec3(VOXEL_VOLUME_SIZE, VOXEL_VOLUME_SIZE * 0.5, VOXEL_VOLUME_SIZE);
+const vec3 voxelVolumeSize = vec3(voxelVolumeRes, voxelVolumeRes * 0.5, voxelVolumeRes);
 vec3 worldToVoxelUV(vec3 wpos) {
     vec3 voxelPos = wpos + fract(cameraPosition) + voxelVolumeSize * 0.5;
     return voxelPos / voxelVolumeSize;
@@ -129,8 +129,8 @@ float sampleHeat(vec3 worldPos) {
 
     float H = 0.0;
     float wsum = 0.0;
-    for (int i = 0; i < HEAT_STEPS; i++) {
-        float ti = min((float(i) + jitter) / float(HEAT_STEPS - 1), 1.0);
+    for (int i = 0; i < heatSteps; i++) {
+        float ti = min((float(i) + jitter) / float(heatSteps - 1), 1.0);
         vec3  uv = worldToVoxelUV(worldPos * ti);
         if (any(lessThan(uv, vec3(0.0))) || any(greaterThan(uv, vec3(1.0)))) continue;
 
@@ -280,7 +280,7 @@ void main() {
 	#ifdef BorderFog
 	 #ifndef DISTANT_HORIZONS
 		float effects = blindness + darknessFactor;
-		float borderFog = clamp(pow(length(worldPos.xz) / FOG_FAR, 14.0) * 0.7, 0.0, 1.0);
+		float borderFog = clamp(pow(length(worldPos.xz) / fogFar, 14.0) * 0.7, 0.0, 1.0);
 		//borderFog *= (1.0 - rainStrength);
      #endif
 	#endif
@@ -403,7 +403,7 @@ void main() {
 					vec4 hClip  = vec4(reflHitUV, reflHitDepth, 1.0) * 2.0 - 1.0;
 					vec4 hView  = gbufferProjectionInverse * hClip; hView /= hView.w;
 					vec3 hWorld = mat3(gbufferModelViewInverse) * hView.xyz + gbufferModelViewInverse[3].xyz;
-					reflBorderFog = clamp(pow(length(hWorld.xz) / FOG_FAR, 14.0) * 0.7, 0.0, 0.5) * (1.0 - rainStrength);
+					reflBorderFog = clamp(pow(length(hWorld.xz) / fogFar, 14.0) * 0.7, 0.0, 0.5) * (1.0 - rainStrength);
 				} else {
 					// Miss, reflecting the sky, which is already sky-colored (yay).
 					// No border fog here, otherwise open water flattens to gray.
@@ -492,11 +492,14 @@ void main() {
 	// E = specular albedo, Lenv = SSR hit or environment.
 	// dielectrics: color * (1 - E) + Lenv * E
 	#ifdef materialReflections
+		vec3 reflFlatN = normalize(cross(dFdx(viewPos.xyz), dFdy(viewPos.xyz)));
 		// opaque surfaces only!!
+		// finite check, NaN fails every comparison, so this also rejects NaN
+		bool reflColorOk = all(lessThan(abs(color.rgb), vec3(1e20)));
 		if (iswater < 0.5 && isglass < 0.5 && Depth < 1.0 && Depth >= Depth1 && material > 0.0
-		    && (specularMap.r > 0.0 || specularMap.g > 0.0)) {
+		    && (specularMap.r > 0.0 || specularMap.g > 0.0) && reflColorOk) {
 
-			#ifdef HARDCODED_METALS
+			#ifdef hardcodedMetals
 			vec4 reflData    = texture2D(colortex4, texcoord);
 			vec3 envMiss     = reflData.rgb;
 			vec3 albedo      = unpackAlbedo(reflData.a);
@@ -538,7 +541,7 @@ void main() {
 				vec3 skyAvg = mix(atmAmb, skyBoxCol, rainStrength);
 					 skyAvg *= clamp(openAmbient / max(skyAvg, vec3(1e-4)), vec3(0.02), vec3(20.0));
 
-				vec3 groundRad = REFL_GROUND_ALBEDO * (sunlightCol * sunlightCol * max(atmSunDir.y, 0.0) / PI
+				vec3 groundRad = reflGroundAlbedo * (sunlightCol * sunlightCol * max(atmSunDir.y, 0.0) / PI
 				                                       * lightStr * 11.0 * transitionFade * max(0.14, rainDirect)
 				                                       + skyAvg);
 
@@ -554,13 +557,13 @@ void main() {
 
 			vec3  Lenv = envMiss;
 			float ssrW = 0.0;
-			if (mat.alpha < SSR_MAX_ALPHA && !isHand) {
+			if (mat.alpha < ssrMaxAlpha && !isHand) {
 				vec3  H = normalize(V + R);
 				vec2  hitUV; float hitDepth; vec3 hitViewPos;
 				vec4  ssr = raytrace(envMiss, viewPos.xyz, H, 4.0, hitUV, hitDepth, hitViewPos);
 
 				// Hit validation
-				vec3  flatN   = normalize(cross(dFdx(viewPos.xyz), dFdy(viewPos.xyz)));
+				vec3  flatN   = reflFlatN;
 				if (dot(flatN, V) < 0.0) flatN = -flatN;
 				vec3  toHit   = hitViewPos - viewPos.xyz;
 				float minDist = max(0.1, 0.01 * length(viewPos.xyz));
@@ -571,13 +574,15 @@ void main() {
 				}
 				if (validHit) {
 					float rayLen   = length(toHit);
-					float coneTan  = mat.alpha * REFL_CONE_SCALE;
+					float coneTan  = mat.alpha * reflConeScale;
 					float radiusPx = coneTan * rayLen / max(-hitViewPos.z, 0.05)
 					               * gbufferProjection[1][1] * 0.5 * viewHeight;
 					float lod = clamp(log2(max(radiusPx, 1.0)), 0.0, 4.0);
 					vec3 hitCol = textureLod(colortex0, hitUV, lod).rgb;
+					// a non finite hit pixel counts as a miss instead of turning this pixel black, fixes flashing artifacts at time 6000
+					if (!all(lessThan(abs(hitCol), vec3(1e20)))) { hitCol = envMiss; ssr.a = 0.0; }
 
-					ssrW = ssr.a * (1.0 - smoothstep(SSR_MAX_ALPHA * 0.6, SSR_MAX_ALPHA, mat.alpha));
+					ssrW = ssr.a * (1.0 - smoothstep(ssrMaxAlpha * 0.6, ssrMaxAlpha, mat.alpha));
 					// confidence fades
 					ssrW *= 1.0 - smoothstep(0.35, 0.85, dot(R, V));
 					ssrW *= smoothstep(minDist, minDist + 0.15, dot(toHit, flatN));
@@ -587,14 +592,14 @@ void main() {
 
 			vec3 dielectric = color.rgb * (1.0 - E) + Lenv * E;
 			// Metals, deferred already removed their diffuse
-			#ifdef HARDCODED_METALS
+			#ifdef hardcodedMetals
 			vec3 metal      = color.rgb + (Lenv - envMiss) * E;
 			#else
 			// original
 			float metalKeep = max(1.0 - dot(E, vec3(0.2126, 0.7152, 0.0722)), 0.0);
 			vec3 metal      = color.rgb * metalKeep + Lenv * E;
 			#endif
-			color.rgb = max(mix(dielectric, metal, mat.metalness), 0.0);
+			color.rgb = max(mat.metalness > 0.0 ? mix(dielectric, metal, mat.metalness) : dielectric, 0.0);
 
 		}
 	#endif

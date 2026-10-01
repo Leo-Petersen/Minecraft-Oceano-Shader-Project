@@ -47,14 +47,14 @@ float raindropNoise(in vec2 x)
     return va;
 }
 
-#define PUDDLE_BASE_FREQ 0.00013 
-#define PUDDLE_OCTAVES   2
-#define PUDDLE_SOFT      0.42
+#define puddleBaseFreq 0.00013 
+#define puddleOctaves   2
+#define puddleSoft      0.42
 
 float puddleFbm(vec2 wp){
-    float f = PUDDLE_BASE_FREQ;
+    float f = puddleBaseFreq;
     float v = 0.0, a = 0.6, tot = 0.0;
-    for (int i = 0; i < PUDDLE_OCTAVES; i++){
+    for (int i = 0; i < puddleOctaves; i++){
         v   += a * texture2D(noisetex, wp * f).x;
         tot += a;
         f   *= 2.0;   // lacunarity 2
@@ -70,22 +70,22 @@ float getRainPuddles(vec2 worldPos, float iswet){
     float cover = mix(0.30, 0.80, clamp(iswet, 0.0, 1.0));
 
     // Smooth depth
-    float d = clamp((cover - field) / PUDDLE_SOFT, 0.0, 1.0);
+    float d = clamp((cover - field) / puddleSoft, 0.0, 1.0);
     return d * d * (3.0 - 2.0 * d);
 }
 
-#define POOL_FILL_MIN  0.60 
-#define POOL_FILL_CAP  1.00 
-#define POOL_FILL_RAMP 1.30
-#define POOL_FILL_FREQ 0.5 
+#define poolFillMin  0.60 
+#define poolFillCap  0.95 
+#define poolFillRamp 1.30
+#define poolFillFreq 0.5 
 
 float getPoolFill(vec2 worldPos){
-    float n = texture2D(noisetex, worldPos * PUDDLE_BASE_FREQ * POOL_FILL_FREQ + vec2(0.37, 0.83)).x;
+    float n = texture2D(noisetex, worldPos * puddleBaseFreq * poolFillFreq + vec2(0.37, 0.83)).x;
     n = smoothstep(0.2, 0.8, n);
-    return min(mix(POOL_FILL_MIN, POOL_FILL_RAMP, n), POOL_FILL_CAP);
+    return min(mix(poolFillMin, poolFillRamp, n), poolFillCap);
 }
 
-#ifdef PUDDLE_REFLECTION
+#ifdef puddleReflection
 float rippleH(vec2 p){ return raindropNoise(10.0 * p); }
 
 vec3 puddles(in vec3 color, in vec3 worldPos, in vec3 reflectedskyBoxCol, in vec3 viewPos, in vec2 lightMap, float iswet, float distFactor, float puddleMask) {
@@ -98,9 +98,9 @@ vec3 puddles(in vec3 color, in vec3 worldPos, in vec3 reflectedskyBoxCol, in vec
 
     vec3  waterN = normalize(viewNormal + vec3(-hx, 0.0, -hy) * rainStrength * 0.6);
 
-    #define PUDDLE_SHEEN 0.06
+    #define puddleSheen 0.06
     float ndv     = clamp(dot(waterN, -normalize(viewPos.xyz)), 0.0, 1.0);
-    float fresnel = PUDDLE_SHEEN + (1.0 - PUDDLE_SHEEN) * pow(1.0 - ndv, 5.0);
+    float fresnel = puddleSheen + (1.0 - puddleSheen) * pow(1.0 - ndv, 5.0);
 
     reflectedskyBoxCol *= (1.0 - time[5] * 0.84);
     vec4  refl    = raytracePuddles(reflectedskyBoxCol, viewPos.xyz, waterN, 6);

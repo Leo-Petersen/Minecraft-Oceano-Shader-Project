@@ -70,17 +70,9 @@ void main() {
     float n = GetBlueNoise3D(worldpos * 5.0, worldNormal);
     albedo.rgb = clamp(albedo.rgb + n * noiseAmount, vec3(0.0), vec3(1.0));
 
-#ifdef PHOTONICS_ENABLED
-/* RENDERTARGETS: 0,1,2,8,13,14,15 */
-#else
 /* RENDERTARGETS: 0,1,2,8,13 */
-#endif
     gl_FragData[0] = albedo;                                     
     gl_FragData[1] = vec4(encodeNormal(viewNormal), 0.0, 0.0);   
     gl_FragData[2] = vec4(lm, material, 1.0);   
     gl_FragData[4] = vec4(emission, 1.0, 1.0, labSSS);
-#ifdef PHOTONICS_ENABLED
-    gl_FragData[5] = vec4(albedo.rgb, 1.0);
-    gl_FragData[6] = vec4(0.5 * viewNormal + 0.5, 1.0);
-#endif
 }

@@ -36,28 +36,34 @@ void main() {
 	vec2 parallaxedUV = texcoord;
 	#endif
 
-	vec4 color = texture2DGradARB(texture, parallaxedUV, dFdxy[0], dFdxy[1]) * glcolor;
+	vec4 color = textureGrad(texture, parallaxedUV, dFdxy[0], dFdxy[1]) * glcolor;
 	if (color.a < 0.1) discard;
 
-	vec4 specularData = texture2D(specular, parallaxedUV);
+	vec4 specularData = textureGrad(specular, parallaxedUV, dFdxy[0], dFdxy[1]);
 	vec2 specularMap = specularData.rg;
 	float emission = specularData.a < 1.0 ? clamp(specularData.a * 1.004 - 0.004, 0.0, 1.0) : 0.0;
 
 	float specularBlue = specularData.b * 255.0;
 	float labSSS = specularBlue < 65.0 ? 0.0 : (specularBlue - 65.0) / 190.0 * 0.6;
 
-	vec4 normalRaw = texture2D(normals, parallaxedUV);
+	vec4 normalRaw = textureGrad(normals, parallaxedUV, dFdxy[0], dFdxy[1]);
 	
 	// LabPBR: RG = encoded normal XY, B = AO, A = height
 	vec2 normalXY = normalRaw.rg * 2.0 - 1.0;
 	vec3 normalData = vec3(normalXY, sqrt(max(1.0 - dot(normalXY, normalXY), 0.0)));
+	#ifdef Parallax
+		 normalData = parallaxNormal(normalData);
+	#endif
 		 normalData *= tbnMatrix;
 	
 	// LabPBR AO from blue channel
 	float textureAO = normalRaw.b;
+	#ifdef Parallax
+	textureAO *= parallaxAO();
+	#endif
 
 	// Get surface height for parallax
-	float surfaceHeight = texture2DGradARB(normals, parallaxedUV, dFdxy[0], dFdxy[1]).a;
+	float surfaceHeight = textureGrad(normals, parallaxedUV, dFdxy[0], dFdxy[1]).a;
 
 	vec2 lightMap = vec2(1.0);
 		 lightMap.s = clamp(lmcoord.s - 1.0 / 32.0, 0.0, 1.0);
@@ -72,24 +78,20 @@ void main() {
 	#ifdef Parallax
 		#ifdef ParallaxShadow
 			float parallaxFade = clamp(dist * 0.04, 0.0, 1.0);
-			if (dot(viewNormal, shadowLightPosition) > 0) {
-				shadowFactor = GetParallaxShadow(surfaceHeight, parallaxFade, parallaxedUV, normalize(shadowLightPosition), tbnMatrix);
+			if (lmcoord.t > 0.05 && (dot(viewNormal, shadowLightPosition) <= 0.0 || dot(normalData, shadowLightPosition) > 0.0)) { // skip with no sky access, or where the bumped normal already faces away on a lit face
+				shadowFactor = parallaxShadow(tbnMatrix * normalize(shadowLightPosition));
 			}
 		#endif
 	#endif
 
-#ifdef PHOTONICS_ENABLED
-/* RENDERTARGETS: 0,1,2,8,13,14,15 */
-#else
 /* RENDERTARGETS: 0,1,2,8,13 */
-#endif
 	gl_FragData[0] = color;
 	gl_FragData[1] = vec4(encodeNormal(normalData), specularMap);
+	#ifdef Parallax
+	gl_FragData[2] = vec4(lightMap, material, parallaxPackShadow(shadowFactor));
+#else
 	gl_FragData[2] = vec4(lightMap, material, shadowFactor);
+#endif
 	gl_FragData[3] = vec4(0.0, 0.0, 0.0, 1.0); // No skybox reflection for hand, but write to buffer to fix issues
 	gl_FragData[4] = vec4(emission, 0.0, textureAO, labSSS);
-#ifdef PHOTONICS_ENABLED
-	gl_FragData[5] = vec4(color.rgb, 1.0);
-	gl_FragData[6] = vec4(0.5 * viewNormal + 0.5, 1.0);
-#endif
 }

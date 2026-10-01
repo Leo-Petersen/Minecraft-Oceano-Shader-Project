@@ -1,5 +1,5 @@
-#ifndef BLOOM_GLSL
-#define BLOOM_GLSL
+#ifndef bloomGlslIncluded
+#define bloomGlslIncluded
 
 // Shared helpers for the compute dualfilter bloom.
 // The pyramid is packed into a single HDR buffer (colortex8) as a

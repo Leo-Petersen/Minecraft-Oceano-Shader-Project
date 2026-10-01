@@ -96,8 +96,6 @@ vec3 endPortalStars(vec2 uv, float depth, float t) {
 }
 
 void main() {
-	vec4 color = texture2D(texture, texcoord) * glcolor;
-
 	//float material = texture2D(colortex2, texcoord).p;
 	#ifdef Parallax
     vec2 parallaxedUV = calcParallax();
@@ -105,19 +103,24 @@ void main() {
 	vec2 parallaxedUV = texcoord;
 	#endif
 
-	vec2 specularMap = texture2D(specular, parallaxedUV).rg;
-	vec3 normalData = texture2D(normals, parallaxedUV).rgb*2.0-1.0;
-	     normalData.z = sqrt(1.0-dot(normalData.xy, normalData.xy));	
+	vec4 color = textureGrad(texture, parallaxedUV, dFdxy[0], dFdxy[1]) * glcolor;
+
+	vec2 specularMap = textureGrad(specular, parallaxedUV, dFdxy[0], dFdxy[1]).rg;
+	vec3 normalData = textureGrad(normals, parallaxedUV, dFdxy[0], dFdxy[1]).rgb*2.0-1.0;
+	     normalData.z = sqrt(max(1.0-dot(normalData.xy, normalData.xy), 0.0));
+	#ifdef Parallax
+		 normalData = parallaxNormal(normalData);
+	#endif
 		 normalData *= tbnMatrix;
 
-    float surfaceHeight = texture2DGradARB(normals, parallaxedUV, dFdxy[0], dFdxy[1]).a;
+    float surfaceHeight = textureGrad(normals, parallaxedUV, dFdxy[0], dFdxy[1]).a;
 
     float shadowFactor = 1.0;
     #ifdef Parallax
         #ifdef ParallaxShadow
             float parallaxFade = clamp(dist * 0.04, 0.0, 1.0);
-            if (dot(viewNormal, shadowLightPosition) > 0) {
-                shadowFactor = GetParallaxShadow(surfaceHeight, parallaxFade, parallaxedUV, normalize(shadowLightPosition), tbnMatrix);
+            if (lmcoord.t > 0.05 && (dot(viewNormal, shadowLightPosition) <= 0.0 || dot(normalData, shadowLightPosition) > 0.0)) { // skip with no sky access, or where the bumped normal already faces away on a lit face
+                shadowFactor = parallaxShadow(tbnMatrix * normalize(shadowLightPosition));
             }
         #endif
     #endif
@@ -190,17 +193,13 @@ void main() {
 		color.a = 1.0;
 	}
 
-#ifdef PHOTONICS_ENABLED
-/* RENDERTARGETS: 0,1,2,13,14,15 */
-#else
 /* RENDERTARGETS: 0,1,2,13 */
-#endif
 	gl_FragData[0] = color; //colortex0
     gl_FragData[1] = vec4(encodeNormal(normalData), specularMap);
+	#ifdef Parallax
+	gl_FragData[2] = vec4(lmcoord, 0.0, parallaxPackShadow(shadowFactor));
+#else
 	gl_FragData[2] = vec4(lmcoord, 0.0, shadowFactor);
-	gl_FragData[3] = vec4(0.0, 0.0, 1.0, 1.0);
-#ifdef PHOTONICS_ENABLED
-	gl_FragData[4] = vec4(color.rgb, 1.0);
-	gl_FragData[5] = vec4(0.5 * viewNormal + 0.5, 1.0);
 #endif
+	gl_FragData[3] = vec4(0.0, 0.0, 1.0, 1.0);
 }

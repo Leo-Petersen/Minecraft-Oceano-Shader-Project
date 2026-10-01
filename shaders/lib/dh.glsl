@@ -8,9 +8,9 @@ uniform float dhFarPlane;
 uniform float dhRenderDistance;
 #endif
 
-#define DH_SSS_STRENGTH 0.5   // [0.2 0.3 0.4 0.5 0.6 0.7 0.8 1.0]
-#define DH_SSS_FORWARD  0.7   // [0.4 0.5 0.6 0.7 0.8 0.9 1.0]  peak when looking toward the sun
-#define DH_SSS_DEPTH 0.015
+#define dhSssStrength 0.5   // [0.2 0.3 0.4 0.5 0.6 0.7 0.8 1.0]
+#define dhSssForward  0.7   // [0.4 0.5 0.6 0.7 0.8 0.9 1.0]  peak when looking toward the sun
+#define dhSssDepth 0.015
 
 bool isSky(vec2 uv, float vanillaDepth) {
 #ifdef DISTANT_HORIZONS
@@ -58,9 +58,9 @@ vec3 reconstructViewPosOpaque(vec2 uv, float vanillaDepth1) {
 
 // far distance
 #ifdef DISTANT_HORIZONS
-    #define FOG_FAR max(far, dhRenderDistance)
+    #define fogFar max(far, dhRenderDistance)
 #else
-    #define FOG_FAR far
+    #define fogFar far
 #endif
 
 #ifdef DISTANT_HORIZONS
@@ -151,11 +151,11 @@ vec3 calculateSSS_DH(vec3 viewPos, vec3 normal, vec3 lightColor,
     if (trans < 0.01) return vec3(0.0);
 
     float VdotL = dot(normalize(-viewPos), lightDir);
-    float phase = mix(0.35, DH_SSS_FORWARD, clamp(-VdotL * 0.5 + 0.5, 0.0, 1.0));
+    float phase = mix(0.35, dhSssForward, clamp(-VdotL * 0.5 + 0.5, 0.0, 1.0));
 
     vec3 sss = lightColor * lightColor * phase * sssAmount * trans * backface * skyLight * 0.62;
     sss *= 1.0 - rainStrength * 0.65;
-    sss *= DH_SSS_STRENGTH * mix(1.0, 0.5, distFactor);
+    sss *= dhSssStrength * mix(1.0, 0.5, distFactor);
     return sss;
 }
 #endif

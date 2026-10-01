@@ -1,5 +1,5 @@
-#ifndef BLOOM_COMPUTE_GLSL
-#define BLOOM_COMPUTE_GLSL
+#ifndef bloomComputeGlslIncluded
+#define bloomComputeGlslIncluded
 
 // Compute dualfilter bloom, i.e. a progressive downsample/upsample pyramid
 // Thanks to the following sources, huge help on learning this new method:
@@ -45,21 +45,21 @@ vec3 loadSrc(int srcLvl, ivec2 coord) {
     return texelFetch(colortex8, bloomLevelOffset(srcLvl) + coord, 0).rgb;
 }
 
-#ifdef PASS_DOWNSAMPLE
+#ifdef passDownsample
 
-#ifdef FIRST_DOWNSAMPLE
+#ifdef firstDownsample
 // 16x16 outputs == a 36 wide region.
 shared vec3 lds[36][36];
 #endif
 
 void bloomDispatch() {
-    const int srcLvl = DST_LEVEL - 1;
-    ivec2 dstSize = bloomLevelSize(DST_LEVEL);
+    const int srcLvl = dstLevel - 1;
+    ivec2 dstSize = bloomLevelSize(dstLevel);
     ivec2 grp = ivec2(gl_WorkGroupID.xy) * 16;
     ivec2 lid = ivec2(gl_LocalInvocationID.xy);
     ivec2 dst = grp + lid;
 
-#ifdef FIRST_DOWNSAMPLE
+#ifdef firstDownsample
     // stage the bright passed scene into shared memory
     ivec2 srcBase = grp * 2 - 2;
     for (int idx = int(gl_LocalInvocationIndex); idx < 36 * 36; idx += 256) {
@@ -114,21 +114,21 @@ void bloomDispatch() {
                 + (e + j + k + l + m) * 0.125;
 #endif
 
-    imageStore(colorimg8, bloomLevelOffset(DST_LEVEL) + dst, vec4(result, 1.0));
+    imageStore(colorimg8, bloomLevelOffset(dstLevel) + dst, vec4(result, 1.0));
 }
 #endif
 
 
-#ifdef PASS_UPSAMPLE
-const float BLOOM_RADIUS = 1.0;   // tent spread in source texels
+#ifdef passUpsample
+const float bloomRadius = 1.0;   // tent spread in source texels
 
 vec3 tapAtlas(vec2 p, vec2 lo, vec2 hi, vec2 buf) {
     return textureLod(colortex8, clamp(p, lo, hi) / buf, 0.0).rgb;
 }
 
 void bloomDispatch() {
-    const int srcLvl = DST_LEVEL + 1;   // smaller, already accumulated level
-    ivec2 dstSize = bloomLevelSize(DST_LEVEL);
+    const int srcLvl = dstLevel + 1;   // smaller, already accumulated level
+    ivec2 dstSize = bloomLevelSize(dstLevel);
 
     ivec2 dst = ivec2(gl_GlobalInvocationID.xy);
     if (any(greaterThanEqual(dst, dstSize))) return;
@@ -141,7 +141,7 @@ void bloomDispatch() {
 
     // Map this dst texel center into the halfsize source tile
     vec2 base = srcOff + (vec2(dst) + 0.5) * 0.5;
-    float R = BLOOM_RADIUS;
+    float R = bloomRadius;
 
     vec3 s00 = tapAtlas(base + vec2(-R, -R), lo, hi, buf);
     vec3 s10 = tapAtlas(base + vec2( 0, -R), lo, hi, buf);
@@ -158,7 +158,7 @@ void bloomDispatch() {
              + (s10 + s01 + s21 + s12) * 2.0
              + (s00 + s20 + s02 + s22)) / 16.0;
 
-    ivec2 addr = bloomLevelOffset(DST_LEVEL) + dst;
+    ivec2 addr = bloomLevelOffset(dstLevel) + dst;
     vec3 base_c = imageLoad(colorimg8, addr).rgb;   // this level's own downsample
     imageStore(colorimg8, addr, vec4(base_c + up, 1.0));
 }

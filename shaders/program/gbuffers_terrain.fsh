@@ -46,6 +46,40 @@ varying vec4 position;
 
 varying mat3 tbnMatrix;
 
+#if defined Parallax && defined ParallaxSeams && defined shadowMap
+uniform usampler3D pomFaceSampler;
+#include "/lib/parallaxSeams.glsl"
+#define pomSeamLookup
+
+#ifdef ParallaxSeams
+#endif
+#ifdef ParallaxTranslucents
+#endif
+
+vec2 pomNbMidX = vec2(0.0), pomNbMidY = vec2(0.0);   // neighbour tile centres across each seam
+bool parallaxSeamIsWall(vec2 dir) {
+    mat3 toWorld = mat3(gbufferModelViewInverse);
+    vec3 Nw = toWorld * viewNormal;
+    vec3 Tw = toWorld * vec3(tbnMatrix[0][0], tbnMatrix[1][0], tbnMatrix[2][0]);
+    vec3 Bw = toWorld * vec3(tbnMatrix[0][1], tbnMatrix[1][1], tbnMatrix[2][1]);
+    vec3 stepW = dir.x != 0.0 ? Tw * dir.x : Bw * dir.y;
+    vec3 a = abs(stepW);
+    ivec3 stepCell = (a.x > a.y && a.x > a.z) ? ivec3(sign(stepW.x), 0, 0) : ((a.y > a.z) ? ivec3(0, sign(stepW.y), 0) : ivec3(0, 0, sign(stepW.z)));
+    vec3 playerPos = worldpos - cameraPosition - normalize(Nw) * 0.5;   // inside this block
+    ivec3 myCell = parallaxSeamCell(playerPos);
+    ivec3 cell = myCell + stepCell;
+    if (!parallaxSeamInside(cell)) return false;
+    int faceOfs = parallaxFaceIndex(Nw) * pomSeamSizeZ;
+    uint nb = texelFetch(pomFaceSampler, cell + ivec3(0, 0, faceOfs), 0).r;
+    // compare against what this block stored,
+    // so a block drawn in layers matches its identical neighbours
+    uint me = parallaxSeamInside(myCell) ? texelFetch(pomFaceSampler, myCell + ivec3(0, 0, faceOfs), 0).r : 0u;
+    if (me == 0u) me = parallaxTileId(vtexcoordam.st + vtexcoordam.pq * 0.5);
+    bool wall = nb != 0u && nb != me;
+    if (wall) { if (dir.x != 0.0) pomNbMidX = parallaxTileMid(nb); else pomNbMidY = parallaxTileMid(nb); }
+    return wall;
+}
+#endif
 #include "/lib/parallax.glsl"
 #include "/lib/encode.glsl"
 #include "/lib/time.glsl"
@@ -64,9 +98,6 @@ vec3 toNDC(vec3 pos){
     return fragpos.xyz / fragpos.w;
 }
 
-// This is here to make it appear in the settings menu, dont ask me why it doesn't appear otherwise
-#ifdef parallaxTAA
-#endif
 
 float Bayer2(vec2 a) { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75))); }
 float Bayer4(vec2 a)  { return Bayer2(0.5 * a) * 0.25 + Bayer2(a); }
@@ -81,6 +112,18 @@ void main() {
 
     #ifdef Parallax
     vec2 parallaxedUV = calcParallax();
+    #ifdef pomSeamLookup
+    if (parallaxWallDir != vec2(0.0)) {
+        float wd = clamp((1.0 - parallaxHeight) * parallaxDepthUsed, 0.0005, 0.9995);
+        vec2 nbTile = fract(parallaxTileCoord);
+        vec2 nbMid  = pomNbMidY;
+        if (parallaxWallDir.x != 0.0) { nbTile.x = parallaxWallDir.x > 0.0 ? wd : 1.0 - wd; nbMid = pomNbMidX; }
+        else                          { nbTile.y = parallaxWallDir.y > 0.0 ? wd : 1.0 - wd; }
+        parallaxedUV = nbMid - vtexcoordam.pq * 0.5 + nbTile * vtexcoordam.pq;
+        if (textureGrad(texture, parallaxedUV, dFdxy[0], dFdxy[1]).a < 0.1)
+            parallaxedUV = vtexcoordam.st + nbTile * vtexcoordam.pq;
+    }
+    #endif
     #else
     vec2 parallaxedUV = texcoord;
     #endif
@@ -90,8 +133,8 @@ void main() {
     vec4 albedoSample = textureGrad(texture, parallaxedUV, dFdxy[0], dFdxy[1]);
     if (albedoSample.a < 0.1) discard;
     vec4 terrainColor = albedoSample * glcolor;
-    vec4 specularData = texture2D(specular, parallaxedUV);
-    vec4 normalRaw = texture2D(normals, parallaxedUV);
+    vec4 specularData = textureGrad(specular, parallaxedUV, dFdxy[0], dFdxy[1]);
+    vec4 normalRaw = textureGrad(normals, parallaxedUV, dFdxy[0], dFdxy[1]);
     
     vec2 specularMap = specularData.rg;
     float emission = specularData.a < 1.0 ? clamp(specularData.a * 1.004 - 0.004, 0.0, 1.0) : 0.0;
@@ -124,6 +167,9 @@ void main() {
     
     vec2 normalXY = normalRaw.rg * 2.0 - 1.0;
     vec3 normalData = vec3(normalXY, sqrt(max(1.0 - dot(normalXY, normalXY), 0.0)));
+    #ifdef Parallax
+         normalData = parallaxNormal(normalData);
+    #endif
          normalData *= tbnMatrix;
 
     #define normalTiltStrength 1.0
@@ -136,7 +182,14 @@ void main() {
     specularMap.r    = 1.0 - widened;
     
     float textureAO = normalRaw.b;
+    #ifdef Parallax
+    textureAO *= parallaxAO();
+    #endif
     float surfaceHeight = textureGrad(normals, parallaxedUV, dFdxy[0], dFdxy[1]).a;
+    #ifdef Parallax
+    // exact traced height
+    if (parallaxActive) surfaceHeight = parallaxHeight;
+    #endif
 
     #ifdef rainReflection
         float wetness01 = wetness;
@@ -173,14 +226,14 @@ void main() {
         bool  wetMetal    = specularMap.g * 255.0 > 229.5;
         if (!wetMetal) terrainColor.rgb *= mix(1.0, soak, wetFilm);
 
-        #define WATER_TINT    vec3(0.45, 0.62, 0.68) 
-        #define WATER_CLARITY 5.0
-        float absorb      = 1.0 - exp(-waterDepth * WATER_CLARITY);
-        terrainColor.rgb  = mix(terrainColor.rgb, terrainColor.rgb * WATER_TINT, absorb * underWater);
+        #define puddleWaterTint    vec3(0.45, 0.62, 0.68) 
+        #define waterClarity 5.0
+        float absorb      = 1.0 - exp(-waterDepth * waterClarity);
+        terrainColor.rgb  = mix(terrainColor.rgb, terrainColor.rgb * puddleWaterTint, absorb * underWater);
 
-        #define WET_FILM_SMOOTH 0.72
+        #define wetFilmSmooth 0.72
         if (!wetMetal) {
-        specularMap.r     = mix(specularMap.r, WET_FILM_SMOOTH, poolMask);   // normal wet puddle
+        specularMap.r     = mix(specularMap.r, wetFilmSmooth, poolMask);   // normal wet puddle
         specularMap.r     = mix(specularMap.r, 0.96, underWater);            // flat pool water
         specularMap.g     = mix(specularMap.g, 0.04, wetFilm);              // water F0 across the whole footprint
         }
@@ -192,8 +245,8 @@ void main() {
     #ifdef Parallax
         #ifdef ParallaxShadow
             float parallaxFade = clamp(dist * 0.04, 0.0, 1.0);
-            if (dot(viewNormal, shadowLightPosition) > 0) {
-                shadowFactor = GetParallaxShadow(surfaceHeight, parallaxFade, parallaxedUV, normalize(shadowLightPosition), tbnMatrix);
+            if (lmcoord.t > 0.05 && (dot(viewNormal, shadowLightPosition) <= 0.0 || dot(normalData, shadowLightPosition) > 0.0)) { // skip with no sky access, or where the bumped normal already faces away on a lit face
+                shadowFactor = parallaxShadow(tbnMatrix * normalize(shadowLightPosition));
             }
         #endif
     #endif
@@ -212,17 +265,13 @@ void main() {
         terrainColor.rgb = vec3(1.0);
     #endif	
 
-#ifdef PHOTONICS_ENABLED
-/* RENDERTARGETS: 0,1,2,8,13,14,15 */
-#else
 /* RENDERTARGETS: 0,1,2,8,13 */
-#endif
 	gl_FragData[0] = terrainColor;
 	gl_FragData[1] = vec4(encodeNormal(normalData), specularMap);
+	#ifdef Parallax
+	gl_FragData[2] = vec4(lightMap, material, parallaxPackShadow(shadowFactor));
+#else
 	gl_FragData[2] = vec4(lightMap, material, shadowFactor);
-	gl_FragData[4] = vec4(emission, wetFilm, textureAO, labSSS);
-#ifdef PHOTONICS_ENABLED
-	gl_FragData[5] = vec4(terrainColor.rgb, 1.0);
-	gl_FragData[6] = vec4(0.5 * viewNormal + 0.5, 1.0);
 #endif
+	gl_FragData[4] = vec4(emission, wetFilm, textureAO, labSSS);
 }

@@ -1,5 +1,5 @@
-#ifndef LABPBR_INCLUDED
-#define LABPBR_INCLUDED
+#ifndef labpbrIncluded
+#define labpbrIncluded
 
 // LabPBR Docs: https://shaderlabs.org/wiki/LabPBR_Material_Standard
 
@@ -16,10 +16,10 @@ struct LabMaterial {
     float alpha;        // GGX alpha = roughness^2
     vec3  F0;
     float metalness;    // LabPBR metals are binary *thumbs up*
-    int   metalId;      // 0 to 7 for hardcoded metals (230 to 237) when HARDCODED_METALS is on, else -1. See docs
+    int   metalId;      // 0 to 7 for hardcoded metals (230 to 237) when hardcodedMetals is on, else -1. See docs
 };
 
-#ifdef HARDCODED_METALS
+#ifdef hardcodedMetals
 
 // from the LabPBR spec
 const vec3 labMetalN[8] = vec3[8](
@@ -61,18 +61,18 @@ LabMaterial decodeLabPBR(vec2 spec, vec3 albedo, float skyLight, float wet) {
     int g = int(spec.g * 255.0 + 0.5);
     if (g >= 230) {
         m.metalness = 1.0;
-        m.F0 = albedo;  // 255, and all metals when HARDCODED_METALS is off
-        #ifdef HARDCODED_METALS
+        m.F0 = albedo;  // 255, and all metals when hardcodedMetals is off
+        #ifdef hardcodedMetals
         // Albedo metals
-        m.F0 = clamp(albedo * HC_METAL_BRIGHTNESS, 0.0, 1.0);
+        m.F0 = clamp(albedo * hcMetalBrightness, 0.0, 1.0);
         if (g <= 237) {
             // The metal's measured reflectance sets the brightness
             m.metalId = g - 230;
             const vec3 lumW = vec3(0.2126, 0.7152, 0.0722);
             float lum     = dot(albedo, lumW);
             float metalF0 = dot(fresnelConductor(1.0, labMetalN[m.metalId], labMetalK[m.metalId]), lumW);
-            vec3  tint    = albedo / max(sqrt(max(lum, 0.0) * HC_TINT_REF), 0.05);
-            m.F0 = clamp(metalF0 * tint * HC_METAL_BRIGHTNESS, 0.0, 1.0);
+            vec3  tint    = albedo / max(sqrt(max(lum, 0.0) * hcTintRef), 0.05);
+            m.F0 = clamp(metalF0 * tint * hcMetalBrightness, 0.0, 1.0);
         }
         #endif
     } else {
@@ -101,7 +101,7 @@ vec3 specularAlbedo(LabMaterial m, float NoV) {
     vec2 AB = envBRDFApprox(NoV, m.roughness);
     vec3 E  = m.F0 * AB.x + AB.y;
     E *= 1.0 + m.F0 * (1.0 / max(AB.x + AB.y, 1e-3) - 1.0);
-    #ifdef HARDCODED_METALS
+    #ifdef hardcodedMetals
     if (m.metalId >= 0) {
         vec3 n = labMetalN[m.metalId], k = labMetalK[m.metalId];
         vec3 F0c     = fresnelConductor(1.0, n, k);

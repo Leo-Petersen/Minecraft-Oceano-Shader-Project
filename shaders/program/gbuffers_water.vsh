@@ -7,6 +7,9 @@ varying vec2 lmcoord;
 varying vec2 texcoord;
 varying vec2 tileMin;
 varying vec2 tileMax;
+varying vec2 vtexcoord;
+varying vec4 vtexcoordam;
+varying float tangentW;
 
 varying vec3 viewNormal;
 varying vec3 viewVector;
@@ -97,6 +100,12 @@ void main() {
 	vec2 halfTile = abs(texcoord - midcoord);
 	tileMin = midcoord - halfTile;
 	tileMax = midcoord + halfTile;
+
+	vec2 texcoordminusmid = texcoord - midcoord;
+	vtexcoordam.pq = abs(texcoordminusmid) * 2.0;
+	vtexcoordam.st = min(texcoord, midcoord - texcoordminusmid);
+	vtexcoord      = sign(texcoordminusmid) * 0.5 + 0.5;
+	tangentW = at_tangent.w < 0.0 ? -1.0 : 1.0;
 
 	//water//
 	material = 0.0;

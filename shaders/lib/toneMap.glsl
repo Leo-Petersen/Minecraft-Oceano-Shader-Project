@@ -92,13 +92,13 @@ vec3 BOTWTonemap(vec3 color){
 // Matrices for rec 2020 <> rec 709 color space conversion
 // matrix provided in row-major order so it has been transposed
 // https://www.itu.int/pub/R-REP-BT.2407-2017
-const mat3 LINEAR_REC2020_TO_LINEAR_SRGB = mat3(
+const mat3 linearRec2020ToLinearSrgb = mat3(
   1.6605, -0.1246, -0.0182,
   -0.5876, 1.1329, -0.1006,
   -0.0728, -0.0083, 1.1187
 );
 
-const mat3 LINEAR_SRGB_TO_LINEAR_REC2020 = mat3(
+const mat3 linearSrgbToLinearRec2020 = mat3(
   0.6274, 0.0691, 0.0164,
   0.3293, 0.9195, 0.0880,
   0.0433, 0.0113, 0.8956
@@ -124,7 +124,7 @@ const float AgxMaxEv = 4.026069;
 
 // Sample usage
 vec3 agxCdl(vec3 color, vec3 slope, vec3 offset, vec3 power, float Saturation) {
-  color = LINEAR_SRGB_TO_LINEAR_REC2020 * color; // From three.js
+  color = linearSrgbToLinearRec2020 * color; // From three.js
 
   // 1. agx()
   // Input transform (inset)
@@ -165,7 +165,7 @@ vec3 agxCdl(vec3 color, vec3 slope, vec3 offset, vec3 power, float Saturation) {
   // *not* using a sRGB render target
   color = pow(max(vec3(0.0), color), vec3(2.2)); // From filament: max()
 
-  color = LINEAR_REC2020_TO_LINEAR_SRGB * color; // From three.js
+  color = linearRec2020ToLinearSrgb * color; // From three.js
   // Gamut mapping. Simple clamp for now.
 	color = clamp(color, 0.0, 1.0);
 

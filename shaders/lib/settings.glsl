@@ -28,7 +28,7 @@
         #define aoRadius 1.5 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0 3.1 3.2 3.3 3.4 3.5 3.6 3.7 3.8 3.9 4.0]
         #define aoStrength 1.5 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0 3.1 3.2 3.3 3.4 3.5 3.6 3.7 3.8 3.9 4.0]
     #define SubsurfaceScattering
-        #define SSS_Quality 8 // [1 2 3 4 5 6 7 8 9 10 11 12]
+        #define sssQuality 8 // [1 2 3 4 5 6 7 8 9 10 11 12]
     //#define PixelLockedShadows // Make shadows pixel-locked to the world grid, like Bedrock shaders
         #define shadowPixelResolution 16 // [16 32 64 128 256 512 1024 2048 4096] grid cells per block. Match to texture pack resolution / preference
 
@@ -66,17 +66,19 @@
 
 //Parallax&Materials//
     //#define Parallax
-        #define parallaxQuality 48 // [8 16 24 32 48 64 96 128 256] // 48 has less artifacts than other values due to how the parallaxTAA works, technically 64 (or anything > 48) should be better but causes more artifacts.
-        #define parallaxTAA // Blurs imperfections in Parallax. Disable then increase parallaxQuality & parallaxShadowQuality to obtain higher quality parallax
-        #define MAX_PARALLAX_STEPS 64 // [8 16 32 64 128 256 512]
-        #define MIN_PARALLAX_STEPS 4 // [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16]
         #define parallaxDepth       0.25 // [0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00]
+        #define parallaxQuality     64   // [16 24 32 48 64 96 128 192 256]
+        #define parallaxSmoothness  0.10  // [0.0 0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00]
+        #define parallaxEdgeChamfer 0.08 // [0.02 0.04 0.06 0.08 0.10 0.15 0.20 0.25]
         #define parallaxNearDist    1 // [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50]
         #define parallaxFarDist     24 // [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50]
+        #define ParallaxSlopeNormals
+        #define ParallaxAO
+        #define ParallaxSeams
+        #define ParallaxTranslucents
     #define ParallaxShadow
-        #define parallaxShadowQuality  8 // [1 2 3 4 5 6 7 8 9 10 12 14 16 18 20]
-        #define parallaxShadowDepth  0.50 // [0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00] 'Technically' this should match parallaxDepth, but double the value of parallaxDepth looks more correct
-        #define parallaxShadowStrength 12 // [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
+        #define parallaxShadowQuality  12   // [4 6 8 10 12 16 20 24]
+        #define parallaxShadowSoftness 0.1 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
     #define materialEmission 
         #define emissionStrength 25 // [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100]
 
@@ -86,13 +88,13 @@
         #define pshininess 1.00 //[0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.25 1.50 1.75 2.00 2.25 2.40 2.75 3.00 3.25 3.50 3.75 4.00 4.25 4.50 4.75 5.00 5.50 6.00 6.50 7.00 7.50 8.00 8.50 9.00 9.50 10.00]
         #define pstrength 1.00 //[0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.25 1.50 1.75 2.00 2.25 2.40 2.75 3.00 3.25 3.50 3.75 4.00 4.25 4.50 4.75 5.00 5.50 6.00 6.50 7.00 7.50 8.00 8.50 9.00 9.50 10.00]
     //#define materialReflections
-        #define SSR_MAX_ALPHA 0.5 //[0.25 0.35 0.5 0.65] Surfaces rougher than this skip the reflection ray and use the environment only
-        #define REFL_CONE_SCALE 1.0 //[0.5 0.75 1.0 1.5 2.0] Blur of rough reflections
-        #define REFL_GROUND_ALBEDO 0.4 //[0.2 0.3 0.4 0.5 0.6 0.7 0.8] Brightness of the ground reflected below the horizon (sand ~0.8, grass/dirt ~0.3)
-        #define METAL_DIFFUSE 0.20 //[0.0 0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00] Lit colour kept under metal reflections
-        //#define HARDCODED_METALS // LabPBR measured metals (230 to 237), measured reflectance and Fresnel, tinted by albedo. (When Off: albedo is F0 for all metals)
-            #define HC_METAL_BRIGHTNESS 1.00 //[0.80 0.90 1.00 1.05 1.10 1.15 1.20 1.25 1.30 1.40 1.50 1.60 1.80 2.00] How much metals reflect (all metals, Hardcoded Metals on only). 1.0 is the measured value (iron ~53%, 1.15 ~60%, 1.3 ~70%)
-            #define HC_TINT_REF 0.8 //[0.5 0.6 0.7 0.8 0.9 1.0] Texture brightness that gets the measured reflectance as is. Lower is brighter
+        #define ssrMaxAlpha 0.5 //[0.25 0.35 0.5 0.65]
+        #define reflConeScale 1.0 //[0.5 0.75 1.0 1.5 2.0]
+        #define reflGroundAlbedo 0.4 //[0.2 0.3 0.4 0.5 0.6 0.7 0.8]
+        #define metalDiffuse 0.20 //[0.0 0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00]
+        #define hardcodedMetals // LabPBR measured metals (230 to 237)
+            #define hcMetalBrightness 1.00 //[0.80 0.90 1.00 1.05 1.10 1.15 1.20 1.25 1.30 1.40 1.50 1.60 1.80 2.00]
+            #define hcTintRef 0.8 //[0.5 0.6 0.7 0.8 0.9 1.0]
 
 
 //Fog//
@@ -184,10 +186,10 @@
     //Nether//
         //#define NetherShadowMap
         #define netherHeatHaze
-            #define HEAT_STEPS       4         // [4 8 12 16 24 32] ray-march samples through the heat volume
-            #define RISE_DECAY     0.90   // [0.80 0.85 0.88 0.90 0.92 0.94]
-            #define RISE_SPREAD    0.30   // [0.05 0.10 0.15 0.22 0.30]
-            #define RISE_BUOYANCY  1.00   // [0.80 0.90 1.00 1.10]
+            #define heatSteps       4         // [4 8 12 16 24 32] ray-march samples through the heat volume
+            #define riseDecay     0.70   // [0.60 0.70 0.80 0.85 0.88 0.90 0.92 0.94]
+            #define riseSpread    0.30   // [0.05 0.10 0.15 0.22 0.30]
+            #define riseBuoyancy  1.00   // [0.80 0.90 1.00 1.10]
             #define heatHazeStrength 1.0    // [0.5 1.0 1.5 2.0 3.0]
             #define heatHazeScale    0.32    // spatial frequency of the wobble
             #define heatHazeSpeed    1.5    // how fast it shimmers

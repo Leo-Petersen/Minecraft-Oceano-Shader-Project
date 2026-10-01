@@ -43,7 +43,7 @@ option.VoxelLighting=Voxel Lighting
     option.VoxelLighting.comment=Enables/disables the voxel lighting system, this provides coloured emissive lighting. LOW FPS COST
 
 option.SubsurfaceScattering=Subsurface Scattering
-option.SSS_Quality=SSS Quality
+option.sssQuality=SSS Quality
 
     # Ambient Occlusion #
     screen.AO=Ambient Occlusion
@@ -221,38 +221,46 @@ option.emissionStrength=Emission Strength
 
     # Material Reflection Settings #
     screen.MaterialReflections=Material Reflection Settings
-        option.HARDCODED_METALS=LabPBR Hardcoded Metals
-            option.HARDCODED_METALS.comment=Only with Material Reflections on. On: metals 230-237 use their measured reflectance and Fresnel curve from the LabPBR spec, tinted by the texture colour, and all metals lose their diffuse (see Metal Base Colour). Off: metals look exactly as they originally did.
-        option.HC_METAL_BRIGHTNESS=Metal Brightness
-            option.HC_METAL_BRIGHTNESS.comment=Only with LabPBR Hardcoded Metals on. Scales how much all metals reflect: 1.0 is the measured value for hardcoded metals (iron about 53%) and the texture colour for other metals (e.g. copper in many packs). Brightens the reflection itself, keeping it sharp.
-        option.METAL_DIFFUSE=Metal Base Colour
-            option.METAL_DIFFUSE.comment=Only with LabPBR Hardcoded Metals on. Keeps some of the normal lit colour under the reflection. 0.3 (recommended) matches the scene's lighting, higher softens metals but makes them brighter in the shade. 0.0 is 'physically accurate' but doesn't mesh well.
-        option.SSR_MAX_ALPHA=Reflection Ray Roughness Cutoff
-            option.SSR_MAX_ALPHA.comment=Surfaces rougher than this reflect the environment only, without a screen space ray. Lower is faster.
-        option.REFL_CONE_SCALE=Rough Reflection Blur
-            option.REFL_CONE_SCALE.comment=How much rough surfaces blur their reflections. 1.0 matches the GGX lobe.
-        option.REFL_GROUND_ALBEDO=Reflected Ground Brightness
-            option.REFL_GROUND_ALBEDO.comment=How bright the ground is that reflections show below the horizon when there is no screen space hit. Sand is about 0.8, grass and dirt about 0.3.
+        option.hardcodedMetals=LabPBR Hardcoded Metals
+            option.hardcodedMetals.comment=Only with Material Reflections on. Enables metals using measured reflectance and Fresnel curve from the LabPBR spec
+        option.hcMetalBrightness=Metal Brightness
+            option.hcMetalBrightness.comment=Only with LabPBR Hardcoded Metals on. Scales how much all metals reflect: 1.0 is the measured value for hardcoded metals (iron about 53%) and the texture colour for other metals (e.g. copper in many packs). Brightens the reflection itself, keeping it sharp.
+        option.metalDiffuse=Metal Base Colour
+            option.metalDiffuse.comment=Only with LabPBR Hardcoded Metals on. Keeps some of the normal lit colour under the reflection. 0.3 (recommended) matches the scene's lighting, higher softens metals but makes them brighter in the shade. 0.0 is 'physically accurate' but doesn't mesh well.
+        option.ssrMaxAlpha=Reflection Ray Roughness Cutoff
+            option.ssrMaxAlpha.comment=Surfaces rougher than this reflect the environment only, without a screen space ray. Lower is faster.
+        option.reflConeScale=Rough Reflection Blur
+            option.reflConeScale.comment=How much rough surfaces blur their reflections. 1.0 matches the GGX lobe.
+        option.reflGroundAlbedo=Reflected Ground Brightness
+            option.reflGroundAlbedo.comment=How bright the ground is that reflections show below the horizon when there is no screen space hit. Sand is about 0.8, grass and dirt about 0.3.
 
     # Parallax Settings #
     screen.ParallaxSettings=Parallax Settings
-        option.parallaxQuality=Parallax Quality
-        option.parallaxTAA=Parallax TAA
-            option.parallaxTAA.comment=Smooths imperfections in Parallax. Disable then increase parallaxQuality & parallaxShadowQuality to obtain higher quality parallax
-        option.MAX_PARALLAX_STEPS=Max Steps
-            option.MAX_PARALLAX_STEPS.comment=Upper limit of raymarch steps for parallax at close range.
-        option.MIN_PARALLAX_STEPS=Min Steps
-            option.MIN_PARALLAX_STEPS.comment=Lower limit of raymarch steps for parallax at distance.
+        option.parallaxQuality=Max Steps
+            option.parallaxQuality.comment=Upper limit of ray march steps
+        option.parallaxSmoothness=Smoothness
+            option.parallaxSmoothness.comment=How large a height step must be before it is drawn as a crisp wall
+        option.parallaxEdgeChamfer=Edge Bevel
+            option.parallaxEdgeChamfer.comment=Width of the tiny bevel on crisp walls
         option.parallaxDepth=Depth
         option.parallaxNearDist=Near Distance
         option.parallaxFarDist=Far Distance
+            option.parallaxFarDist.comment=Parallax depth smoothly fades out up to this distance.
+        option.ParallaxSlopeNormals=Slope Lighting
+            option.ParallaxSlopeNormals.comment=Lights walls and bevels using the true direction of the traced surface, so they shade like real geometry.
+        option.ParallaxAO=Cavity Occlusion
+            option.ParallaxAO.comment=Darkens the deep parts of the height map.
+        option.ParallaxSeams=Seam Walls
+            option.ParallaxSeams.comment=Stops a block's parallax at the seam with a neighbouring block that has a different texture.
+        option.ParallaxTranslucents=Translucent Parallax
+            option.ParallaxTranslucents.comment=Applies parallax, shadows and slope lighting to glass, ice, honey, slime and other translucent blocks.
         option.ParallaxShadow=Parallax Shadows
 
         # Shadow Settings #
         screen.ShadowSettings=Parallax Shadow Settings
             option.parallaxShadowQuality=Shadow Quality
-            option.parallaxShadowDepth=Shadow Depth
-            option.parallaxShadowStrength=Shadow Strength
+            option.parallaxShadowSoftness=Shadow Softness
+            option.parallaxShadowSoftness.comment=Width of the soft shadow edge.
 
 
 # Post Processing #
@@ -326,8 +334,8 @@ option.grassHeight=Grass Height
             option.netherHeatHaze.comment=Rising heat distortion in the Nether.
         option.overworldHeatHaze= Overworld Heat Haze
         option.heatHazeStrength=Haze Strength
-        option.HEAT_STEPS=Haze Samples
-            option.HEAT_STEPS.comment=Ray-march samples through the heat volume.
-        option.RISE_DECAY=Rise Decay
-        option.RISE_SPREAD=Rise Spread
-        option.RISE_BUOYANCY=Rise Buoyancy
+        option.heatSteps=Haze Samples
+            option.heatSteps.comment=Ray-march samples through the heat volume.
+        option.riseDecay=Rise Decay
+        option.riseSpread=Rise Spread
+        option.riseBuoyancy=Rise Buoyancy

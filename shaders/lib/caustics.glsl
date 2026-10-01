@@ -33,15 +33,15 @@ vec3 reflectedWaterCaustics(
     // March from fragment toward the water surface along the reverse reflection path.
     vec3 toWaterDir = normalize(vec3(sunDirWorld.x, -sunDirWorld.y, sunDirWorld.z));
 
-    const int STEPS = 4;
-    const float MAX_DIST = 4.0;
-    float stepSize = MAX_DIST / float(STEPS);
+    const int causticSteps = 4;
+    const float causticMaxDist = 4.0;
+    float stepSize = causticMaxDist / float(causticSteps);
 
     vec3 lastAbovePos = worldPos;
     vec3 waterHitPos  = vec3(0.0);
     bool found = false;
 
-    for (int i = 1; i <= STEPS; i++) {
+    for (int i = 1; i <= causticSteps; i++) {
         vec3 samplePos = worldPos + toWaterDir * float(i) * stepSize;
 
         vec4 sCoord = ShadowSpace(samplePos);

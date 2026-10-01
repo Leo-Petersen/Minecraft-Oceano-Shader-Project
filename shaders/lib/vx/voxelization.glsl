@@ -2,7 +2,7 @@
 
 #include "/lib/voxel_settings.glsl"
 
-const vec3 voxelVolumeSize = vec3(VOXEL_VOLUME_SIZE, VOXEL_VOLUME_SIZE * 0.5, VOXEL_VOLUME_SIZE);
+const vec3 voxelVolumeSize = vec3(voxelVolumeRes, voxelVolumeRes * 0.5, voxelVolumeRes);
 
 vec3 worldToVoxel(vec3 worldPos) {
     return worldPos + fract(cameraPosition) + voxelVolumeSize * 0.5;
