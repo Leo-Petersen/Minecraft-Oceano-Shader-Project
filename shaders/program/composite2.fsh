@@ -23,6 +23,7 @@ uniform vec3 cameraPosition;
 uniform vec3 sunPosition;
 uniform vec3 skyColor;
 uniform int isEyeInWater;
+uniform int frameCounter;
 
 varying vec2 texcoord;
 varying vec2 lmcoord;
@@ -48,10 +49,23 @@ float Depth1 = texture2D(depthtex1, texcoord).r;
 #include "/lib/lightCol.glsl"
 #include "/lib/dh.glsl"
 
+#define waterBlurTaps 10
+#define underwaterBlurTaps 16
+
+vec4 spiralBlur(vec4 center, vec2 radius, int taps, float rotation) {
+	vec4 sum = center;
+	for (int k = 0; k < taps; k++) {
+		float r = sqrt((float(k) + 0.5) / float(taps));
+		float a = float(k) * 2.39996323 + rotation;
+		sum += texture2D(colortex0, texcoord + vec2(cos(a), sin(a)) * radius * r);
+	}
+	return sum / float(taps + 1);
+}
+
 void main() {
 	vec4 color = texture2D(colortex0, texcoord);
 	
-	float undergroundFix = clamp(mix(max(lmcoord.t-2.0/16.0,0.0)*1.14285714286,1.0,clamp((eyeBrightnessSmooth.y/255.0-2.0/16.)*4.0,0.0,1.0)), 0.0, 1.0);
+	float undergroundFix = clamp(mix(max(texture2D(colortex2, texcoord).t-2.0/16.0,0.0)*1.14285714286,1.0,clamp((eyeBrightnessSmooth.y/255.0-2.0/16.)*4.0,0.0,1.0)), 0.0, 1.0);
 
 	bool fromDH;
 	vec4 viewPos = vec4(reconstructViewPos(texcoord, Depth, fromDH), 1.0);
@@ -65,21 +79,19 @@ void main() {
     float Size = 10.0;
    
     vec2 Radius = Size/vec2(viewWidth, viewHeight);
+
+	float blurRot = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
+	#ifdef TAA
+		blurRot = fract(blurRot + float(frameCounter % 8) * 0.125);
+	#endif
+	blurRot *= Pi2;
 	
 	#ifdef fogBlur
     // https://www.shadertoy.com/view/Xltfzj //
 	//Water blur//
 	if (iswater == 1.0){
 	float depthFog = 1.0 - clamp(exp2(-distance(viewPos.xyz, fragpos2) * 0.14), 0.0, 1.0); // Beer's Law
-		for( float d=0.0; d<Pi2; d+=Pi2/Directions)
-			{
-				for(float i=1.0/Quality; i<=1.0; i+=1.0/Quality)
-				{
-					color += texture2D(colortex0, texcoord+vec2(cos(d),sin(d))*Radius*i*depthFog);		
-				}
-			}
-		// Output to screen
-		color /= Quality * Directions + 1.0;
+		color = spiralBlur(color, Radius * depthFog, waterBlurTaps, blurRot);
 	}
 
 	#ifdef rainfogBlur
@@ -110,20 +122,8 @@ void main() {
 			  fogDepth = pow(fogDepth, 2.0);
 			  fogDepth = 1.0 - exp(-1.2 * fogDepth);
 			  fogDepth = clamp(fogDepth, 0.0, 0.5);
-			  Quality += 2.0;
-			  Directions += 3.0;
-			  
 
-		for( float d=0.0; d<Pi2; d+=Pi2/Directions)
-			{
-				for(float i=1.0/Quality; i<=1.0; i+=1.0/Quality)
-				{
-					color += texture2D(colortex0, texcoord+vec2(cos(d),sin(d))*Radius*i*fogDepth*2.55);		
-				}
-			}
-		// Output to screen
-	
-		color /= Quality * Directions + 1.0;
+		color = spiralBlur(color, Radius * fogDepth * 2.55, underwaterBlurTaps, blurRot);
 	}
 
 	#endif

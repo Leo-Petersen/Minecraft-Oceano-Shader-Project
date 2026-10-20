@@ -11,6 +11,11 @@ varying vec3 Normal;
 varying vec4 glcolor;
 varying vec3 shadowLightDir;
 
+uniform mat4 gbufferModelViewInverse;
+
+#include "/lib/settings.glsl"
+#include "/lib/atmFrame.glsl"
+
 void main() {
 
 	upVec = upPosition * 0.01;
@@ -21,4 +26,6 @@ void main() {
 
 	texcoord.xy = gl_MultiTexCoord0.st;
 	lmcoord  = (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;
+
+	computeAtmFrame(false);
 }

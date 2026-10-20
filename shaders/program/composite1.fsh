@@ -48,15 +48,17 @@ const bool colortex10Clear = false;
 #include "/lib/atmosphereLUT.glsl"
 vec3 atmSunDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
 vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
-vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunDir);
-vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue);
+varying vec3 atmSunFrame;
+vec3 atmSun = atmSunFrame;
+varying vec3 atmAmbFrame;
+vec3 atmAmb = atmAmbFrame;
 #define atmosphereSun
 #include "/lib/lightCol.glsl"
 #include "/lib/clouds.glsl"
 #include "/lib/dimensionSky.glsl"
 #include "/lib/dh.glsl"
 
-float undergroundFix = clamp(mix(max(lmcoord.t-2.0/16.0,0.0)*1.14285714286,1.0,clamp((eyeBrightnessSmooth.y/255.0-2.0/16.)*4.0,0.0,1.0)), 0.0, 1.0);
+float undergroundFix = clamp(mix(max(texture2D(colortex2, texcoord).t-2.0/16.0,0.0)*1.14285714286,1.0,clamp((eyeBrightnessSmooth.y/255.0-2.0/16.)*4.0,0.0,1.0)), 0.0, 1.0);
 
 float hash31(vec3 p){
     p = fract(p * 0.1031);
@@ -178,9 +180,11 @@ void main(){
 
 			float horizonMask = smoothstep(0.0, 0.05, sunDir.y);
 
-			float rainClear = 1.0 - rainStrength;
-			overworldSky += Nebula(sunDir) * time[5] * transitionFade * 0.4 * horizonMask * rainClear;
-			overworldSky += Stars(sunDir)  * time[5] * transitionFade * 4.0 * horizonMask * rainClear;
+			float nightSky = time[5] * transitionFade * horizonMask * (1.0 - rainStrength);
+			if (nightSky > 0.0) {
+				overworldSky += Nebula(sunDir) * nightSky * 0.4;
+				overworldSky += Stars(sunDir)  * nightSky * 4.0;
+			}
 			color.rgb = overworldSky * (1.0 - effects * 0.95);
 		}
 		#endif

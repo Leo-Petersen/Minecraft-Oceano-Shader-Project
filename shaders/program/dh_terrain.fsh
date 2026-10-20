@@ -70,9 +70,9 @@ void main() {
     float n = GetBlueNoise3D(worldpos * 5.0, worldNormal);
     albedo.rgb = clamp(albedo.rgb + n * noiseAmount, vec3(0.0), vec3(1.0));
 
-/* RENDERTARGETS: 0,1,2,8,13 */
+/* RENDERTARGETS: 0,1,2,13 */
     gl_FragData[0] = albedo;                                     
     gl_FragData[1] = vec4(encodeNormal(viewNormal), 0.0, 0.0);   
     gl_FragData[2] = vec4(lm, material, 1.0);   
-    gl_FragData[4] = vec4(emission, 1.0, 1.0, labSSS);
+    gl_FragData[3] = vec4(emission, 1.0, 1.0, labSSS);
 }

@@ -9,6 +9,11 @@ varying mat3 tbnMatrix;
 
 attribute vec4 at_tangent;
 
+uniform mat4 gbufferModelViewInverse;
+
+#include "/lib/settings.glsl"
+#include "/lib/atmFrame.glsl"
+
 void main() {
 	gl_Position = ftransform();
 	
@@ -24,4 +29,6 @@ void main() {
 
 	viewVector = ( gl_ModelViewMatrix * gl_Vertex).xyz;
 	viewVector = (tbnMatrix * viewVector);
+
+	computeAtmFrame(false);
 }

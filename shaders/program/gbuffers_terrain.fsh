@@ -197,45 +197,48 @@ void main() {
             wetness01 = 1.0;
         #endif
 
-        vec3  worldNormal = normalize(mat3(gbufferModelViewInverse) * viewNormal);
-        float flatFace    = smoothstep(0.55, 0.95, worldNormal.y);
+        float wetFilm = 0.0;
+        if (wetness01 > 0.0) {
+            vec3  worldNormal = normalize(mat3(gbufferModelViewInverse) * viewNormal);
+            float flatFace    = smoothstep(0.55, 0.95, worldNormal.y);
 
-        vec3  worldRel    = mat3(gbufferModelViewInverse) * fragpos + gbufferModelViewInverse[3].xyz;
-        vec2  wpos        = worldRel.xz + cameraPosition.xz;
-        float puddleField = getRainPuddles(wpos, wetness01);
+            vec3  worldRel    = mat3(gbufferModelViewInverse) * fragpos + gbufferModelViewInverse[3].xyz;
+            vec2  wpos        = worldRel.xz + cameraPosition.xz;
+            float puddleField = getRainPuddles(wpos, wetness01);
 
-        float fillLevel   = getPoolFill(wpos) * puddleField;
+            float fillLevel   = getPoolFill(wpos) * puddleField;
 
-        float distFade    = 1.0 - smoothstep(64.0, 128.0, length(worldRel.xz));
+            float distFade    = 1.0 - smoothstep(64.0, 128.0, length(worldRel.xz));
 
-        float rawSky      = clamp(lmcoord.t - 1.0 / 32.0, 0.0, 1.0);
-        float skyExposure = smoothstep(12.5 / 16.0, 14.75 / 16.0, rawSky);
+            float rawSky      = clamp(lmcoord.t - 1.0 / 32.0, 0.0, 1.0);
+            float skyExposure = smoothstep(12.5 / 16.0, 14.75 / 16.0, rawSky);
 
-        float wetPresence = flatFace * smoothstep(0.0, 0.25, wetness01) * distFade * skyExposure;
+            float wetPresence = flatFace * smoothstep(0.0, 0.25, wetness01) * distFade * skyExposure;
 
-        float poolMask    = smoothstep(0.05, 0.35, puddleField) * wetPresence;
+            float poolMask    = smoothstep(0.05, 0.35, puddleField) * wetPresence;
 
-        float underWater  = smoothstep(fillLevel + 0.012, fillLevel - 0.012, surfaceHeight) * wetPresence;
-        float waterDepth  = max(fillLevel - surfaceHeight, 0.0);
+            float underWater  = smoothstep(fillLevel + 0.012, fillLevel - 0.012, surfaceHeight) * wetPresence;
+            float waterDepth  = max(fillLevel - surfaceHeight, 0.0);
 
-        float wetFilm     = max(poolMask, underWater);
+            wetFilm           = max(poolMask, underWater);
 
-        normalData = normalize(mix(normalData, viewNormal, underWater));
+            normalData = normalize(mix(normalData, viewNormal, underWater));
 
-        float soak        = mix(0.72, 0.30, porosity);
-        bool  wetMetal    = specularMap.g * 255.0 > 229.5;
-        if (!wetMetal) terrainColor.rgb *= mix(1.0, soak, wetFilm);
+            float soak        = mix(0.72, 0.30, porosity);
+            bool  wetMetal    = specularMap.g * 255.0 > 229.5;
+            if (!wetMetal) terrainColor.rgb *= mix(1.0, soak, wetFilm);
 
-        #define puddleWaterTint    vec3(0.45, 0.62, 0.68) 
-        #define waterClarity 5.0
-        float absorb      = 1.0 - exp(-waterDepth * waterClarity);
-        terrainColor.rgb  = mix(terrainColor.rgb, terrainColor.rgb * puddleWaterTint, absorb * underWater);
+            #define puddleWaterTint    vec3(0.45, 0.62, 0.68) 
+            #define waterClarity 5.0
+            float absorb      = 1.0 - exp(-waterDepth * waterClarity);
+            terrainColor.rgb  = mix(terrainColor.rgb, terrainColor.rgb * puddleWaterTint, absorb * underWater);
 
-        #define wetFilmSmooth 0.72
-        if (!wetMetal) {
-        specularMap.r     = mix(specularMap.r, wetFilmSmooth, poolMask);   // normal wet puddle
-        specularMap.r     = mix(specularMap.r, 0.96, underWater);            // flat pool water
-        specularMap.g     = mix(specularMap.g, 0.04, wetFilm);              // water F0 across the whole footprint
+            #define wetFilmSmooth 0.72
+            if (!wetMetal) {
+            specularMap.r     = mix(specularMap.r, wetFilmSmooth, poolMask);   // normal wet puddle
+            specularMap.r     = mix(specularMap.r, 0.96, underWater);            // flat pool water
+            specularMap.g     = mix(specularMap.g, 0.04, wetFilm);              // water F0 across the whole footprint
+            }
         }
     #else
         float wetFilm = 0.0;
@@ -265,7 +268,7 @@ void main() {
         terrainColor.rgb = vec3(1.0);
     #endif	
 
-/* RENDERTARGETS: 0,1,2,8,13 */
+/* RENDERTARGETS: 0,1,2,13 */
 	gl_FragData[0] = terrainColor;
 	gl_FragData[1] = vec4(encodeNormal(normalData), specularMap);
 	#ifdef Parallax
@@ -273,5 +276,5 @@ void main() {
 #else
 	gl_FragData[2] = vec4(lightMap, material, shadowFactor);
 #endif
-	gl_FragData[4] = vec4(emission, wetFilm, textureAO, labSSS);
+	gl_FragData[3] = vec4(emission, wetFilm, textureAO, labSSS);
 }

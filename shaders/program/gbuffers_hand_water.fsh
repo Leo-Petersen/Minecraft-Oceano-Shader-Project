@@ -207,10 +207,10 @@ void main() {
 	float packedWaveLight = 0.5 + (frontGlow * 0.5) - (sssIntensity * 0.5);
 	packedWaveLight = clamp(packedWaveLight, 0.0, 1.0);
 
-/* DRAWBUFFERS:012583 */
+/* DRAWBUFFERS:01253 */
 	gl_FragData[0] = color;
 	gl_FragData[1] = vec4(encodeNormal((isglass > 0.5 || isice > 0.5 || ishoney > 0.5) ? glassNormal : viewNormal), 1, 1);
 	gl_FragData[2] = vec4(lmcoord, material, 1.0f);
 	gl_FragData[3] = normalTangentSpace;
-	gl_FragData[5] = vec4(vec3(0.0), packedWaveLight);
+	gl_FragData[4] = vec4(vec3(0.0), packedWaveLight);
 }

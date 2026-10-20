@@ -14,7 +14,7 @@ vec3 CaveFog(
     float caveFactor = 1.0 - smoothstep(0.05, 0.5, rawSkyLight);
     if (caveFactor < 0.001) return color;
 
-    float dist = pow(length(worldPos.xz) / 20.0, 0.75);
+    float dist = pow(length(worldPos) / 20.0, 0.75);
 
     vec3 caveFogColor = pow(vec3(0.035, 0.04, 0.055), vec3(0.9));
 

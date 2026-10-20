@@ -43,10 +43,9 @@ void main() {
 		 lightMap.s = clamp(lmcoord.s - 1.0 / 32.0, 0.0, 1.0);
 		 lightMap.t = clamp(lmcoord.t - 1.0 / 32.0, 0.0, 1.0);
 
-/* RENDERTARGETS: 0,1,2,8,13 */
+/* RENDERTARGETS: 0,1,2,13 */
 	gl_FragData[0] = color;
-	gl_FragData[1] = vec4(encodeNormal(normalData), specularMap.r, 1);
+	gl_FragData[1] = vec4(encodeNormal(normalData), specularMap.r, 0.0);
 	gl_FragData[2] = vec4(lightMap, 0, 1);
-	gl_FragData[3] = vec4(0.0, 0.0, 0.0, 1.0);
-	gl_FragData[4] = vec4(0, 0, 1, 1.0);
+	gl_FragData[3] = vec4(0, 0, 1, 1.0);
 }

@@ -8,14 +8,7 @@ vec4 ShadowSpaceWater(vec3 worldPos) {
 #endif
 
 
-// Absorption coefficients (per meter)
-const vec3 waterAbsorptionCoeff = vec3(AbsorptionCoeffR, AbsorptionCoeffG, AbsorptionCoeffB); // R, G, B
-
-// Scattering coefficient (per meter): Rayleigh + Mie for water
-const vec3 waterScatteringCoeff = vec3(0.0045, 0.0060, 0.0080);
-
-#define waterExtinctionCoeff (waterAbsorptionCoeff + waterScatteringCoeff)
-#define waterSSA (waterScatteringCoeff / waterExtinctionCoeff)
+#include "/lib/waterMedium.glsl"
 
 float phaseHG(float cosTheta, float g) {
     float g2 = g * g;
@@ -208,10 +201,7 @@ vec3 getUnderwaterFog(vec3 color, vec3 viewPos, float lightMapSky) {
     
     vec3 underwaterExtinction = waterExtinctionCoeff * 0.75;
     vec3 transmittance = exp(-underwaterExtinction * dist);
-    float fogDensity = 1.0 - dot(transmittance, vec3(0.333));
-    
-    float depthFactor = 1.0 + estimatedDepth * 0.025;
-    fogDensity = clamp(fogDensity * depthFactor, 0.0, 0.96);
+    float fogDensity = underwaterFogDensity(dist);
     
     
     vec3 shallowWaterColor = vec3(shallowwaterR, shallowwaterG, shallowwaterB)/255;

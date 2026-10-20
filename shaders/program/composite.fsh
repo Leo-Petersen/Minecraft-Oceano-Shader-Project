@@ -12,7 +12,6 @@ uniform sampler2D colortex2; //.s = torchLightMap, .t = skyLightMap, .p = materi
 uniform sampler2D colortex3;
 uniform sampler2D colortex5; 
 uniform sampler2D colortex14; // transmittance + multiscatter LUT
-uniform sampler2D colortex8; 
 uniform sampler2D colortex9; 
 uniform sampler2D colortex15; // skyview LUT
 uniform sampler2D depthtex0;
@@ -78,7 +77,7 @@ vec3 luma(vec3 color, float strength) {
 
 #include "/lib/encode.glsl"
 
-float undergroundFix = clamp(mix(max(lmcoord.t-2.0/16.0,0.0)*1.14285714286,1.0,clamp((eyeBrightnessSmooth.y/255.0-2.0/16.)*4.0,0.0,1.0)), 0.0, 1.0);
+float undergroundFix = clamp(mix(max(rawSkyLightMap-2.0/16.0,0.0)*1.14285714286,1.0,clamp((eyeBrightnessSmooth.y/255.0-2.0/16.)*4.0,0.0,1.0)), 0.0, 1.0);
 vec3 viewNormal = normalize(decodeNormal(texture2D(colortex1, texcoord).st));
 vec3 waterNormal = normalize(texture2D(colortex5, texcoord).rgb * 2.0 - 1.0);
 float Diffuse = max(0.0, dot(viewNormal, shadowLightPosition * 0.01)); 
@@ -89,8 +88,10 @@ float Diffuse = max(0.0, dot(viewNormal, shadowLightPosition * 0.01));
 #include "/lib/atmosphereLUT.glsl"
 vec3 atmSunDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
 vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
-vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunTrue);
-vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue);
+varying vec3 atmSunFrame;
+vec3 atmSun = atmSunFrame;
+varying vec3 atmAmbFrame;
+vec3 atmAmb = atmAmbFrame;
 #define atmosphereSun
 #include "/lib/lightCol.glsl"
 #include "/lib/waterShadow.glsl"
@@ -124,13 +125,7 @@ void main() {
 	}
 
 	////Calculate sun////
-    vec3 reflectedVector = reflect(normalize(viewPos.xyz), waterNormal) * 300.0;
-
     float sunDist = 1.0/distance(normalize(viewPos.xyz), shadowLightPosition * 0.01);
-    float sunDistReflected = 1.0/distance(normalize(reflectedVector.xyz), shadowLightPosition * 0.01);
-
-	float normalDotEye = dot(waterNormal, -normalize(viewPos.xyz));
-	float fresnel = pow(1.0 - normalDotEye, 3.0);
 
 	//Atmo time factor/
 	float atmoStr = 0.06 * (time[0]) +  
@@ -186,11 +181,6 @@ void main() {
 		float repackedWaveLight = 0.5 + (frontGlow * 0.5) - (waterSSS * 0.5);
 		repackedWaveLight = clamp(repackedWaveLight, 0.0, 1.0);
 
-	//Reflected Atmosphere//
-    vec3 ReflectAtmoGlare = pow(sunDistReflected*2.2, 0.1) * sunCol;
-		 ReflectAtmoGlare = 1.0 - exp( -ReflectAtmoGlare );
-		 ReflectAtmoGlare *= (1-rainStrength*0.9)*transitionFade*atmoStr*1.5*fresnel;
-
 	float sunStr = sunStrength;
 	if (ToneMap == 0) {
 		sunStr *= 0.4;
@@ -205,15 +195,14 @@ void main() {
 	sunStr *= 0.05;
 	float sunAboveHorizon = smoothstep(-0.02, 0.04, sunElevation);
 	float discGate = max(sunAboveHorizon, atmMoon);
-	vec3 reflectedskyBoxCol = texture2D(colortex8, texcoord.st).rgb+ReflectAtmoGlare;
 	#ifdef screenSunGlare
 	float visibleSun = float(texture2D(depthtex1, lightPos + 0.5).r >= 1.0);
-	vec3 finalGlare = (screensunGlare) * sunStr * (1.0 - ((time2[1].y)*rainStrength)) * transitionFade * (1.0-isEyeInWater) * visibleSun * transitionFade * discGate;
+	vec3 finalGlare = (screensunGlare) * sunStr * (1.0 - ((time2[1].y)*rainStrength)) * transitionFade * float(isEyeInWater == 0) * visibleSun * transitionFade * discGate;
 	#else
 	vec3 finalGlare = vec3(0.0);
 	#endif
 
-	vec3 finalSun = (mainSun + sunGlare + atmoGlare*atmoStr*transitionFade) * (1.0 - ((time2[1].y)*rainStrength) * 0.7) * (1.0-isEyeInWater) * sunStr * transitionFade * discGate;
+	vec3 finalSun = (mainSun + sunGlare + atmoGlare*atmoStr*transitionFade) * (1.0 - ((time2[1].y)*rainStrength) * 0.7) * float(isEyeInWater == 0) * sunStr * transitionFade * discGate;
 
 	
 	////Colours////
@@ -240,7 +229,7 @@ void main() {
 	///Caustics///
     #ifdef Caustics
 	float WaterShadowVisibility = 1.0;
-    if (iswater == 1.0 || isEyeInWater > 0.9) {
+    if (iswater == 1.0 || isEyeInWater == 1) {
         WaterShadowVisibility = shadowSample(worldPos1).r 
                               * transitionFade * Diffuse;
         vec3 caustics = waterCaustics(worldPos1, WaterShadowVisibility);
@@ -293,10 +282,9 @@ void main() {
 		color.rgb = getUnderwaterFog(color.rgb, viewPos.xyz, lightMap.t);
 	}
 
-/* DRAWBUFFERS:06893 */
+/* DRAWBUFFERS:0693 */
 	gl_FragData[0] = vec4(color); //colortex0
 	gl_FragData[1] = vec4(reflectSun, 0.0); //colortex6
-	gl_FragData[2] = vec4(reflectedskyBoxCol, 0.0); //colortex8
-	gl_FragData[3] = vec4(skyBoxCol, 1.0); //colortex9
-	gl_FragData[4] = vec4(vec3(0.0), repackedWaveLight);
+	gl_FragData[2] = vec4(skyBoxCol, 1.0); //colortex9
+	gl_FragData[3] = vec4(vec3(0.0), repackedWaveLight);
 }

@@ -262,7 +262,7 @@ vec3 calculateSSS(
     for (int i = 0; i < sssQuality; i++) {
         gradNoise = fract(gradNoise + 1.618);
         float rot  = gradNoise * 6.283;
-        float dist = (float(i) + gradNoise) / 12.0;
+        float dist = (float(i) + gradNoise) / float(sssQuality);
 
         vec2  offset2D = vec2(cos(rot), sin(rot)) * dist;
         float offsetZ  = -(dist * dist + 0.025);

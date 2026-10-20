@@ -1,19 +1,11 @@
 
 // TO-DO: Filter with TAA to drag performance back
 
-#if !defined NETHER && !defined END
-    #define sunShafts
-#endif
-#define sunShaftSamples 40
-#define sunShaftStrength 0.55
-#define sunShaftThreshold 0.55
-#define sunShaftDecay 0.965
-#define sunShaftDensity 0.85
-
 varying vec2 texcoord;
 
 uniform sampler2D colortex0;
 uniform sampler2D depthtex0;
+uniform sampler2D shaftSampler;
 uniform int worldTime;
 
 #ifdef DISTANT_HORIZONS
@@ -25,6 +17,8 @@ uniform mat4 gbufferModelViewInverse;
 uniform vec3 sunPosition;
 uniform float viewWidth, viewHeight;
 uniform float rainStrength;
+
+#include "/lib/sunShafts.glsl"
 
 float ticks = worldTime;
 float transitionFade = 1.0-(
@@ -45,45 +39,11 @@ void main() {
     #endif
     if (pixelIsSky) {
         #ifdef sunShafts
-            vec4 clip = gbufferProjection * vec4(sunPosition, 1.0);
-            vec2 sunScreen = clip.xy / clip.w * 0.5 + 0.5;
-
-            vec3 sunWorld = normalize(mat3(gbufferModelViewInverse) * sunPosition);
-            float dayFade = smoothstep(-0.04, 0.16, sunWorld.y) * (1.0 - rainStrength * 0.7);
-            float inFront = step(0.0, clip.w);
-
-            vec2 d = abs(sunScreen - 0.5);
-            float onScreen = 1.0 - smoothstep(0.5, 1.15, max(d.x, d.y));
-
-            float gate = dayFade * inFront * onScreen;
+            float gate;
+            vec2 sunScreen = sunShaftScreen(gate);
 
             if (gate > 0.001) {
-                vec2 delta = (texcoord - sunScreen) * (sunShaftDensity / float(sunShaftSamples));
-                vec2 pos = texcoord;
-                float decay = 1.0;
-                vec3 shaft = vec3(0.0);
-
-                for (int i = 0; i < sunShaftSamples; i++) {
-                    pos -= delta;
-                    vec2 sp = clamp(pos, 0.0, 1.0);
-
-                    // FIX FOR BRDF BEING INCLUDED
-                    // Only the sky contributes to shafts, solid geometry acts as an occluder
-                    // Stops bright surfaces being smeared in
-                    float skyMask = step(0.9999, texture2D(depthtex0, sp).r);
-                    #ifdef DISTANT_HORIZONS
-                    skyMask *= step(0.9999, texture2D(dhDepthTex0, sp).r);
-                    #endif
-
-                    vec3 s = texture2D(colortex0, sp).rgb;
-                    float l = dot(s, vec3(0.2126, 0.7152, 0.0722));
-
-                    vec3 bright = s * smoothstep(sunShaftThreshold, sunShaftThreshold + 0.5, l) * skyMask;
-                    shaft += bright * decay;
-                    decay *= sunShaftDecay;
-                }
-                shaft /= float(sunShaftSamples);
-
+                vec3 shaft = textureLod(shaftSampler, texcoord, 0.0).rgb;
                 float radial = 1.0 - smoothstep(0.0, 1.1, length(texcoord - sunScreen));
 
                 color += shaft * (sunShaftStrength * transitionFade * gate * radial);

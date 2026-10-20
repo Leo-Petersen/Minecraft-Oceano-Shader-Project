@@ -87,7 +87,7 @@ vec3 waterNormal = normalize(texture2D(colortex5, texcoord).stp * 2.0f - 1.0f);
 
 float Depth = texture2D(depthtex0, texcoord).r;
 float Depth1 = texture2D(depthtex1, texcoord).r;
-float undergroundFix = clamp(mix(max(lmcoord.t-2.0/16.0,0.0)*1.14285714286,1.0,clamp((eyeBrightnessSmooth.y/255.0-2.0/16.)*4.0,0.0,1.0)), 0.0, 1.0);
+float undergroundFix = clamp(mix(max(texture2D(colortex2, texcoord).t-2.0/16.0,0.0)*1.14285714286,1.0,clamp((eyeBrightnessSmooth.y/255.0-2.0/16.)*4.0,0.0,1.0)), 0.0, 1.0);
 
 #define atmosphereSun
 
@@ -103,8 +103,10 @@ const bool colortex0MipmapEnabled = true;
 #include "/lib/dh.glsl"
 #include "/lib/time.glsl"
 #include "/lib/atmosphereLUT.glsl"
-vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunDir);
-vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue);
+varying vec3 atmSunFrame;
+vec3 atmSun = atmSunFrame;
+varying vec3 atmAmbFrame;
+vec3 atmAmb = atmAmbFrame;
 #include "/lib/lightCol.glsl"
 #include "/lib/raytrace.glsl"
 #include "/lib/labpbr.glsl"
@@ -112,6 +114,7 @@ vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue)
 #define puddleReflection
 #include "/lib/puddles.glsl"
 #include "/lib/caveFog.glsl"
+#include "/lib/waterMedium.glsl"
 #include "/lib/clouds.glsl"
 #include "/lib/dimensionSky.glsl"
 
@@ -218,7 +221,7 @@ void main() {
 	//float surfaceHeight = texture2D(colortex13, texcoord).g; // Height for puddle masking
 	
 	float iswater = float(material > 0.08 && material < 0.10);
-	float isglass = float(material > 0.10 && material < 0.14 || material > 0.14 && material < 0.16)*undergroundFix;
+	float isglass = float(material > 0.10 && material < 0.14 || material > 0.14 && material < 0.16);
 	bool isHand = material > 0.96 && material < 0.98;
 	vec2 lightMap = colortex2Data.st;
 	float reflSkyAccess = clamp((lightMap.t - 2.0/16.0) * 1.14285714286, 0.0, 1.0);
@@ -449,7 +452,7 @@ void main() {
 		
 		// Glass F0 ~0.04
 		float fresnel = 0.04 + (1.0 - 0.04) * pow(1.0 - NdotV, 5.0);
-		fresnel *= (1.0 - roughness * 0.5); 
+		fresnel *= (1.0 - roughness * 0.5) * undergroundFix;
 		
 		// Calculate reflection 
 		vec4 glassreflection = raytrace(reflectedskyBoxCol*lightMap.t, viewPos.xyz, viewNormal, 4);
@@ -497,7 +500,7 @@ void main() {
 		// finite check, NaN fails every comparison, so this also rejects NaN
 		bool reflColorOk = all(lessThan(abs(color.rgb), vec3(1e20)));
 		if (iswater < 0.5 && isglass < 0.5 && Depth < 1.0 && Depth >= Depth1 && material > 0.0
-		    && (specularMap.r > 0.0 || specularMap.g > 0.0) && reflColorOk) {
+		    && (specularMap.r > 0.0 || specularMap.g > 0.0) && reflColorOk && isEyeInWater < 2) {
 
 			#ifdef hardcodedMetals
 			vec4 reflData    = texture2D(colortex4, texcoord);
@@ -599,7 +602,9 @@ void main() {
 			float metalKeep = max(1.0 - dot(E, vec3(0.2126, 0.7152, 0.0722)), 0.0);
 			vec3 metal      = color.rgb * metalKeep + Lenv * E;
 			#endif
-			color.rgb = max(mat.metalness > 0.0 ? mix(dielectric, metal, mat.metalness) : dielectric, 0.0);
+			vec3 reflected = max(mat.metalness > 0.0 ? mix(dielectric, metal, mat.metalness) : dielectric, 0.0);
+			float reflVisibility = (isEyeInWater == 1) ? 1.0 - underwaterFogDensity(length(viewPos.xyz)) : 1.0;
+			color.rgb = mix(color.rgb, reflected, reflVisibility);
 
 		}
 	#endif
@@ -729,14 +734,14 @@ void main() {
 		if (velFactor > 0.02) {
 		#endif
 			vec4 e1 = current;	// centre fresh sample
-			vec4 b1 = texelFetch(colortex12, src + ivec2( 0,-1), 0);
-			vec4 d1 = texelFetch(colortex12, src + ivec2(-1, 0), 0);
-			vec4 f1 = texelFetch(colortex12, src + ivec2( 1, 0), 0);
-			vec4 h1 = texelFetch(colortex12, src + ivec2( 0, 1), 0);
-			vec4 a1 = texelFetch(colortex12, src + ivec2(-1,-1), 0);
-			vec4 c1 = texelFetch(colortex12, src + ivec2( 1,-1), 0);
-			vec4 g1 = texelFetch(colortex12, src + ivec2(-1, 1), 0);
-			vec4 i1 = texelFetch(colortex12, src + ivec2( 1, 1), 0);
+			vec4 b1 = texelFetch(colortex12, clamp(src + ivec2( 0,-1), ivec2(0), corner - 1), 0);
+			vec4 d1 = texelFetch(colortex12, clamp(src + ivec2(-1, 0), ivec2(0), corner - 1), 0);
+			vec4 f1 = texelFetch(colortex12, clamp(src + ivec2( 1, 0), ivec2(0), corner - 1), 0);
+			vec4 h1 = texelFetch(colortex12, clamp(src + ivec2( 0, 1), ivec2(0), corner - 1), 0);
+			vec4 a1 = texelFetch(colortex12, clamp(src + ivec2(-1,-1), ivec2(0), corner - 1), 0);
+			vec4 c1 = texelFetch(colortex12, clamp(src + ivec2( 1,-1), ivec2(0), corner - 1), 0);
+			vec4 g1 = texelFetch(colortex12, clamp(src + ivec2(-1, 1), ivec2(0), corner - 1), 0);
+			vec4 i1 = texelFetch(colortex12, clamp(src + ivec2( 1, 1), ivec2(0), corner - 1), 0);
 			vec4 lo = min(min(min(b1,d1), min(e1,f1)), h1);
 			lo = 0.5 * (lo + min(min(min(lo,a1), min(c1,g1)), i1));
 			vec4 hi = max(max(max(b1,d1), max(e1,f1)), h1);
@@ -822,9 +827,10 @@ void main() {
 		}
 	#endif
 	#ifdef caveFog
-		if (!isSky(texcoord, Depth) && isEyeInWater < 0.9) {
+		if (!isSky(texcoord, Depth) && isEyeInWater < 0.9 && !isHand) {
 			float heldLight = max(float(heldBlockLightValue), float(heldBlockLightValue2));
-			color.rgb = CaveFog(color.rgb, worldPos, colortex2Data.t, heldLight, 0.5*(1 - undergroundFix), colortex2Data.s);
+			float eyeOutdoors = clamp((eyeBrightnessSmooth.y / 255.0 - 2.0 / 16.0) * 4.0, 0.0, 1.0);
+			color.rgb = CaveFog(color.rgb, worldPos, colortex2Data.t, heldLight, 0.5 * (1.0 - eyeOutdoors), colortex2Data.s);
 		}
 	#endif
 

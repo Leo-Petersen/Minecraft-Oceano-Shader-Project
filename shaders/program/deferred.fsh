@@ -82,8 +82,10 @@ vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
 
 #include "/lib/time.glsl"
 #include "/lib/atmosphereLUT.glsl"
-vec3 atmSun = atmSunColor(colortex14, vec2(viewWidth, viewHeight), atmSunTrue);
-vec3 atmAmb = atmSkyAmbient(colortex15, vec2(viewWidth, viewHeight), atmSunTrue);
+varying vec3 atmSunFrame;
+vec3 atmSun = atmSunFrame;
+varying vec3 atmAmbFrame;
+vec3 atmAmb = atmAmbFrame;
 #include "/lib/lightCol.glsl"
 #include "/lib/lighting.glsl"
 #include "/lib/brdf.glsl"
@@ -99,7 +101,7 @@ vec3 worldToVoxelUV(vec3 worldPos) {
     return voxelPos / voxelVolumeSize;
 }
 
-float undergroundFix = clamp(mix(max(lmcoord.t - 2.0 / 16.0, 0.0) * 1.14285714286, 1.0, clamp((eyeBrightnessSmooth.y / 255.0 - 2.0 / 16.0) * 4.0, 0.0, 1.0)), 0.0, 1.0);
+float undergroundFix = clamp(mix(max(texture2D(colortex2, texcoord).t - 2.0 / 16.0, 0.0) * 1.14285714286, 1.0, clamp((eyeBrightnessSmooth.y / 255.0 - 2.0 / 16.0) * 4.0, 0.0, 1.0)), 0.0, 1.0);
 
 float transparencyFactor =  0.5 * (time[0]) +
                             0.9 * (time[1]) +
