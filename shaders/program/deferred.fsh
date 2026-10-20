@@ -93,6 +93,7 @@ vec3 atmAmb = atmAmbFrame;
 #include "/lib/waterBump.glsl"
 #include "/lib/caustics.glsl"
 #include "/lib/dh.glsl"
+#include "/lib/lightningFlash.glsl"
 
 const vec3 voxelVolumeSize = vec3(voxelVolumeRes, voxelVolumeRes * 0.5, voxelVolumeRes);
 
@@ -134,6 +135,9 @@ void main() {
     // Early out for sky pixels
     if (isSky(texcoord, Depth)) {
         vec3 color = texture2D(colortex0, texcoord).rgb;
+        #if !defined NETHER && !defined END
+        if (isEyeInWater == 0) color = vec3(0.0);
+        #endif
         #ifdef materialReflections
         /* DRAWBUFFERS:04 */
         gl_FragData[0] = vec4(color, 1.0);
@@ -159,7 +163,21 @@ void main() {
     float parallaxSunkDepth = (15.0 - mod(parallaxPacked, 16.0)) / 15.0 * parallaxDepth;
     float iswater = float(material > 0.08 && material < 0.10);
     bool isHand = material > 0.96 && material < 0.98;
-    
+
+    // Beacon beams and lightning
+    if (material > 0.92 && material < 0.94) {
+        color *= mix(torchFactor, 1.0, rainStrength * 0.6);
+        #ifdef materialReflections
+        /* DRAWBUFFERS:04 */
+        gl_FragData[0] = vec4(color, 1.0);
+        gl_FragData[1] = vec4(0.0);
+        #else
+        /* DRAWBUFFERS:0 */
+        gl_FragData[0] = vec4(color, 1.0);
+        #endif
+        return;
+    }
+
     vec4 extraData = texture2D(colortex13, texcoord);
     float emission = extraData.r;
     float textureAO = extraData.b;
@@ -676,6 +694,15 @@ void main() {
         diffuseLight += finalBlockLightColor * torchIntensity * textureAO;
     #endif
 
+    //// Lightning flash ////
+    #ifdef lightningFlashFx
+    {
+        vec3 flashLight = lightningSurfaceLight(worldPos, normalize(worldNormal), rawSkyLight) * textureAO;
+        color        += albedo * flashLight * diffuseWeight;
+        diffuseLight += flashLight;
+    }
+    #endif
+
     //// Material reflection environment ////
     vec3 albedoQ = floor(clamp(albedo, 0.0, 1.0) * 255.0 + 0.5);
     vec3 envMiss = vec3(0.0);
@@ -702,6 +729,7 @@ void main() {
             vec3 skyR   = atmSky(colortex15, vec2(viewWidth, viewHeight), skyDir, atmSunTrue);
                  skyR   = atmSkyFinish(skyR, skyDir, atmSunTrue, envMoonDir);
                  skyR   = mix(skyR, skyBoxCol, rainStrength);
+                 skyR  += lightningSky(skyDir);
             vec3 skyAvg = mix(atmAmb, skyBoxCol, rainStrength);
 
             skyAvg *= clamp(openAmbient / max(skyAvg, vec3(1e-4)), vec3(0.02), vec3(20.0));

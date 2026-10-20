@@ -45,7 +45,7 @@ void main() {
     skylightMap = clamp(skylightMap, min_skyLightMap, 1.0);
     skylightMap = pow(skylightMap, 0.1);
 
-    float transparencyFactor = 0.15 * getTransparencyFactor() * skylightMap;
+    float transparencyFactor = 0.35 * getTransparencyFactor() * skylightMap;
 
     #ifdef Reflections
     float waterTransparency = 1.0 - iswater;

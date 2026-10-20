@@ -172,6 +172,23 @@ option.caveFogStrength=Cave Fog Strength
             option.cloudEvolve=Evolution Speed
             option.cloudEvolve.comment=How quickly cloud shapes change over time.
 
+    # Weather #
+    screen.Weather=Weather
+        option.rainOpacity=Rain Opacity
+            option.rainOpacity.comment=How visible raindrops are.
+        option.snowOpacity=Snow Opacity
+        option.stormIntensity=Thunderstorm Intensity
+            option.stormIntensity.comment=How much darker/foggier/clouded thunderstorms are than rain. 0 = same as rain.
+
+        # Lightning #
+        screen.Lightning=Lightning
+            option.lightningFlashFx=Lightning Flash
+                option.lightningFlashFx.comment=Lightning lights up sky, clouds, terrain, water reflections and rain.
+            option.lightningFlashStrength=Flash Strength
+            option.lightningBrightness=Bolt Brightness
+            option.lightningDensity=Bolt Density
+                option.lightningDensity.comment=How solid lightning bolts look.
+
 
 # Reflections / Water #
 screen.Reflections=Water
@@ -212,7 +229,6 @@ option.CookTorranceGGXBRDF=Specular (GGX BRDF)
 option.materialReflections=Material Reflections
     option.materialReflections.comment=Screen space and sky reflections on LabPBR materials.
 option.materialEmission=Material Emission
-option.emissionStrength=Emission Strength
 
     # Specular Settings #
     screen.Specular=Specular Settings
@@ -250,7 +266,7 @@ option.emissionStrength=Emission Strength
             option.ParallaxSlopeNormals.comment=Lights walls and bevels using the true direction of the traced surface, so they shade like real geometry.
         option.ParallaxAO=Cavity Occlusion
             option.ParallaxAO.comment=Darkens the deep parts of the height map.
-        option.ParallaxSeams=Seam Walls
+        option.ParallaxSeams=Seam Walls [Experimental]
             option.ParallaxSeams.comment=Stops a block's parallax at the seam with a neighbouring block that has a different texture.
         option.ParallaxTranslucents=Translucent Parallax
             option.ParallaxTranslucents.comment=Applies parallax, shadows and slope lighting to glass, ice, honey, slime and other translucent blocks.
@@ -261,7 +277,11 @@ option.emissionStrength=Emission Strength
             option.parallaxShadowQuality=Shadow Quality
             option.parallaxShadowSoftness=Shadow Softness
             option.parallaxShadowSoftness.comment=Width of the soft shadow edge.
-
+        
+        # Emission Settings #
+        screen.EmissionSettings=Emission Settings
+            option.emissionStrength=Emission Strength
+            option.beamBrightness=Beacon Beam Brightness
 
 # Post Processing #
 screen.Post=Post Processing

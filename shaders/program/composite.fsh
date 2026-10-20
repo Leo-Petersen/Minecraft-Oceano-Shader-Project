@@ -206,7 +206,7 @@ void main() {
 
 	
 	////Colours////
-	vec4 color = texture2D(colortex0, texcoord.st)+vec4(finalGlare, 0.0);
+	vec4 color = texture2D(colortex0, texcoord.st)+vec4(finalGlare * float(!isSky(texcoord, Depth)), 0.0);
 	vec3 skyBoxCol = texture2D(colortex9, texcoord.st).rgb+finalSun+finalGlare;
 
 	////Reflections////

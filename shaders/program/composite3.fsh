@@ -117,6 +117,7 @@ vec3 atmAmb = atmAmbFrame;
 #include "/lib/waterMedium.glsl"
 #include "/lib/clouds.glsl"
 #include "/lib/dimensionSky.glsl"
+#include "/lib/lightningFlash.glsl"
 
 const vec3 voxelVolumeSize = vec3(voxelVolumeRes, voxelVolumeRes * 0.5, voxelVolumeRes);
 vec3 worldToVoxelUV(vec3 wpos) {
@@ -151,6 +152,10 @@ float getDepth(float depth) {
 
 // Bicubic Catmull Rom fetch. This preserves the higher frequencies across repeated
 // reprojection so the cloud history stops eroding into a blurry mess while the camera moves
+
+// a briefly covered sky pixel keeps its cloud history
+const float cloudOccludeFrames = 20.0;
+
 vec4 vcSampleCatmullRom(sampler2D tex, vec2 uv, vec2 texSize) {
 	vec2 samplePos = uv * texSize;
 	vec2 texPos1 = floor(samplePos - 0.5) + 0.5;
@@ -168,17 +173,23 @@ vec4 vcSampleCatmullRom(sampler2D tex, vec2 uv, vec2 texSize) {
 	vec2 texPos3  = (texPos1 + 2.0) / texSize;
 	vec2 texPos12 = (texPos1 + offset12) / texSize;
 
-	vec4 r = vec4(0.0);
-	r += texture2D(tex, vec2(texPos0.x,  texPos0.y))  * w0.x  * w0.y;
-	r += texture2D(tex, vec2(texPos12.x, texPos0.y))  * w12.x * w0.y;
-	r += texture2D(tex, vec2(texPos3.x,  texPos0.y))  * w3.x  * w0.y;
-	r += texture2D(tex, vec2(texPos0.x,  texPos12.y)) * w0.x  * w12.y;
-	r += texture2D(tex, vec2(texPos12.x, texPos12.y)) * w12.x * w12.y;
-	r += texture2D(tex, vec2(texPos3.x,  texPos12.y)) * w3.x  * w12.y;
-	r += texture2D(tex, vec2(texPos0.x,  texPos3.y))  * w0.x  * w3.y;
-	r += texture2D(tex, vec2(texPos12.x, texPos3.y))  * w12.x * w3.y;
-	r += texture2D(tex, vec2(texPos3.x,  texPos3.y))  * w3.x  * w3.y;
-	return r;
+	vec4 s00 = texture2D(tex, vec2(texPos0.x,  texPos0.y));
+	vec4 s10 = texture2D(tex, vec2(texPos12.x, texPos0.y));
+	vec4 s20 = texture2D(tex, vec2(texPos3.x,  texPos0.y));
+	vec4 s01 = texture2D(tex, vec2(texPos0.x,  texPos12.y));
+	vec4 s11 = texture2D(tex, vec2(texPos12.x, texPos12.y));
+	vec4 s21 = texture2D(tex, vec2(texPos3.x,  texPos12.y));
+	vec4 s02 = texture2D(tex, vec2(texPos0.x,  texPos3.y));
+	vec4 s12 = texture2D(tex, vec2(texPos12.x, texPos3.y));
+	vec4 s22 = texture2D(tex, vec2(texPos3.x,  texPos3.y));
+
+	vec4 r = s00 * w0.x  * w0.y  + s10 * w12.x * w0.y  + s20 * w3.x * w0.y
+	       + s01 * w0.x  * w12.y + s11 * w12.x * w12.y + s21 * w3.x * w12.y
+	       + s02 * w0.x  * w3.y  + s12 * w12.x * w3.y  + s22 * w3.x * w3.y;
+
+	vec4 mn = min(min(min(s00, s10), min(s20, s01)), min(min(s11, s21), min(min(s02, s12), s22)));
+	vec4 mx = max(max(max(s00, s10), max(s20, s01)), max(max(s11, s21), max(max(s02, s12), s22)));
+	return clamp(r, mn, mx);
 }
 
 #if defined END
@@ -265,6 +276,7 @@ void main() {
 		reflectedskyBoxCol = atmSkyFinish(reflectedskyBoxCol, reflWorldDir, atmSunTrue, atmMoonDir);
 		reflectedskyBoxCol = atmSunsetTint(reflectedskyBoxCol, reflWorldDir, atmSunDir,
 		                                   (1.0 - rainStrength) * (1.0 - rainStrength));
+		reflectedskyBoxCol += lightningSky(reflWorldDir);
 	}
 	#endif
 
@@ -476,7 +488,7 @@ void main() {
 
 	#ifdef rainReflection
 		float iswet = wetness;
-		float isParticle = float(material == 0);
+		float isParticle = float(material == 0 || (material > 0.92 && material < 0.94)); // particles, beacon beams, lightning
 		  #ifdef alwaysPuddles
 	      iswet = 1.0;
 		  #endif
@@ -676,9 +688,16 @@ void main() {
 				color.rgb = color.rgb * ca + sm.rgb * inFront;
 			}
 		#else
-			// Terrain here means clouds are never composited onto solid geometry, so skip the entire reproject
-			cloudAccum   = current;
-			cloudDataOut = vec4(freshDist, 0.0, 0.0, 0.0);
+			vec4  prevData = texelFetch(colortex10, dst, 0);
+			float prevAge  = mod(prevData.g, 64.0);
+			float occluded = floor(prevData.g / 64.0);
+			if (prevAge >= 0.5 && occluded < cloudOccludeFrames) {
+				cloudAccum   = texelFetch(colortex11, dst, 0);
+				cloudDataOut = vec4(prevData.r, prevAge + 64.0 * (occluded + 1.0), 0.0, 0.0);
+			} else {
+				cloudAccum   = current;
+				cloudDataOut = vec4(freshDist, 0.0, 0.0, 0.0);
+			}
 		#endif
 	  } else {
 		vec3 worldDir = normalize(mat3(gbufferModelViewInverse) * viewPos.xyz);
@@ -701,12 +720,12 @@ void main() {
 		ivec2 hMax  = ivec2(hSize) - 1;
 		ivec2 hBase = ivec2(floor(prevUV * hSize - 0.5));
 		float ageMin = min(
-			min(texelFetch(colortex10, clamp(hBase + ivec2(0,0), ivec2(0), hMax), 0).g,
-			    texelFetch(colortex10, clamp(hBase + ivec2(1,0), ivec2(0), hMax), 0).g),
-			min(texelFetch(colortex10, clamp(hBase + ivec2(0,1), ivec2(0), hMax), 0).g,
-			    texelFetch(colortex10, clamp(hBase + ivec2(1,1), ivec2(0), hMax), 0).g));
+			min(mod(texelFetch(colortex10, clamp(hBase + ivec2(0,0), ivec2(0), hMax), 0).g, 64.0),
+			    mod(texelFetch(colortex10, clamp(hBase + ivec2(1,0), ivec2(0), hMax), 0).g, 64.0)),
+			min(mod(texelFetch(colortex10, clamp(hBase + ivec2(0,1), ivec2(0), hMax), 0).g, 64.0),
+			    mod(texelFetch(colortex10, clamp(hBase + ivec2(1,1), ivec2(0), hMax), 0).g, 64.0)));
 		bool historyWasSky = ageMin >= 0.5 && !any(isnan(historyData));
-		bool disocclusion = rp.z < 0.5 || any(isnan(history)) || !historyWasSky;
+		bool disocclusion = rp.z < 0.5 || any(isnan(history)) || any(isinf(history)) || !historyWasSky;
 
 		bool marchedHere = texelFetch(colortex10, src, 0).a >= 0.5;
 		bool borrowed = false;
@@ -785,7 +804,7 @@ void main() {
 		}
 
 		// Age weighted blend
-		float age = max(historyData.g, 0.0) * float(!disocclusion);
+		float age = ageMin * float(!disocclusion);
 		float historyWeight = 1.0 - 1.0 / max(age - float(area), 1.0);
 			  historyWeight = min(historyWeight, mix(0.97, 0.80, clamp(uvVel / 8.0, 0.0, 1.0)));
 
@@ -797,7 +816,17 @@ void main() {
 
 		if (isEyeInWater < 0.9) {
 			float ca = clamp((cloudAccum.a - 0.05) / 0.95, 0.0, 1.0);
+			#if !defined NETHER && !defined END
+			float rainCov = texture2D(colortex13, texcoord).a;
+			if (rainCov > 0.002) {
+				vec3 skyEst = (skyBoxCol + lightningSky(worldDir)) * (1.0 - (blindness + darknessFactor) * 0.95);
+				vec3 rainCol = max(color.rgb - skyEst * (1.0 - rainCov), 0.0);
+				color.rgb = (skyEst * ca + cloudAccum.rgb) * (1.0 - rainCov) + rainCol;
+			} else
+			#endif
 			color.rgb = color.rgb * ca + cloudAccum.rgb;
+			// clouds light up from inside during lightning
+			color.rgb += lightningSky(worldDir) * (1.0 - ca) * 1.5;
 		}
 	  }
 	}
@@ -826,6 +855,13 @@ void main() {
 			}
 		}
 	#endif
+	//// Lightning ////
+	#ifdef lightningFlashFx
+		if (!isSky(texcoord, Depth) && isEyeInWater < 0.9 && !isHand) {
+			color.rgb += lightningAirLight(length(worldPos));
+		}
+	#endif
+
 	#ifdef caveFog
 		if (!isSky(texcoord, Depth) && isEyeInWater < 0.9 && !isHand) {
 			float heldLight = max(float(heldBlockLightValue), float(heldBlockLightValue2));

@@ -65,7 +65,8 @@ const float rainAmbDayLum = 0.32; // flat overcast level, daytime
 const float rainAmbNgtLum = 0.10; // flat overcast level, night
 
 vec3  rainGreyHue = mix(atmAmbHue, vec3(1.0), rainDesat) * vec3(0.97, 0.99, 1.05);
-float rainAmbLum  = mix(rainAmbDayLum, rainAmbNgtLum, atmNight);
+#include "/lib/storm.glsl"
+float rainAmbLum  = mix(rainAmbDayLum, rainAmbNgtLum, atmNight) * (1.0 - 0.35 * atmStorm);   // storms are darker than normal rain
 vec3  rainAmbient = rainGreyHue * rainAmbLum;
 
 #if defined NETHER

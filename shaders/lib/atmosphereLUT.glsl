@@ -310,11 +310,15 @@ vec3 atmMoonSky(vec3 rd, vec3 moonDir) {
 }
 
 
+#include "/lib/storm.glsl"
+
 vec3 atmSkyFinish(vec3 sky, vec3 rd, vec3 sunDir, vec3 moonDir) {
     float night = smoothstep(0.02, -0.10, sunDir.y);
     sky += atmMoonSky(rd, moonDir) * night * (1.0 - rainStrength * 0.95);
     float luma = dot(sky, vec3(0.2126, 0.7152, 0.0722));
     sky = mix(sky, vec3(luma), vec3(1.0 - 1.32));
+    // thunderstorms
+    sky *= 1.0 - 0.40 * atmStorm;
     return sky;
 }
 
@@ -399,13 +403,13 @@ vec3 atmAerialPBR(vec3 surfaceColor, sampler2D skyViewTex, vec2 res,
     float rain    = 1.0 - clearness;
     vec3  moonDir = -sunDir;
 
-    float apH        = atmosApHeight * mix(1.0, 0.45, rain);
+    float apH        = atmosApHeight * mix(1.0, 0.45, rain) * (1.0 - 0.25 * atmStorm);
     float avgY       = 0.5 * (camY + fragY);
     float heightFall = exp(-max(avgY - atmosApBaseY, 0.0) / apH);
 
     float aero    = mix(1.0e-3, 6.0e-3, rain);
     vec3  betaExt = mix(atmosRayS, vec3(0.010), rain * 0.9) + vec3(aero);
-    float apDens  = atmosApDensity * mix(1.0, 2.2, rain);
+    float apDens  = atmosApDensity * mix(1.0, 2.2, rain) * (1.0 + 0.6 * atmStorm);
 
     float nearGuard = smoothstep(0.0, mix(80.0, 24.0, rain), distBlocks);
     nearGuard *= nearGuard;

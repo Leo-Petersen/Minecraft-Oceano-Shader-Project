@@ -19,6 +19,7 @@ uniform vec3 sunPosition;
 uniform sampler2D colortex0;
 uniform sampler2D colortex2;
 uniform sampler2D colortex9;
+uniform sampler2D colortex13;   // .a = rain coverage
 uniform sampler2D colortex10;
 uniform sampler2D colortex14;  // transmittance + multiscatter LUT
 uniform sampler2D colortex15;  // sky-view LUT
@@ -57,6 +58,7 @@ vec3 atmAmb = atmAmbFrame;
 #include "/lib/clouds.glsl"
 #include "/lib/dimensionSky.glsl"
 #include "/lib/dh.glsl"
+#include "/lib/lightningFlash.glsl"
 
 float undergroundFix = clamp(mix(max(texture2D(colortex2, texcoord).t-2.0/16.0,0.0)*1.14285714286,1.0,clamp((eyeBrightnessSmooth.y/255.0-2.0/16.)*4.0,0.0,1.0)), 0.0, 1.0);
 
@@ -185,7 +187,9 @@ void main(){
 				overworldSky += Nebula(sunDir) * nightSky * 0.4;
 				overworldSky += Stars(sunDir)  * nightSky * 4.0;
 			}
-			color.rgb = overworldSky * (1.0 - effects * 0.95);
+			overworldSky += lightningSky(sunDir);
+			float rainCov = texture2D(colortex13, texcoord).a;
+			color.rgb = (overworldSky * (1.0 - rainCov) + color.rgb) * (1.0 - effects * 0.95);
 		}
 		#endif
 	}

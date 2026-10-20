@@ -74,13 +74,21 @@
         #define parallaxFarDist     24 // [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50]
         #define ParallaxSlopeNormals
         #define ParallaxAO
-        #define ParallaxSeams
+        //#define ParallaxSeams
         #define ParallaxTranslucents
     #define ParallaxShadow
         #define parallaxShadowQuality  12   // [4 6 8 10 12 16 20 24]
         #define parallaxShadowSoftness 0.1 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
     #define materialEmission 
         #define emissionStrength 25 // [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100]
+    #define beamBrightness 3.0 // [1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 10.0 12.0 15.0 20.0]
+    #define lightningBrightness 4.0 // [4.0 6.0 8.0 10.0 12.0 14.0 16.0 20.0 25.0 30.0 40.0]
+    #define lightningDensity 1.2 // [0.6 0.8 1.0 1.2 1.5 2.0 3.0]
+    #define lightningFlashFx // Lightning lights up the sky, clouds, terrain, reflections and rain
+        #define lightningFlashStrength 0.75 // [0.25 0.5 0.75 1.0 1.25 1.5 2.0 2.5 3.0]
+    #define stormIntensity 1.0 // [0.0 0.25 0.5 0.75 1.0 1.25 1.5]
+    #define rainOpacity 0.15 // [0.05 0.08 0.1 0.12 0.15 0.18 0.2 0.25 0.3 0.4]
+    #define snowOpacity 0.6 // [0.2 0.3 0.4 0.5 0.6 0.7 0.8 1.0]
 
 
 //BRDF//

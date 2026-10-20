@@ -134,7 +134,9 @@ vec2 vcOffset16(int frame) {
 #define cloudShapeOct 0.5         // frequency of the low 'shape' octave
 #define cloudShapeWeight 0.5      // how much the shape octave dominates the carve
 
-float vcBase = cloudBottom - cloudRainDrop * rainStrength;
+#include "/lib/storm.glsl"
+
+float vcBase = cloudBottom - cloudRainDrop * rainStrength - 40.0 * atmStorm;   // storm clouds hang lower
 float vcTopCu = cloudCumulusTop - 90.0 * rainStrength;
 
 vec2  vcWind     = vec2(frameTimeCounter * cloudWindSpeed, frameTimeCounter * cloudWindSpeed * 0.3);
@@ -295,6 +297,7 @@ float vcDensity(vec3 wpos) {
 
 	// Height based erosion, so clouds aren't just big smooth bricks
 	float carve = cloudDetail * (0.2 + relH) * (1.0 - rainStrength * 0.22);
+	carve *= mix(1.0, mix(0.35, 1.4, smoothstep(0.42, 1.3, coverage)), rainStrength);
 	float d = env - billow * billow * carve; // squared keeps lobe cores round and dense
 
 	// Gated 3rd octave
@@ -427,6 +430,9 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
         ambBot = mix(ambBot, ocAmb * 0.38, oa);
         ambTop = mix(ambTop, ocAmb * 1.45, oa);
     }
+    // thunderstorms
+    ambBot *= 1.0 - 0.55 * atmStorm;
+    ambTop *= 1.0 - 0.45 * atmStorm;
 
     float vcTransDim = mix(cloudTransitionDim, 1.0, transitionFade);
     ambBot *= vcTransDim;
@@ -523,7 +529,7 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 	vec3 cloudColor = scatter / cloudAlpha;
 
 	float distFade = smoothstep(3000.0, 13000.0, entryT + coveredDist);
-	vec3 farCol = mix(atmSky(colortex15, res, worldDir, sunDirTrue), atmosOvercastTint * atmOvercastLum(sunElevY) * 0.333, rainStrength) * vcTransDim;
+	vec3 farCol = mix(atmSky(colortex15, res, worldDir, sunDirTrue), atmosOvercastTint * atmOvercastLum(sunElevY) * 0.333 * (1.0 - 0.5 * atmStorm), rainStrength) * vcTransDim;
     cloudColor = mix(cloudColor, farCol, distFade * 0.85);
 	cloudAlpha *= horizon * (1.0 - distFade * 0.75) * max(transitionFade, 0.85);
 
