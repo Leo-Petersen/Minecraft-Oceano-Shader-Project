@@ -62,7 +62,6 @@ ivec2 vcCheckerOffset(int i) { return vcCheckerTable[i]; }
 #define netherCeilTop      (netherFloorY + 1.0 + netherFogThick)
 #define netherHangFalloff  4.5 
 #define netherBillowScale  4.0
-#define netherTendrilFade  0.20 
 #define netherRiseSpeed 0.6
 #define netherShear     3.5
 
@@ -70,14 +69,10 @@ ivec2 vcCheckerOffset(int i) { return vcCheckerTable[i]; }
 #define netherSeparation   1.0
 #define netherCoverScale   0.00008
 
-#define netherVeinScale    0.0016
-#define netherVeinSharp    2.2
 #define netherFireEvolve   0.03
-#define netherBaseGlow     0.75
 #define netherFireStrength 0.75
 
 #define netherFireHi vec3(2.6, 0.85, 0.16)     // hottest vein colour
-#define netherFireLo vec3(0.9, 0.18, 0.05)     // smoke colour
 #define netherAmbLow vec3(0.14, 0.055, 0.028)   // underside, basically the lava glow
 #define netherAmbTop vec3(0.06, 0.028, 0.015)   // dark soot
 

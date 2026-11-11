@@ -72,26 +72,6 @@ ivec2 vcCheckerOffset(int i) { return vcCheckerTable[i]; }
 
 #define cloudRainDrop 0.0 // set to zero for now, makes the transition to rain too abrupt
 
-vec2 vcOffset8(int frame) {
-	int i = frame & 7;
-	if (i == 0) return vec2( 1.0, -3.0) / 8.0 * 0.5;
-	if (i == 1) return vec2(-1.0,  3.0) / 8.0 * 0.5;
-	if (i == 2) return vec2( 5.0,  1.0) / 8.0 * 0.5;
-	if (i == 3) return vec2(-3.0, -5.0) / 8.0 * 0.5;
-	if (i == 4) return vec2(-5.0,  5.0) / 8.0 * 0.5;
-	if (i == 5) return vec2(-7.0, -1.0) / 8.0 * 0.5;
-	if (i == 6) return vec2( 3.0,  7.0) / 8.0 * 0.5;
-	return vec2( 7.0, -7.0) / 8.0 * 0.5;
-}
-
-// 16-frame low-discrepancy jitter (R2 sequence) in [-0.5, 0.5]
-vec2 vcOffset16(int frame) {
-	int i = (frame & 15) + 1;
-	const float a1 = 0.7548776662466927;   // 1/g
-	const float a2 = 0.5698402909980532;   // 1/g^2
-	return fract(vec2(a1, a2) * float(i)) - 0.5;
-}
-
 // look modifiers //
 #define cloudBottom (300.0 + cloudAltitude)
 // Normal cloud top
@@ -151,8 +131,6 @@ float vcNoise(vec2 uv) { return texture2D(noisetex, uv).x; }
 // Billow remap
 // 0 at a lobe core (v = 0.5), 1 in the crevices between lobes.
 float vcBil(float v) { return abs(v * 2.0 - 1.0); }
-
-float vcRelH(float y) { return (y - vcBase) / (cloudTop - vcBase); }
 
 float vcValNoise(vec3 pos) {
 	vec3 pi = floor(pos);
@@ -327,10 +305,6 @@ float vcPhaseG(float x, float g) {
 	float gg = g * g;
 	return (gg * -0.25 / PI + 0.25 / PI) * pow(-2.0 * (g * x) + (gg + 1.0), -1.5);
 }
-float hg(float c, float g){
-    float g2 = g*g;
-    return (1.0 - g2) / (4.0*3.14159265 * pow(1.0 + g2 - 2.0*g*c, 1.5));
-}
 float vcPhase(float c) {
     float g = 0.8;
     return mix(vcPhaseG(c, g), vcPhaseG(c, -g * 0.5), 0.35);
@@ -407,10 +381,6 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 
 	vec3 ambBase = skyAmb;
 
-	float sunFacing = max(dot(normalize(vec3(worldDir.x,   0.0, worldDir.z)   + 1e-4),
-	                          normalize(vec3(sunDirTrue.x, 0.0, sunDirTrue.z) + 1e-4)), 0.0);
-
-	float warmDir = pow(sunFacing, 1.6); 
 	float duskAmt = goldenHour;
 	vec3  warmLit = sunHue * skyLum;
 
@@ -438,10 +408,8 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
     ambBot *= vcTransDim;
     ambTop *= vcTransDim;
 
-	float pathLen = exitT - entryT;
 	// Adaptive stepping
 	float fine   = clamp(190.0 / float(steps), 5.0, cloudMaxStep);
-	float coarse = fine * cloudSkipMult;
 	float t = entryT + fine * dither;
 	bool  wasEmpty = true;
 

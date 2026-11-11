@@ -8,10 +8,6 @@ vec3 worldToVoxel(vec3 worldPos) {
     return worldPos + fract(cameraPosition) + voxelVolumeSize * 0.5;
 }
 
-vec3 voxelToWorld(vec3 voxelPos) {
-    return voxelPos - fract(cameraPosition) - voxelVolumeSize * 0.5;
-}
-
 bool isInsideVoxelVolume(vec3 voxelPos) {
     vec3 normalized = voxelPos / voxelVolumeSize;
     return all(greaterThanEqual(normalized, vec3(0.0))) && all(lessThanEqual(normalized, vec3(1.0)));

@@ -1,7 +1,6 @@
 
 #include "/lib/settings.glsl"
 
-uniform sampler2D lightmap;
 uniform sampler2D texture;
 uniform sampler2D normals;
 uniform sampler2D specular;

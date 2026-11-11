@@ -2,7 +2,6 @@
 
 varying vec2 lmcoord;
 varying vec2 texcoord;
-varying vec3 viewNormal;
 varying vec4 glcolor;
 
 #ifdef TAA
@@ -10,7 +9,6 @@ varying vec4 glcolor;
 #endif
 
 void main() {
-    viewNormal = normalize(gl_NormalMatrix*gl_Normal);
 	gl_Position = ftransform();
 	#ifdef TAA
 	gl_Position.xy = taaJitter(gl_Position.xy,gl_Position.w);

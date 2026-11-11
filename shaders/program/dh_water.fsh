@@ -8,9 +8,7 @@ uniform sampler2D noisetex;
 uniform mat4 gbufferModelViewInverse;
 
 uniform float viewWidth, viewHeight, far, frameTimeCounter, rainStrength, nightVision, darknessLightFactor;
-uniform vec3 skyColor;
 uniform int isEyeInWater;
-uniform vec3 shadowLightPosition;
 uniform vec3 sunPosition;
 
 varying float material;
@@ -20,7 +18,6 @@ varying vec2  texcoord;
 varying vec3  viewNormal;
 varying vec3  wpos;
 varying vec4  glcolor;
-varying vec4  viewPosV;
 varying mat3  tbnMatrix;
 
 vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);

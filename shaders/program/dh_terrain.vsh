@@ -5,7 +5,6 @@ uniform mat4  gbufferModelViewInverse;
 uniform vec3  cameraPosition;
 
 varying float material;
-varying float dist;
 varying vec2  lmcoord;
 varying vec2  texcoord;
 varying vec3  viewNormal;
@@ -33,7 +32,6 @@ void main() {
     lmcoord    = (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;
     viewNormal = normalize(gl_NormalMatrix * gl_Normal);
 
-    dist = length((gl_ModelViewMatrix * gl_Vertex).xyz);
 
     dhMat    = 0;
     material = 1.0;

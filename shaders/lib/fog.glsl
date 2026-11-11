@@ -22,12 +22,6 @@ float shadowStep(sampler2DShadow shadow, vec3 sPos) {
     return shadow2D(shadow, sPos).r;
 }
 
-vec2 DistortPosition(in vec2 position){
-    float CenterDistance = length(position);
-    float DistortionFactor = mix(1.0, CenterDistance, 0.9);
-    return position / DistortionFactor;
-}
-
 vec4 ShadowSpace(float depth0) {
     vec3 ClipSpace = vec3(texcoord, depth0) * 2.0 - 1.0;
     vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0);

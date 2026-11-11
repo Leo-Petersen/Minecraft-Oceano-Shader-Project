@@ -1,18 +1,13 @@
 
 uniform sampler2D lightmap;
 uniform sampler2D texture;
-uniform sampler2D colortex0;
 uniform sampler2D colortex2;
-uniform sampler2D colortex10;
-uniform sampler2D colortex11;
 uniform sampler2D normals;
 uniform sampler2D noisetex;
 uniform sampler2D specular;
 
 uniform float frameTimeCounter;
 uniform float rainStrength;
-uniform float aspectRatio;
-uniform float screenBrightness;
 uniform float nightVision;
 uniform float viewWidth;
 uniform float viewHeight;
@@ -27,7 +22,6 @@ uniform ivec2 atlasSize;
 
 uniform vec3 shadowLightPosition;
 uniform vec3 sunPosition;
-uniform vec3 skyColor;
 
 uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
@@ -48,7 +42,6 @@ varying vec3 viewVector;
 varying vec3 wpos;
 
 varying vec4 glcolor;
-varying vec4 position;
 
 varying mat3 tbnMatrix;
 
@@ -90,7 +83,6 @@ void main() {
 	float ishoney = float(material > 0.12 && material < 0.14);
 	float isice = float(material > 0.14 && material < 0.16);
 	float isportal = float(material > 0.16 && material < 0.18);
-	float isTransparent = 1.0 - iswater; // Everything except water
 
 	mat3 pTBN = tbnMatrix;
 	pTBN[0].y *= tangentW; pTBN[1].y *= tangentW; pTBN[2].y *= tangentW;
@@ -150,7 +142,6 @@ void main() {
 		float diffuse = NdotL * 0.7 + 0.3;
 		
 		float transparencyFactor = getTransparencyFactor();
-		float shadowFactor = getShadowFactor();
 		
 		float undergroundBlend = smoothstep(0.0, 0.3, rawSkyLight);
 		

@@ -15,7 +15,6 @@ uniform sampler2D dhDepthTex0;
 uniform mat4 gbufferProjection;
 uniform mat4 gbufferModelViewInverse;
 uniform vec3 sunPosition;
-uniform float viewWidth, viewHeight;
 uniform float rainStrength;
 
 #include "/lib/sunShafts.glsl"

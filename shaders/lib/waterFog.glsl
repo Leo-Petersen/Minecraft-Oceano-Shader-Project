@@ -215,7 +215,6 @@ vec3 getUnderwaterFog(vec3 color, vec3 viewPos, float lightMapSky) {
             float backwardVisibility = 0.4; // Minimum visibility of caustic rays when looking away
             float viewAngleBoost = max(forwardBoost, backwardVisibility);
             
-            float waterSurfaceY = cameraPosition.y + estimatedDepth;
             
             #ifdef TAA
             float sampleReduction = 0.25;

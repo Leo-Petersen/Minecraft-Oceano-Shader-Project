@@ -11,11 +11,6 @@ float atmAmbLum = dot(atmAmb, vec3(0.2126, 0.7152, 0.0722));
 vec3 atmSunHue = (atmSunLum > 1e-3) ? atmSun / atmSunLum : vec3(1.0);
 vec3 atmAmbHue = (atmAmbLum > 1e-3) ? atmAmb / atmAmbLum : vec3(1.0);
 
-vec3 atmHueMix(vec3 orig, vec3 physHue) {
-    float b = dot(orig, vec3(0.2126, 0.7152, 0.0722));
-    return mix(orig, physHue * b, 0.6);
-}
-
 vec3 atmTint(vec3 c, vec3 physHue, float s) {
     float b = dot(c, vec3(0.2126, 0.7152, 0.0722));
     return mix(c, physHue * b, clamp(s, 0.0, 1.0));
@@ -25,11 +20,6 @@ vec3 luminance(vec3 color, float strength) {
 	float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
   	color = mix(color, vec3(luma), vec3(1.0 - strength));
 	return color;
-}
-
-vec3 rainGrey(vec3 c, float amt) {
-    float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-    return mix(c, vec3(l) * vec3(0.94, 0.97, 1.04), clamp(amt, 0.0, 1.0));
 }
 
 #if defined NETHER || defined END
@@ -201,4 +191,3 @@ vec3 waterSceneLight(float sunCos) {
 #endif
 }
 
-float fogStrength = 0.3;

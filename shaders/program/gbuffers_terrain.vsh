@@ -16,11 +16,8 @@ varying mat3 tbnMatrix;
 
 varying vec4 glcolor;
 varying vec4 vtexcoordam;
-varying vec4 position;
 
 uniform vec3 cameraPosition;
-uniform vec3 sunVec;
-uniform mat4 gbufferProjectionInverse;
 uniform mat4 gbufferModelView;
 uniform float rainStrength;
 

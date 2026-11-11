@@ -106,20 +106,11 @@ float fakeCloudShadow(vec3 worldPos, float distFactor) {
 vec3 backLight(vec3 bounceColor) {
     vec3 scaledBounce = bounceColor * 2.0;
     vec3 scaledSunlight = sunlightCol * 2.0;
-    float upVector = -dot(upVec, viewNormal);
     vec3 backLight = (scaledSunlight + scaledBounce) * 7;
     return (backLight + scaledSunlight);
 }
 
 ////AmbientOcclusion////
-float ld(float dist) {
-    return (2.0 * near) / (far + near - dist * (far - near));
-}
-
-float IGN(vec2 coord) {
-    return fract(52.9829189 * fract(dot(coord, vec2(0.06711056, 0.00583715))));
-}
-
 // depth using projection matrix
 float aoGetLinearDepth(float depth) {
     depth = depth * 2.0 - 1.0;

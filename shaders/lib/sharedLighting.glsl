@@ -7,15 +7,6 @@ float getTransparencyFactor() {
            0.3 * time[5];     // night
 }
 
-float getShadowFactor() {
-    return 0.75 * time[0] +
-           1.0  * time[1] +
-           1.0  * time[2] +
-           1.0  * time[3] +
-           0.75 * time[4] +
-           0.25 * time[5];
-}
-
 float getTorchFactor() {
     return 1.0  * time[0] +
            0.33 * time[1] +

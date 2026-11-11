@@ -6,12 +6,7 @@ uniform sampler2D texture;
 uniform sampler2D normals;
 uniform sampler2D specular;
 
-uniform float frameTimeCounter;
-uniform int frameCounter;
-uniform float viewWidth;
-uniform float viewHeight;
 
-uniform ivec2 atlasSize; 
 uniform vec3 shadowLightPosition;
 
 varying float dist;
@@ -63,7 +58,6 @@ void main() {
 	#endif
 
 	// Get surface height for parallax
-	float surfaceHeight = textureGrad(normals, parallaxedUV, dFdxy[0], dFdxy[1]).a;
 
 	vec2 lightMap = vec2(1.0);
 		 lightMap.s = clamp(lmcoord.s - 1.0 / 32.0, 0.0, 1.0);
@@ -77,7 +71,6 @@ void main() {
 	float shadowFactor = 1.0;
 	#ifdef Parallax
 		#ifdef ParallaxShadow
-			float parallaxFade = clamp(dist * 0.04, 0.0, 1.0);
 			if (lmcoord.t > 0.05 && (dot(viewNormal, shadowLightPosition) <= 0.0 || dot(normalData, shadowLightPosition) > 0.0)) { // skip with no sky access, or where the bumped normal already faces away on a lit face
 				shadowFactor = parallaxShadow(tbnMatrix * normalize(shadowLightPosition));
 			}

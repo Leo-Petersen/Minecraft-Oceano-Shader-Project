@@ -6,18 +6,12 @@ uniform sampler2D lightmap;
 uniform sampler2D texture;
 uniform sampler2D normals;
 uniform sampler2D specular;
-uniform sampler2D colortex2;
 
 uniform float frameTimeCounter;
-uniform int frameCounter;
-uniform ivec2 atlasSize; 
 uniform vec3 shadowLightPosition;
-uniform vec3 cameraPosition;
 
 varying float dist;
 varying float isportal;
-uniform float viewWidth;
-uniform float viewHeight;
 varying vec2 lmcoord;
 varying vec2 texcoord;
 varying vec2 vtexcoord;
@@ -29,8 +23,6 @@ varying vec4 glcolor;
 varying vec4 vtexcoordam;
 
 varying mat3 tbnMatrix;
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferProjectionInverse;
 
 #include "/lib/parallax.glsl"
 #include "/lib/encode.glsl"
@@ -113,12 +105,10 @@ void main() {
 	#endif
 		 normalData *= tbnMatrix;
 
-    float surfaceHeight = textureGrad(normals, parallaxedUV, dFdxy[0], dFdxy[1]).a;
 
     float shadowFactor = 1.0;
     #ifdef Parallax
         #ifdef ParallaxShadow
-            float parallaxFade = clamp(dist * 0.04, 0.0, 1.0);
             if (lmcoord.t > 0.05 && (dot(viewNormal, shadowLightPosition) <= 0.0 || dot(normalData, shadowLightPosition) > 0.0)) { // skip with no sky access, or where the bumped normal already faces away on a lit face
                 shadowFactor = parallaxShadow(tbnMatrix * normalize(shadowLightPosition));
             }

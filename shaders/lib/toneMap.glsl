@@ -57,31 +57,6 @@ vec3 Duiker(vec3 color)
    return (x*(6.2*x+.5))/(x*(6.2*x+1.7)+0.06);
 }
 
-vec3 jodieReinhardTonemap(vec3 c){
-    float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-    vec3 tc = c / (c + 1.0);
-
-    return mix(c / (l + 1.0), tc, tc);
-}
-
-vec3 filmic(vec3 x) {
-  vec3 X = max(vec3(0.0), x - 0.004);
-  vec3 result = (X * (6.2 * X + 0.5)) / (X * (6.2 * X + 1.7) + 0.06);
-  return pow(result, vec3(2.2));
-}
-
-vec3 BOTWTonemap(vec3 color){
-	color = pow(color, vec3(1.0 / 1.2));
-
-	float avg = (color.r + color.g + color.b) * 0.2;
-	float maxc = max(color.r, max(color.g, color.b));
-
-	float w = 1.0 - pow(1.0 - 1.0 * avg, 2.0);
-	float weight = 1.0 + w * 0.18;
-
-	return mix(vec3(maxc), color * 1.0, weight);
-}
-
 //// AgX Tonemapping Implementation (see git link for reference) ////
 // https://github.com/dmnsgn/glsl-tone-map/blob/main/agx.glsl
 // Missing Deadlines (Benjamin Wrensch): https://iolite-engine.com/blog_posts/minimal_agx_implementation

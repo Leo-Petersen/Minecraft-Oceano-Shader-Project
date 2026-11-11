@@ -65,8 +65,6 @@ vec4 raytrace(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnelView) {
     fragmentPos += stepVector;
 
     int stepCount = 0;
-    float dist = 0.0;
-    vec3 start = fragmentPos;
 
     for (int i = 0; i < numSamples; i++) {
         vec3 position = rtViewToScreen(fragmentPos);
@@ -80,7 +78,6 @@ vec4 raytrace(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnelView) {
         bool hasSurface = sampleSurfaceViewPos(position.st, samplePosition, sampleIsDH);
 
         if (hasSurface) {
-            dist = abs(dot(start - samplePosition, normal));
             float error = length(fragmentPos - samplePosition);
 
             float dynamicThreshold = length(stepVector) * pow(length(stepVector), 0.1) * 2.0;
@@ -118,8 +115,6 @@ vec4 raytrace(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnelView, o
     fragmentPos += stepVector;
 
     int stepCount = 0;
-    float dist = 0.0;
-    vec3 start = fragmentPos;
 
     for (int i = 0; i < numSamples; i++) {
         vec3 position = rtViewToScreen(fragmentPos);
@@ -133,7 +128,6 @@ vec4 raytrace(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnelView, o
         bool hasSurface = sampleSurfaceViewPos(position.st, samplePosition, sampleIsDH);
 
         if (hasSurface) {
-            dist = abs(dot(start - samplePosition, normal));
             float error = length(fragmentPos - samplePosition);
 
             float dynamicThreshold = length(stepVector) * pow(length(stepVector), 0.1) * 2.0;

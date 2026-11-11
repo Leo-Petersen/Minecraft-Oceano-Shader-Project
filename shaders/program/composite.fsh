@@ -11,12 +11,9 @@ uniform sampler2D colortex1; //.st = viewNormal
 uniform sampler2D colortex2; //.s = torchLightMap, .t = skyLightMap, .p = material
 uniform sampler2D colortex3;
 uniform sampler2D colortex5; 
-uniform sampler2D colortex14; // transmittance + multiscatter LUT
 uniform sampler2D colortex9; 
-uniform sampler2D colortex15; // skyview LUT
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
-uniform sampler2DShadow shadowtex0;
 uniform sampler2DShadow shadowtex1;
 uniform sampler2D noisetex;
 
@@ -25,20 +22,13 @@ uniform mat4 shadowProjection;
 
 uniform int frameCounter;
 uniform int isEyeInWater;
-uniform int heldBlockLightValue;
-uniform int heldBlockLightValue2;
-uniform vec2 texelSize;
 
 uniform float far;
 uniform float near;
 uniform float eyeAltitude;
 uniform float frameTimeCounter;
-uniform float aspectRatio;
-uniform float viewWidth;
-uniform float viewHeight;
 uniform float rainStrength;
 uniform float nightVision;
-uniform float darknessFactor;
 uniform float darknessLightFactor;
 uniform float PI;
 
@@ -48,7 +38,6 @@ uniform vec3 shadowLightPosition;
 uniform vec3 sunPosition;
 
 varying vec2 texcoord;
-varying vec2 lmcoord;
 
 varying vec3 viewVector;
 
@@ -68,12 +57,6 @@ float Depth = texture2D(depthtex0, texcoord).r;
 float Depth1 = texture2D(depthtex1, texcoord).r;
 vec2 lightMap = texture2D(colortex2, texcoord).st;
 float rawSkyLightMap = lightMap.t;
-
-vec3 luma(vec3 color, float strength) {
-	float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
-  	color = mix(color, vec3(luma), vec3(1.0 - strength));
-	return color;
-}
 
 #include "/lib/encode.glsl"
 
@@ -238,20 +221,9 @@ void main() {
     #endif
 
 	///Lightmap///
-	float heldLightValue = max(float(heldBlockLightValue), float(heldBlockLightValue2));
-	float handlight = clamp((heldLightValue - 1.5 * length(viewPos.xyz)) / 15.0, 0.0, 0.9333);
-
 	lightMap.t = clamp(lightMap.t, ((1-nightVision)*min_skyLightMap)+(0.5*nightVision), 1.0);
 	lightMap.t = pow(lightMap.t*(1-darknessLightFactor), 0.65);
-	lightMap.s *= (1-darknessLightFactor*0.5);
-	float torchmapLight = max(lightMap.s, handlight) * lightMap.t;
-	float torchmapCovered = max(lightMap.s, handlight) * (1-lightMap.t);
-		  lightMap.s = (torchmapLight) + torchmapCovered;
 
-	float adjustedTorchMap = lightMap.s * 0.7 + pow(lightMap.s, 4.2) * 2.0;
-	vec3 torchColor = vec3(255, 140, 80)/255 * adjustedTorchMap;
-	float torchmap = clamp(adjustedTorchMap - 1.0 / 32.0, 0.0, 1.0);
-	vec3 torchTotal = mix(vec3(0.0), pow(torchColor, vec3(1.5)), color.rgb)*0.3;
 
 	////GlassLighting////
 	if (isglass == 1.0 || isslime == 1.0) {

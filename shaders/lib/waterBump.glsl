@@ -2,7 +2,6 @@ float textureNoise(vec2 coord) {
     return texture2D(noisetex, coord).r;
 }
 
-const float radiance = 0.3;
 const mat2 rotationMatrix = mat2(
     0.95533649, -0.29552021,
     0.29552021, 0.95533649

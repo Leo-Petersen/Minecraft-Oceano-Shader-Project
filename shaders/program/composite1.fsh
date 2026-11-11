@@ -1,9 +1,7 @@
 #extension GL_ARB_shader_texture_lod : enable
 
 varying vec2 texcoord;
-varying vec2 lmcoord;
 
-uniform float aspectRatio;
 uniform float viewWidth;
 uniform float viewHeight;
 uniform float far;
@@ -13,7 +11,6 @@ uniform float rainStrength;
 uniform ivec2 eyeBrightnessSmooth;
 uniform int isEyeInWater;
 
-uniform vec3 skyColor;
 uniform vec3 sunPosition;
 
 uniform sampler2D colortex0;
@@ -21,7 +18,6 @@ uniform sampler2D colortex2;
 uniform sampler2D colortex9;
 uniform sampler2D colortex13;   // .a = rain coverage
 uniform sampler2D colortex10;
-uniform sampler2D colortex14;  // transmittance + multiscatter LUT
 uniform sampler2D colortex15;  // sky-view LUT
 uniform sampler2D depthtex0;
 uniform sampler2D noisetex;
@@ -32,7 +28,7 @@ uniform int frameCounter;
 uniform vec3 cameraPosition;
 uniform vec3 shadowLightPosition;
 
-uniform mat4 gbufferProjection, gbufferProjectionInverse;
+uniform mat4 gbufferProjectionInverse;
 uniform mat4 gbufferModelViewInverse;
 
 /*
@@ -134,10 +130,7 @@ vec3 Nebula(vec3 dir){
 
 void main(){
 	vec3 color = texture2DLod(colortex0,texcoord.xy,0).rgb;
-	vec2 lightMap = texture2D(colortex2, texcoord).st;
 	float Depth = texture2D(depthtex0, texcoord).r;
-	float material = texture2D(colortex2, texcoord).p;
-	float iswater = float(material > 0.08 && material < 0.10);
 
 	bool fromDH;
 	vec4 viewPos = vec4(reconstructViewPos(texcoord, Depth, fromDH), 1.0);

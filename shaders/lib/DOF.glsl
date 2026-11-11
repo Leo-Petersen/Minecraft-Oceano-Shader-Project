@@ -61,8 +61,6 @@
     
     vec3 getDOF(inout vec3 color){
         const float focal = Focal;
-        float aperture = (35.0 / 6.0) / 1000.0;
-        const float sizemult = 50.0;
 
                     //Calculate pixel Circle of Confusion that will be used for bokeh depth of field
                     float z = texture2D(depthtex2, texcoord.st).x;
@@ -70,8 +68,6 @@
                     float pcoc = (z-focus)/15 * focal * 10;
                     vec4 sample = vec4(0.0);
                     vec3 bcolor = vec3(0.0);
-                    float nb = 0.0;
-                    vec2 bcoord = vec2(0.0);
 
                     for ( int i = 0; i < 60; i++) {
                         sample = texture2D(colortex0, texcoord + dof_offsets[i]*pcoc*vec2(1.0,aspectRatio),abs(pcoc * 125.0));

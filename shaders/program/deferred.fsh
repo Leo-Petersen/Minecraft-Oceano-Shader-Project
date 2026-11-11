@@ -16,7 +16,6 @@ uniform sampler2D colortex1; // .stp = VIEWNormal
 uniform sampler2D colortex2; // .s = torchLightMap, .t = skyLightMap, .p = material
 uniform sampler2D colortex9;
 uniform sampler2D colortex13;
-uniform sampler2D colortex14;  // transmittance + multiscatter LUT
 uniform sampler2D colortex15;  // sky-view LUT
 
 uniform sampler2D shadowcolor0;
@@ -33,8 +32,6 @@ uniform sampler2D specular;
 uniform sampler3D floodfillSampler;
 uniform sampler3D floodfillSamplerCopy;
 
-uniform mat4 shadowProjectionInverse;
-uniform mat4 shadowModelViewInverse;
 
 uniform mat4 gbufferProjection;
 uniform mat4 gbufferProjectionInverse;
@@ -51,29 +48,24 @@ uniform int heldItemId2;
 
 uniform float frameTimeCounter;
 uniform float rainStrength;
-uniform float near, far;
+uniform float far;
 uniform float nightVision;
 uniform float darknessFactor;
 uniform float darknessLightFactor;
 uniform float viewHeight, viewWidth;
 uniform float aspectRatio;
 uniform float wetness;
-uniform float blindness;
 uniform float PI;
 
 uniform vec3 shadowLightPosition;
 uniform vec3 cameraPosition;
-uniform vec3 skyColor;
 uniform vec3 sunPosition;
 uniform vec3 moonPosition;
 
 uniform ivec2 eyeBrightnessSmooth;
 
 varying vec2 texcoord;
-varying vec2 lmcoord;
 
-varying vec3 upVec;
-varying vec3 Normal;
 
 #define atmosphereSun
 
@@ -89,7 +81,7 @@ vec3 atmAmb = atmAmbFrame;
 #include "/lib/lightCol.glsl"
 #include "/lib/lighting.glsl"
 #include "/lib/brdf.glsl"
-#include "/lib/handlight.glsl"
+#include "/lib/vx/blocklightColor.glsl"
 #include "/lib/waterBump.glsl"
 #include "/lib/caustics.glsl"
 #include "/lib/dh.glsl"
@@ -392,8 +384,6 @@ void main() {
     vec3 ShadowAccum = vec3(0.0);
 
     vec3 flux = vec3(0.4);
-    float fluxRadius = 0.08;
-    float validSamples = 0.0;
 
     #ifdef BounceLight
         flux = vec3(0.0);
@@ -554,7 +544,6 @@ void main() {
 
         // Material flags
         float isGrass = float(material > 0.025 && material < 0.04);
-        bool isFoliage = (material > 0.005 && material < 0.02);
 
         if (isGrass == 1) Diffuse = mix(Diffuse, 0.3, distFactor);
 

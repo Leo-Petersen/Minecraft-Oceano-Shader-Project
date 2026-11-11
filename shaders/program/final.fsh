@@ -7,15 +7,9 @@ const int colortex0Format = R11F_G11F_B10F;
 
 uniform sampler2D noisetex;
 uniform sampler2D depthtex2;
-uniform sampler2D colortex11;
 
 uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferModelViewInverse;
 
-uniform float viewWidth;
-uniform float viewHeight;
-uniform float far;
-uniform float eyeAltitude;
 uniform float aspectRatio;
 uniform float frameTimeCounter;
 uniform float rainStrength;
@@ -28,7 +22,6 @@ uniform sampler2D colortex0; //.rgb = color
 uniform sampler2D depthtex0;
 
 varying vec2 texcoord;
-varying vec2 lmcoord;
 
 float Depth = texture2D(depthtex0, texcoord).r;
 
@@ -57,7 +50,6 @@ void main() {
 	vec4 screenPos = vec4(texcoord, Depth, 1.0);
 	vec4 viewPos = gbufferProjectionInverse * (screenPos * 2.0 - 1.0);
 		 viewPos /= viewPos.w;
-	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos.xyz + gbufferModelViewInverse[3].xyz;
 
 	#ifdef DOF
 		 color = getDOF(color);

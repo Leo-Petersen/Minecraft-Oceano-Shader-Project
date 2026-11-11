@@ -2,9 +2,7 @@
 
 #ifdef defaultClouds
     uniform sampler2D texture;
-    uniform sampler2D colortex1;
 
-    uniform vec3 skyColor;
 
     uniform float rainStrength;
 

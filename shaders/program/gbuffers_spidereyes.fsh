@@ -1,7 +1,6 @@
 
 uniform sampler2D texture;
 
-varying vec2 lmcoord;
 varying vec2 texcoord;
 varying vec4 glcolor;
 

@@ -9,22 +9,16 @@ varying vec2 texcoord;
 varying vec3 viewNormal;
 varying vec3 viewVector;
 varying vec3 wpos;
-varying vec3 lightVector;
 
 varying vec4 glcolor;
-varying vec4 position;
 
 varying mat3 tbnMatrix;
 
 uniform mat4 gbufferModelView, gbufferModelViewInverse;
 
-uniform float frameTimeCounter;
-uniform int worldTime;
 
-uniform vec3 sunPosition;
 uniform vec3 cameraPosition;
 
-attribute vec4 mc_Entity;
 attribute vec4 at_tangent;
 
 #define transMAD(mat, v) (mat3(mat) * (v) + (mat)[3].xyz)
@@ -39,14 +33,6 @@ void main() {
 
 	gl_Position = ftransform();
 	
-	if (worldTime < 12700 || worldTime > 23250) {
-		lightVector = sunPosition;
-	}
-
-	else {
-		lightVector = -sunPosition;
-	}
-
 	texcoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 	lmcoord  = (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;
 
@@ -62,7 +48,6 @@ void main() {
 	dist = length(gl_ModelViewMatrix * gl_Vertex);
 	viewVector = ( gl_ModelViewMatrix * gl_Vertex).xyz;
 	viewVector = (tbnMatrix * viewVector);
-	position = gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
 
 	vec3 viewpos = transMAD(gl_ModelViewMatrix, gl_Vertex.rgb);
 		 viewpos = transMAD(gbufferModelViewInverse, viewpos);

@@ -116,7 +116,6 @@
         #define FogStrength 0.25 //[0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.6 0.7 0.8 0.9 1 1.25 1.5 1.75 2 2.25 2.5 2.75 3 3.25 3.5 3.75 4 4.25 4.5 4.75 5 6 7 8 9 10 12 14 16 18 20]
         #define shaftAnisotropy 0.60   // lobe width, higher = tighter to the sun, lower = wider radius
         #define shaftStrength 1.6      // sun shaft brightness
-        #define shaftMax 1.1           // clamp ceiling for the sun shaft
     #define fogBlur
         //#define rainfogBlur // Needs to be re-ordered in the pipeline, too much effort for what it's worth currently
     #define BorderFog

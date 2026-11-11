@@ -2,7 +2,6 @@
 
 #define atmosRainMie 2.2
 #define atmosRainG 0.30
-#define atmosOvercast
 #define atmosOvercastTint vec3(0.94, 0.97, 1.03)
 #define atmosApNightSky vec3(0.012, 0.017, 0.030)
 #define atmosOvercastGain 0.62
@@ -13,7 +12,6 @@ bool atmWantBand = true;
 
 #define atmosSkyBrightness 20.0   // overall sky radiance
 #define atmosSunBrightness 22.0   // direct sunlight strength
-#define atmosFogDensity 0.0011    // aerial perspective density (per block)
 
 // LUT Dimensions //
 const vec2 atmosTransSize = vec2(256.0, 64.0);
@@ -187,7 +185,6 @@ vec3 atmGenMultiScatter(vec2 uv) {
             vec3 sInt = (scat - scat * sampleTr) / max(ext, vec3(1e-6));
             fms += tr * sInt;
 
-            float muSun = dot(normalize(p), sunDir);
             vec3 sunTr = atmTransmittanceInline(p, sunDir);
             float shadow = (atmRaySphere(p, sunDir, atmosRg) > 0.0) ? 0.0 : 1.0;
             lum += tr * shadow * sunTr * scat * (1.0 / (4.0 * atmosPi))
@@ -354,18 +351,6 @@ vec3 atmSkyAmbient(sampler2D skyViewTex, vec2 res, vec3 sunDir) {
     acc += atmSky(skyViewTex, res, normalize(vec3( 0.0, 0.4,  0.6)), sunDir);
     atmWantBand = true;
     return acc * 0.25;
-}
-
-// aerial perspective
-vec3 atmAerial(sampler2D skyViewTex, sampler2D transTex, vec2 res,
-               vec3 rd, float distBlocks, vec3 sunDir, out float outTr) {
-    outTr = exp(-distBlocks * atmosFogDensity);
-    float fogAmt = 1.0 - outTr;
-    vec3 rdHaze = normalize(vec3(rd.x, max(rd.y, 0.03) * 0.35, rd.z));
-    vec3 sky = atmSky(skyViewTex, res, rdHaze, sunDir);
-    float mu = dot(rd, sunDir);
-    sky += atmSunColor(transTex, res, sunDir) * atmPhaseM(mu, mix(atmosMieG * 0.6, atmosRainG, rainStrength)) * 0.02 * fogAmt;
-    return sky * fogAmt;
 }
 
 // Sunrise/sunset tint, WIP, coloring of the sky at these times needs work.

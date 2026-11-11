@@ -3,14 +3,10 @@
 #include "/lib/encode.glsl"
 
 uniform sampler2D texture;
-uniform sampler2D lightmap;
 uniform sampler2D noisetex;
-uniform float far;
 uniform mat4  gbufferModelViewInverse;
-uniform vec3 cameraPosition;
 
 varying float material;
-varying float dist;
 varying vec2  lmcoord;
 varying vec2  texcoord;
 varying vec3  worldpos;

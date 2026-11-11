@@ -15,7 +15,6 @@ attribute vec4 mc_Entity;
 attribute vec3 at_midBlock;
 attribute vec4 mc_midTexCoord;
 
-uniform mat4 gbufferModelView, gbufferModelViewInverse;
 uniform mat4 shadowProjection, shadowProjectionInverse;
 uniform mat4 shadowModelView, shadowModelViewInverse;
 

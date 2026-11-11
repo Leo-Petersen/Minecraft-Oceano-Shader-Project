@@ -12,7 +12,6 @@ varying vec3  viewVector;
 varying vec3  wpos;
 
 varying vec4  glcolor;
-varying vec4  viewPosV;
 
 varying mat3  tbnMatrix;
 
@@ -25,7 +24,7 @@ uniform vec3  cameraPosition;
 #endif
 
 void main() {
-    viewPosV    = gl_ModelViewMatrix * gl_Vertex;
+    vec4 viewPosV = gl_ModelViewMatrix * gl_Vertex;
     gl_Position = dhProjection * viewPosV;
 
     #ifdef TAA

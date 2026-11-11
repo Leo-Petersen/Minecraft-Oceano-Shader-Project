@@ -4,7 +4,6 @@ uniform mat4 gbufferModelViewInverse;
 
 varying vec2 texcoord;
 varying vec2 lmcoord;
-varying vec3 viewNormal;
 varying vec4 glcolor;
 
 #ifdef TAA
@@ -13,7 +12,6 @@ varying vec4 glcolor;
 
 void main() {
 	vec3 position = mat3(gbufferModelViewInverse) * (gl_ModelViewMatrix * gl_Vertex).xyz + gbufferModelViewInverse[3].xyz;
-    viewNormal = normalize(gl_NormalMatrix*gl_Normal);
 
 	gl_Position = ftransform();
 	#ifdef TAA

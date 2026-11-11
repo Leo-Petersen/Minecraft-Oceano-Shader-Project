@@ -8,18 +8,15 @@ uniform sampler2D colortex6;
 uniform sampler2D colortex3;
 uniform sampler2D colortex4;
 uniform sampler2D colortex5;
-uniform sampler2D colortex7;
 uniform sampler2D colortex9;
 uniform sampler2D colortex10;
 uniform sampler2D colortex11;
 uniform sampler2D colortex12;
 uniform sampler2D colortex13;
-uniform sampler2D colortex14;  // transmittance + multiscatter LUT
 uniform sampler2D colortex15;  // sky-view LUT
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 uniform sampler2D noisetex;
-uniform sampler2D shadowtex1;
 
 uniform sampler3D floodfillSampler;
 uniform sampler3D floodfillSamplerCopy;
@@ -39,8 +36,6 @@ uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferPreviousModelView;
 uniform mat4 gbufferPreviousProjection;
 uniform vec3 previousCameraPosition;
-uniform mat4 shadowModelView;
-uniform mat4 shadowProjection;
 
 uniform ivec2 eyeBrightnessSmooth;
 
@@ -50,7 +45,6 @@ uniform float rainStrength;
 uniform float viewWidth;
 uniform float viewHeight;
 uniform float far;
-uniform float near;
 uniform float blindness;
 uniform vec3 moonPosition;
 uniform float darknessFactor;
@@ -70,9 +64,7 @@ uniform vec3 sunPosition;
 varying float dist;
 
 varying vec2 texcoord;
-varying vec2 lmcoord;
 varying vec3 viewVector;
-varying vec3 upVec;
 
 #include "/lib/encode.glsl"
 
@@ -81,7 +73,6 @@ varying vec3 upVec;
 #endif
 
 vec3 viewNormal = normalize(decodeNormal(texture2D(colortex1, texcoord).st));
-float rainMask = 1;
 vec2 specularMap = texture2D(colortex1, texcoord).ba;
 vec3 waterNormal = normalize(texture2D(colortex5, texcoord).stp * 2.0f - 1.0f);
 
@@ -144,10 +135,6 @@ float sampleHeat(vec3 worldPos) {
         wsum += 1.0;
     }
     return (wsum > 0.0) ? H / wsum : 0.0;
-}
-
-float getDepth(float depth) {
-    return 2.0 * near * far / (far + near - (2.0 * depth - 1.0) * (far - near));
 }
 
 // Bicubic Catmull Rom fetch. This preserves the higher frequencies across repeated
@@ -719,7 +706,6 @@ void main() {
 		}
 
 		// Velocity gated neighbourhood clamp
-		float camVel = length(cameraPosition - previousCameraPosition) / max(frameTime, 1e-4);
 		float uvVel = length(prevUV - texcoord) * max(viewWidth, viewHeight);
 		float velFactor = uvVel / (uvVel + 2.0);
 		#if defined NETHER

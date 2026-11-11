@@ -60,24 +60,6 @@ ivec2 vcCheckerOffset(int i) { return vcCheckerTable[i]; }
 #define cloudMaxStep 120.0
 #define cloudSkipMult 3.5
 
-vec2 vcOffset8(int frame) {
-	int i = frame & 7;
-	if (i == 0) return vec2( 1.0, -3.0) / 8.0 * 0.5;
-	if (i == 1) return vec2(-1.0,  3.0) / 8.0 * 0.5;
-	if (i == 2) return vec2( 5.0,  1.0) / 8.0 * 0.5;
-	if (i == 3) return vec2(-3.0, -5.0) / 8.0 * 0.5;
-	if (i == 4) return vec2(-5.0,  5.0) / 8.0 * 0.5;
-	if (i == 5) return vec2(-7.0, -1.0) / 8.0 * 0.5;
-	if (i == 6) return vec2( 3.0,  7.0) / 8.0 * 0.5;
-	return vec2( 7.0, -7.0) / 8.0 * 0.5;
-}
-vec2 vcOffset16(int frame) {
-	int i = (frame & 15) + 1;
-	const float a1 = 0.7548776662466927;
-	const float a2 = 0.5698402909980532;
-	return fract(vec2(a1, a2) * float(i)) - 0.5;
-}
-
 #define bhCenterX      2000.0
 #define bhCenterZ      2000.0
 #define bhCenterXZ     vec2(bhCenterX, bhCenterZ)
@@ -153,7 +135,6 @@ vec2 vcOffset16(int frame) {
 #define lensStrength  1.0
 #define lensShadow    1.0
 #define lensFalloff   2.0
-#define lensRange     4.0s
 
 #define diskFadeNear   6000.0
 #define diskFadeFar    14000.0
@@ -370,7 +351,6 @@ vec4 computeVolumetricClouds(vec3 worldDir, float terrainDist, float dither, int
 		}
 	}
 #endif
-	vec3 bendPoint = cameraPosition + worldDir * min(tBend, 100000.0);
 
 	float inside  = 1.0 - smoothstep(shadowAng * 0.97, shadowAng, angBH);
 	float ringC   = shadowAng * bhRingScale;
@@ -579,7 +559,6 @@ vec3 vcReprojectCloudAt(vec3 worldDir, float apparentDist, float dt,
                         mat4 prevMV, mat4 prevP, vec3 prevCam) {
 	vec3 cloudPos = cameraPosition + worldDir * apparentDist;
 	vec2  rel = cloudPos.xz - bhCenterXZ;
-	float r   = max(length(rel), 1e-3);
 	float a   = -orbitDir * patternSpeed * dt;
 	float cs = cos(a), sn = sin(a);
 	rel = mat2(cs, -sn, sn, cs) * rel;

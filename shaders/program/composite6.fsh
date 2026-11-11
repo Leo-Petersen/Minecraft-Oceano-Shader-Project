@@ -2,7 +2,6 @@
 
 varying vec2 texcoord;
 
-uniform float aspectRatio;
 uniform float viewWidth;
 uniform float viewHeight;
 

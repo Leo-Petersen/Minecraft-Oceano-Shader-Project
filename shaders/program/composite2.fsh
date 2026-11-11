@@ -3,44 +3,28 @@ uniform sampler2D colortex0;
 uniform sampler2D colortex2;
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
-uniform sampler2D shadowtex1;
 
 uniform ivec2 eyeBrightnessSmooth;
 
-uniform mat4 gbufferProjection, gbufferProjectionInverse;
+uniform mat4 gbufferProjectionInverse;
 uniform mat4 gbufferModelViewInverse;
-uniform mat4 shadowModelView;
-uniform mat4 shadowProjection;
 
 uniform float viewWidth;
 uniform float viewHeight;
 uniform float rainStrength;
 uniform float far;
-uniform float near;
-uniform float frameTimeCounter;
 uniform vec3 shadowLightPosition;
-uniform vec3 cameraPosition;
 uniform vec3 sunPosition;
-uniform vec3 skyColor;
 uniform int isEyeInWater;
 uniform int frameCounter;
 
 varying vec2 texcoord;
-varying vec2 lmcoord;
 
 float material = texture2D(colortex2, texcoord).p;
 float iswater = float(material > 0.08 && material < 0.10);
 float Depth = texture2D(depthtex0, texcoord).r;
 
 vec3 atmSunTrue = normalize(mat3(gbufferModelViewInverse) * sunPosition);
-
-vec3 nvec3(vec4 pos){
-    return pos.xyz/pos.w;
-}
-
-vec4 nvec4(vec3 pos){
-    return vec4(pos.xyz, 1.0);
-}
 
 float Depth1 = texture2D(depthtex1, texcoord).r;
 

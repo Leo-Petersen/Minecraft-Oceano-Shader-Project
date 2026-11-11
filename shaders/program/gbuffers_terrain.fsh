@@ -6,23 +6,17 @@ uniform sampler2D lightmap;
 uniform sampler2D texture;
 uniform sampler2D normals;
 uniform sampler2D specular;
-uniform sampler2D colortex10;
 uniform sampler2D noisetex;
 uniform float far;
 
-uniform int frameCounter;
 
 uniform float frameTimeCounter;
 uniform float viewWidth;
 uniform float viewHeight;
 uniform float rainStrength;
-uniform float nightVision;             
-uniform float screenBrightness;
 uniform float wetness;
 
-uniform ivec2 atlasSize; 
 uniform vec3 shadowLightPosition;
-uniform vec3 skyColor;
 uniform vec3 cameraPosition;
 
 uniform mat4 gbufferModelViewInverse;
@@ -42,7 +36,6 @@ varying vec3 viewVector;
 
 varying vec4 glcolor;
 varying vec4 vtexcoordam;
-varying vec4 position;
 
 varying mat3 tbnMatrix;
 
@@ -264,7 +257,6 @@ void main() {
     float shadowFactor = 1.0;
     #ifdef Parallax
         #ifdef ParallaxShadow
-            float parallaxFade = clamp(dist * 0.04, 0.0, 1.0);
             if (lmcoord.t > 0.05 && (dot(viewNormal, shadowLightPosition) <= 0.0 || dot(normalData, shadowLightPosition) > 0.0)) { // skip with no sky access, or where the bumped normal already faces away on a lit face
                 shadowFactor = parallaxShadow(tbnMatrix * normalize(shadowLightPosition));
             }
