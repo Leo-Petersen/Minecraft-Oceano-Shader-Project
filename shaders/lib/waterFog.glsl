@@ -22,10 +22,6 @@ float phaseWater(float cosTheta) {
     return mix(forwardPhase, backPhase, 0.1);
 }
 
-float phaseRayleigh(float cosTheta) {
-    return (3.0 / (16.0 * PI)) * (1.0 + cosTheta * cosTheta);
-}
-
 vec3 multiScatteringApprox(vec3 extinction, vec3 scattering, float depth) {
     vec3 ssAlbedo = scattering / extinction;
     vec3 multiScatFactor = ssAlbedo * ssAlbedo;
@@ -35,152 +31,131 @@ vec3 multiScatteringApprox(vec3 extinction, vec3 scattering, float depth) {
     return inScatter;
 }
 
-vec3 waterTransmittance(float depth) {
-    return exp(-waterExtinctionCoeff * depth);
-}
-
-vec3 getInScatteredLight(vec3 lightColor, float distToSurface, float cosTheta, float shadowFactor) {
-    vec3 transmittanceToSurface = exp(-waterExtinctionCoeff * distToSurface);
-    float phase = phaseWater(cosTheta);
-    vec3 singleScatter = lightColor * transmittanceToSurface * waterScatteringCoeff * phase * shadowFactor;
-    vec3 multiScatter = multiScatteringApprox(waterExtinctionCoeff, waterScatteringCoeff, distToSurface);
-    multiScatter *= lightColor * shadowFactor * 0.3;
-    return singleScatter + multiScatter;
+//// Shared water model ////
+// Seen from above or from below, water is the same thing
+vec3 waterBodyColor(float depth) {
+    vec3 shallowWaterColor = vec3(shallowwaterR, shallowwaterG, shallowwaterB) / 255.0;
+    vec3 deepWaterColor    = vec3(deepwaterR, deepwaterG, deepwaterB) / 255.0;
+    return mix(shallowWaterColor, deepWaterColor, 1.0 - exp(-depth * 0.15));
 }
 
 
+// Ambient light in the water body
+vec3 waterAmbientScatter(float path) {
+    return multiScatteringApprox(waterPureExtinction, waterScatteringCoeff, path) * 0.15;
+}
+
+float waterShaftLight() {
+    return transitionFade * rainDirect;
+}
+
+
+//// Looking into water from above ////
 vec3 getWaterDepthFog(vec3 color, vec3 fragpos, vec3 fragpos2, float iswater, float lightMap, float skyAccess) {
-    
-    float depth = distance(fragpos, fragpos2);
-    depth = clamp(depth, 0.0, 20.0);
-    
-    vec3 transmittance = waterTransmittance(depth);
-    float fogDensity = 1.0 - dot(transmittance, vec3(0.333));
-    
-    float adaptiveFactor = 1.0 + (1.0 - lightMap) * 0.3;
-    fogDensity = clamp(fogDensity * adaptiveFactor, 0.0, 1.0);
 
-    // How much daylight actually reaches this water
+    float path = min(distance(fragpos, fragpos2), 64.0);
+    vec3  transmittance = waterTransmittancePath(path);
+
+    // how much light actually reaches this water
     float skyVisibility = smoothstep(0.02, 0.30, skyAccess);
-    
-    vec3 shallowWaterColor = vec3(shallowwaterR, shallowwaterG, shallowwaterB)/255;
-    vec3 deepWaterColor = vec3(deepwaterR, deepwaterG, deepwaterB)/255;
-    
-    float depthBlend = 1.0 - exp(-depth * 0.15);
-    vec3 baseWaterColor = mix(shallowWaterColor, deepWaterColor, depthBlend);
-    
-    vec3 rainyWaterColor = mix(baseWaterColor, vec3(deepwaterR, deepwaterG, deepwaterB)/255, rainStrength * 0.85);
-    baseWaterColor = mix(baseWaterColor, rainyWaterColor * 0.32, rainStrength);
-    
-    float fogStr = waterDayLight * lightMap * depthFogStr;
-    
+
+    vec3 lightDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);   // world space, used below too
+    vec3 light = waterSceneLight(lightDir.y) * lightMap * depthFogStr;
+    vec3 waterLight = (waterBodyColor(path) + waterAmbientScatter(path)) * light;
+
     #ifdef volumetricLight
-        
-        vec3 volumetricScatter = vec3(0.0);
-        float endRay = 0.0;
-        
-        if (depth > 0.1) {
+        float shaftLight = waterShaftLight();
+        if (path > 0.1 && shaftLight > 0.0) {
             float startRay = 0.0;
-            endRay = min(depth, 16.0);
-            
-            vec3 lightDir = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+            float endRay = min(path, 16.0);
+
             vec3 rayDir = normalize(fragpos2 - fragpos);
             float cosTheta = dot(rayDir, lightDir);
             float viewAngleBoost = max(0.0, cosTheta) * 0.5 + 0.5;
-            
+
             #ifdef TAA
             float sampleReduction = 0.25;
             #else
             float sampleReduction = 1.0;
             #endif
-            
+
             float increment = endRay / (volumetricFogQuality * sampleReduction);
-            
+
             #ifdef TAA
             float frameOffset = fract(frameTimeCounter * 6.283185307);
             dither64 = fract(dither64 + frameOffset);
             #endif
-            
+
             startRay = dither64 * increment;
-            
+
             vec3 startWorldPos = mat3(gbufferModelViewInverse) * fragpos + gbufferModelViewInverse[3].xyz;
             vec3 worldStep = mat3(gbufferModelViewInverse) * (rayDir * increment);
             vec3 currentWorldPos = startWorldPos + worldStep * (startRay / increment);
-            vec3 waterSurfaceWorldPos = mat3(gbufferModelViewInverse) * fragpos2 + gbufferModelViewInverse[3].xyz;
-            
-            // Pre-compute loop-invariant values
+            float surfaceY = startWorldPos.y;
+            vec3  waterLightDir = waterRefractedLightDir(lightDir);
+            float invWaterLightY = 1.0 / waterLightDir.y;
+            float invLightY      = 1.0 / max(lightDir.y, 0.05);
+
             float phase = phaseWater(cosTheta);
             vec3 stepTransmittance = exp(-waterExtinctionCoeff * increment);
             vec3 scatterBase = sunCol * phase * 0.08;
 
             vec3 accumulatedScatter = vec3(0.0);
             vec3 accumulatedTransmittance = vec3(1.0);
-            
+
+            vec4 shadowCoordRay  = ShadowSpaceWater(currentWorldPos);
+            vec4 shadowCoordStep = shadowProjection * (shadowModelView * vec4(worldStep, 0.0));
+
             for (float dist = startRay; dist < endRay; dist += increment) {
-                vec4 shadowCoord = ShadowSpaceWater(currentWorldPos);
+                vec4 shadowCoord = shadowCoordRay;
+                shadowCoordRay += shadowCoordStep;
                 shadowCoord.xy *= distort(shadowCoord.xy);
                 shadowCoord.z /= 6.0;
                 vec3 sampleCoords = shadowCoord.xyz * 0.5 + 0.5;
                 sampleCoords.z -= 0.0005;
-                
+
                 float shadowSample = shadowStep(shadowtex1, sampleCoords);
-                
-                float distToSurface = (waterSurfaceWorldPos.y - currentWorldPos.y) / lightDir.y;
-                
-                vec3 causticSamplePos = currentWorldPos + lightDir * distToSurface;
-                causticSamplePos.y = waterSurfaceWorldPos.y;
+
+                // Light lost on the way down uses the refracted path length
+                float depthHere = max(0.0, surfaceY - currentWorldPos.y);
+                float distToSurface = depthHere * invWaterLightY;
+
+                vec3 causticSamplePos = currentWorldPos + lightDir * (depthHere * invLightY);
+                causticSamplePos.y = surfaceY;
                 vec3 causticValue = waterCaustics(causticSamplePos, 1.0);
                 float causticIntensity = pow(causticValue.x, 1.5) * 8.0;
-                
-                float depthFalloff = exp(-dist * 0.08);
-                causticIntensity *= depthFalloff;
-                float distToSurfaceClamped = max(0.0, distToSurface);
-                
-                vec3 surfaceToSample = exp(-waterExtinctionCoeff * distToSurfaceClamped);
-                
+                causticIntensity *= exp(-dist * 0.08);
+
+                vec3 surfaceToSample = waterTransmittancePath(distToSurface);
+
                 vec3 inScatter = scatterBase * surfaceToSample * shadowSample;
                 inScatter *= (1.0 + causticIntensity * 2.0);
-                
+
                 accumulatedScatter += inScatter * accumulatedTransmittance * increment;
                 accumulatedTransmittance *= stepTransmittance;
-                
+
                 currentWorldPos += worldStep;
             }
-            
-            volumetricScatter = accumulatedScatter * fogStr * transitionFade * viewAngleBoost;
-            volumetricScatter *= (1.0 - rainStrength * 0.85);
-            
-            float avgDepth = endRay * 0.5;
-            vec3 shallowShaftColor = sunCol * vec3(shallowwaterR, shallowwaterG, shallowwaterB)/255;
-            vec3 deepShaftColor = sunCol * vec3(deepwaterR, deepwaterG, deepwaterB)/255;
-            vec3 underwaterSunColor = mix(shallowShaftColor, deepShaftColor, clamp(avgDepth / 10.0, 0.0, 1.0));
-            volumetricScatter *= underwaterSunColor * 5;
+
+            vec3 shaftTint = mix(vec3(shallowwaterR, shallowwaterG, shallowwaterB),
+                                 vec3(deepwaterR, deepwaterG, deepwaterB),
+                                 clamp(endRay * 0.05, 0.0, 1.0)) / 255.0;
+            waterLight += accumulatedScatter * shaftTint * 5.0 * shaftLight * viewAngleBoost * lightMap * depthFogStr;
         }
-        
-        baseWaterColor += volumetricScatter;
-        
     #endif
-    
-    vec3 ambientMultiScatter = multiScatteringApprox(waterExtinctionCoeff, waterScatteringCoeff, depth);
-    ambientMultiScatter *= sunCol * fogStr * 0.15 * (1.0 - rainStrength * 0.85);
-    baseWaterColor += ambientMultiScatter;
-    
+
     vec3 worldPos = mat3(gbufferModelViewInverse) * fragpos + gbufferModelViewInverse[3].xyz;
     float turbidity = texture2D(noisetex, worldPos.xz * 0.1 + frameTimeCounter * 0.01).r;
-    turbidity = turbidity * 0.1 + 0.95;
-    baseWaterColor *= turbidity;
-    
-    vec3 litWaterColor = baseWaterColor * fogStr;
-    vec3 caveWaterColor = deepWaterColor * 0.04;
-    vec3 waterTint = mix(caveWaterColor, litWaterColor, skyVisibility);
+    waterLight *= turbidity * 0.1 + 0.95;
 
-    vec3 extinctedColor = color * transmittance;
-    vec3 finalColor = mix(extinctedColor, waterTint, fogDensity);
-    
-    return finalColor;
+    vec3 caveWaterColor = vec3(deepwaterR, deepwaterG, deepwaterB) / 255.0 * 0.04;
+    waterLight = mix(caveWaterColor, waterLight, skyVisibility);
+
+    return color * transmittance + waterLight * (1.0 - transmittance);
 }
 
 
+//// Underwater ////
 vec3 getUnderwaterFog(vec3 color, vec3 viewPos, float lightMapSky) {
     
     float dist = length(viewPos);
@@ -199,7 +174,7 @@ vec3 getUnderwaterFog(vec3 color, vec3 viewPos, float lightMapSky) {
     
     float distSurfaceToCamera = estimatedDepth / lightAngle;
     
-    vec3 underwaterExtinction = waterExtinctionCoeff * 0.75;
+    vec3 underwaterExtinction = waterPureExtinction * 0.75;
     vec3 transmittance = exp(-underwaterExtinction * dist);
     float fogDensity = underwaterFogDensity(dist);
     
@@ -271,10 +246,14 @@ vec3 getUnderwaterFog(vec3 color, vec3 viewPos, float lightMapSky) {
             vec3 accumulatedScatter = vec3(0.0);
             vec3 accumulatedTransmittance = vec3(1.0);
             
+            vec4 shadowCoordRay  = ShadowSpaceWater(currentWorldPos - cameraPosition);
+            vec4 shadowCoordStep = shadowProjection * (shadowModelView * vec4(worldStep, 0.0));
+
             for (float rayDist = startRay; rayDist < endRay; rayDist += increment) {
                 float distanceFalloff = exp(-rayDist * 0.04);
                 
-                vec4 shadowCoord = ShadowSpaceWater(currentWorldPos - cameraPosition);
+                vec4 shadowCoord = shadowCoordRay;
+                shadowCoordRay += shadowCoordStep;
                 shadowCoord.xy *= distort(shadowCoord.xy);
                 shadowCoord.z /= 6.0;
                 vec3 sampleCoords = shadowCoord.xyz * 0.5 + 0.5;

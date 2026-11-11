@@ -198,29 +198,43 @@ void main() {
         #endif
 
         float wetFilm = 0.0;
+        float standingWater = 0.0;
+        float puddleReflMask = 0.0;
         if (wetness01 > 0.0) {
             vec3  worldNormal = normalize(mat3(gbufferModelViewInverse) * viewNormal);
             float flatFace    = smoothstep(0.55, 0.95, worldNormal.y);
 
             vec3  worldRel    = mat3(gbufferModelViewInverse) * fragpos + gbufferModelViewInverse[3].xyz;
             vec2  wpos        = worldRel.xz + cameraPosition.xz;
-            float puddleField = getRainPuddles(wpos, wetness01);
-
-            float fillLevel   = getPoolFill(wpos) * puddleField;
 
             float distFade    = 1.0 - smoothstep(64.0, 128.0, length(worldRel.xz));
 
             float rawSky      = clamp(lmcoord.t - 1.0 / 32.0, 0.0, 1.0);
             float skyExposure = smoothstep(12.5 / 16.0, 14.75 / 16.0, rawSky);
 
-            float wetPresence = flatFace * smoothstep(0.0, 0.25, wetness01) * distFade * skyExposure;
+            // Sides of blocks get the same wet film as the tops for rain so they match!!
+            float wetFace     = flatFace;
+            #ifdef wallWetness
+            float sideFace    = 1.0 - smoothstep(0.35, 0.75, abs(worldNormal.y));
+            wetFace           = max(wetFace, sideFace);
+            #endif
+            float wetPresence = wetFace * smoothstep(0.0, 0.25, wetness01) * distFade * skyExposure;
+
+            // covered
+            if (wetPresence > 0.0) {
+            float puddleField = getRainPuddles(wpos, wetness01);
+            float fillLevel   = getPoolFill(wpos) * puddleField;
 
             float poolMask    = smoothstep(0.05, 0.35, puddleField) * wetPresence;
 
-            float underWater  = smoothstep(fillLevel + 0.012, fillLevel - 0.012, surfaceHeight) * wetPresence;
+            float underWater  = smoothstep(fillLevel + 0.012, fillLevel - 0.012, surfaceHeight) * wetPresence * flatFace;
             float waterDepth  = max(fillLevel - surfaceHeight, 0.0);
 
             wetFilm           = max(poolMask, underWater);
+            standingWater     = underWater;
+            // Walls look wet through darkening and the regular PBR reflections,
+            // so save some performance through making only up-facing surfaces go through the puddle reflection raymarch?
+            puddleReflMask    = wetFilm * flatFace;
 
             normalData = normalize(mix(normalData, viewNormal, underWater));
 
@@ -239,9 +253,12 @@ void main() {
             specularMap.r     = mix(specularMap.r, 0.96, underWater);            // flat pool water
             specularMap.g     = mix(specularMap.g, 0.04, wetFilm);              // water F0 across the whole footprint
             }
+            }
         }
     #else
         float wetFilm = 0.0;
+        float standingWater = 0.0;
+        float puddleReflMask = 0.0;
     #endif
 
     float shadowFactor = 1.0;
@@ -276,5 +293,5 @@ void main() {
 #else
 	gl_FragData[2] = vec4(lightMap, material, shadowFactor);
 #endif
-	gl_FragData[3] = vec4(emission, wetFilm, textureAO, labSSS);
+	gl_FragData[3] = vec4(emission, packPuddle(puddleReflMask, standingWater), textureAO, labSSS);
 }

@@ -9,6 +9,8 @@ uniform mat4 gbufferModelViewInverse;
 
 uniform float viewWidth, viewHeight, far, frameTimeCounter, rainStrength, nightVision, darknessLightFactor;
 uniform vec3 skyColor;
+uniform int isEyeInWater;
+uniform vec3 shadowLightPosition;
 uniform vec3 sunPosition;
 
 varying float material;
@@ -34,29 +36,30 @@ float Bayer2(vec2 a) { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75)))
 float Bayer4(vec2 a)  { return Bayer2(0.5 * a) * 0.25 + Bayer2(a); }
 float Bayer8(vec2 a)  { return Bayer4(0.5 * a) * 0.25 + Bayer2(a); }
 
+
 void main() {
     vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
 
     if (texture2D(depthtex1, uv).r < 1.0) discard;
 
-    float iswater = 1.0;
+    // Same surface model as gbuffers_water
+    vec4 color = vec4(0.0);
+    if (isEyeInWater >= 1) {
+        float skylightMap = texture2D(colortex2, texcoord).t;
+        skylightMap = clamp(skylightMap, min_skyLightMap, 1.0);
+        skylightMap = pow(skylightMap, 0.1);
+        float transparencyFactor = 0.35 * getTransparencyFactor() * skylightMap;
 
-    float skylightMap = texture2D(colortex2, texcoord).t;
-    skylightMap = clamp(skylightMap, min_skyLightMap, 1.0);
-    skylightMap = pow(skylightMap, 0.1);
+        #ifdef Reflections
+        float waterTransparency = 0.0;
+        #else
+        float waterTransparency = 0.7;
+        #endif
 
-    float transparencyFactor = 0.35 * getTransparencyFactor() * skylightMap;
-
-    #ifdef Reflections
-    float waterTransparency = 1.0 - iswater;
-    #else
-    float waterTransparency = 1.0 - iswater * 0.3;
-    #endif
-
-    vec4 color = texture2D(texture, texcoord) * glcolor;
-    color *= texture2D(lightmap, lmcoord);
-    color.a   *= (waterTransparency + 0.6);
-    color.rgb *= transparencyFactor;
+        color = texture2D(texture, texcoord) * glcolor * texture2D(lightmap, lmcoord);
+        color.a   *= (waterTransparency + 0.6);
+        color.rgb *= transparencyFactor;
+    }
 
     vec3 bump = getWaveHeight((wpos.xz - wpos.y), 1.0, 0, dist);
     const float bumpmult = 0.5 * (WaterDepth + 0.5);

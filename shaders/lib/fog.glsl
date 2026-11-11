@@ -91,6 +91,10 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
     vec3  shafts   = vec3(0.0);
     float transmit = 1.0;
 
+    // Everything below gets multiplied by this, so when it's zero the march is wasted work
+    float shaftScale = shaftStrength * transitionFade * (1.0 - rainStrength);
+    if (shaftScale <= 0.0) startRay = endRay;
+
     for (; startRay < endRay; startRay += increment) {
         if (startRay > sceneDepthLinear) break;
 
@@ -121,7 +125,7 @@ vec3 getFog(vec3 color, vec3 cameraPosition, vec3 worldPos, vec3 volumeColor, fl
         transmit *= stepTr;
     }
 
-    shafts *= shaftStrength * transitionFade * (1.0 - rainStrength);
+    shafts *= shaftScale;
 
     color = max(color + shafts, vec3(0.0));
 #endif

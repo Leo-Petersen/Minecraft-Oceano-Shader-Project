@@ -119,7 +119,8 @@ vec3 atmMoonLight = vec3(40, 70, 115)/255 * atmMoonLum;
 vec3 sunlightClear = atmDayLight * atmDN + atmMoonLight * atmMoon;
 vec3 sunlightCol = mix(sunlightClear, rainAmbient, rainT);
 
-//// Water Fog Colour ////
+//// Underwater Fog Light ////
+// Daylight level used by the underwater fog
 float waterDayLight = max(atmDN, 0.20);
 
 //// Ambient Shadow Colour ////
@@ -157,5 +158,47 @@ vec3 atmoBase  = mix(mix(atmoNight, atmoDay, atmDN), atmoWarm, atmGlow);
 vec3 atmoClear = atmTint(atmoBase, atmAmbHue, 0.75 * atmDN) * clamp(transitionFade, 0.6, 1.0);
 vec3 atmoColor = mix(atmoClear, rainAmbient, rainT);
 #endif
+
+//// Light on water ////
+// Light for the water body, relative to clear noon
+#if !defined NETHER && !defined END
+vec3 waterLandLight(vec3 sunL, vec3 shCol, float NdotL, float fade, float directScale,
+                    float nightMix, float bounceDay, float shadowFactorTime, float night,
+                    float rain, float overcast, float bounceStr, float ambStr, float lightS) {
+    float diffuse = NdotL / 3.14159265;
+    vec3  shadowAccum = sunL;                                   // unshadowed
+    vec3  direct = sunL * shadowAccum * diffuse * (lightS * 11.0 * fade * directScale);
+
+    float shadowLum  = dot(shadowAccum, vec3(0.2126, 0.7152, 0.0722));
+    float bounceMask = 1.0 - smoothstep(0.0, 0.25, shadowLum * diffuse);
+          bounceMask = bounceMask * bounceMask * fade;
+    vec3  invShadowAccum = clamp(vec3(0.4) - shadowAccum * diffuse, 0.0, 1.0);
+
+    vec3 flux = vec3(1.0);                                      // neutral bounce colour
+    vec3 back = (sunL * 2.0 + flux * 2.0) * 7.0 + sunL * 2.0;   // backLight()
+    vec3 bounce = mix(shCol, back, 1.5) * 0.55 * bounceStr;
+         bounce = mix(bounce, vec3(dot(bounce, vec3(0.2126, 0.7152, 0.0722))), nightMix);
+         bounce *= bounceDay * (1.0 - rain);
+
+    vec3 base = mix(pow(shCol, vec3(0.3)) * (1.0 - rain * 0.2), shCol * 3.0 * invShadowAccum * (1.0 - rain * 0.7), fade);
+    vec3 bounceAmb = ambStr * 0.09 * bounce * shadowFactorTime * bounceMask;
+    vec3 ambient = (base + bounceAmb + ambientShadowColor * 2.0 * night) * 0.25;
+         ambient = mix(ambient, rainAmbient * 0.70, overcast);
+    return direct + ambient;
+}
+#endif
+
+vec3 waterSceneLight(float sunCos) {
+#if defined NETHER || defined END
+    return vec3(waterDayLight);
+#else
+    float shadowFactorTime = 0.75 * time[0] + time[1] + time[2] + time[3] + 0.75 * time[4] + 0.25 * time[5];
+    vec3 now = waterLandLight(sunlightCol, shadowCol, max(sunCos, 0.0), transitionFade, max(0.14, rainDirect),
+                              time[5], smoothstep(-0.08, 0.0, sunElevation), shadowFactorTime,
+                              atmNight, rainStrength, rainScatter, BounceLightStr, ambientStr, lightStr);
+    const vec3 noon = vec3(1.2048293, 1.2212815, 1.2851918);
+    return now / noon;
+#endif
+}
 
 float fogStrength = 0.3;

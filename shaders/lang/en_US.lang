@@ -197,6 +197,8 @@ option.ParallaxWater=Parallax Water
     option.ParallaxWater.comment=Adds parallax-mapped wave depth to water surfaces.
 option.WaterDepth=Wave Depth
 option.rainReflection=Puddles
+option.wallWetness=Puddles: Wet Walls
+    option.wallWetness.comment=Puddles also darken and wet the sides of blocks, matching the tops of blocks
 option.Caustics=Caustics
 option.reflectedCaustics=Caustics Reflections
 option.reflectedCausticsStrength=Strength
@@ -217,6 +219,8 @@ option.AbsorptionCoeffR=Absorption Red
     option.AbsorptionCoeffR.comment=Per-channel light absorption in water. Higher absorbs more red, shifting deep water bluer.
 option.AbsorptionCoeffG=Absorption Green
 option.AbsorptionCoeffB=Absorption Blue
+option.waterTurbidity=Water Turbidity
+    option.waterTurbidity.comment='Suspended' particles in the water. Higher values make water murkier and shorten how far you can see into it from above
 
 
 # Materials #

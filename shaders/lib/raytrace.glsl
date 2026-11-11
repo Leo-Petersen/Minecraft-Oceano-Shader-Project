@@ -170,16 +170,17 @@ vec4 raytracePuddles(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnel
     vec3 oldPosition = fragmentPos;
     fragmentPos += stepVector;
     int stepCount = 0;
+    float stepLen = stepSize;
 
     for (int i = 0; i < numSamples; i++) {
         vec3 position = rtViewToScreen(fragmentPos);
         if (any(lessThan(position, vec3(0.0))) || any(greaterThan(position, vec3(1.0)))) {
             break;
         }
-        vec3 samplePosition = vec3(position.st, texture2D(depthtex1, position.st).r);
-        samplePosition = rtScreenToView(samplePosition);
+        float sampleDepth = texture2D(depthtex1, position.st).r;
+        vec3 samplePosition = rtScreenToView(vec3(position.st, sampleDepth));
         float error = abs(fragmentPos.z - samplePosition.z);
-        if (error < pow(length(stepVector), 1.35) && texture2D(depthtex1, position.st).r < 1.0) {
+        if (error < pow(stepLen, 1.35) && sampleDepth < 1.0) {
             stepCount++;
             if (stepCount >= maxRefinements) {
                 color = textureLod(colortex0, position.st, 0.0);
@@ -188,8 +189,10 @@ vec4 raytracePuddles(vec3 skyColor, vec3 fragmentPos, vec3 normal, float fresnel
             }
             fragmentPos = oldPosition;
             stepVector *= refinementMultiplier;
+            stepLen    *= refinementMultiplier;
         }
         stepVector *= incrementFactor;
+        stepLen    *= incrementFactor;
         oldPosition = fragmentPos;
         fragmentPos += stepVector;
     }

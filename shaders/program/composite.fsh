@@ -232,7 +232,7 @@ void main() {
     if (iswater == 1.0 || isEyeInWater == 1) {
         WaterShadowVisibility = shadowSample(worldPos1).r 
                               * transitionFade * Diffuse;
-        vec3 caustics = waterCaustics(worldPos1, WaterShadowVisibility);
+        vec3 caustics = waterCausticsLight(worldPos1, WaterShadowVisibility);
         color.rgb *= caustics;
     }
     #endif

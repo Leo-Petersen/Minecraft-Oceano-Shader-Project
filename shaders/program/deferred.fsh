@@ -424,17 +424,29 @@ void main() {
         vec2 dir = vec2(cosAngle, sinAngle);
 
         float shadowBias = getShadowBias(SampleCoords);
+        float waterLightPath = -2.0;
 
         for (int i = 0; i < lightingQuality; i++) {
             float radius = sqrt((float(i) + 0.5) / float(lightingQuality));
             vec2 offset = dir * radius;
 
-            ShadowAccum += TransparentShadowHardware(vec3(SampleCoords.xy + offset * filterSize, SampleCoords.z), transparencyFactor, shadowBias);
+            ShadowAccum += TransparentShadowHardware(vec3(SampleCoords.xy + offset * filterSize, SampleCoords.z), SampleCoords, transparencyFactor, shadowBias, waterLightPath);
 
             dir = vec2(
                 dir.x * goldenCos - dir.y * goldenSin,
                 dir.x * goldenSin + dir.y * goldenCos
             );
+        }
+
+        // Under water, sunlight arrives refracted steeper and weaker
+        if (waterLightPath >= 0.0) {
+            vec3  lightDirWorld = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+            vec3  refrDirWorld  = waterRefractedLightDir(lightDirWorld);
+            float cosI = max(lightDirWorld.y, 0.0);
+            float fresnelT = 1.0 - (0.02 + 0.98 * pow(1.0 - cosI, 5.0));
+            float beam = fresnelT * cosI / refrDirWorld.y;
+            vec3  refrDirView = mat3(gbufferModelView) * refrDirWorld;
+            Diffuse = calculateDiffuse(refrDirView, normalize(-viewPos.xyz), normal, roughness) * beam;
         }
 
         ShadowAccum /= float(lightingQuality);
@@ -624,7 +636,7 @@ void main() {
         
         // PBR Specular
         vec3 specularBRDF = vec3(0.0);
-        if (directLit) {
+        if (directLit && rainDirect * transitionFade > 0.0) {
             specularBRDF = cookTorranceGGXBRDF(color, specularMap, lightMap.t, sunlightCol);
             specularBRDF *= ShadowAccum * lightMap.t * lightStrength * rainDirect * transitionFade;
         }
@@ -650,6 +662,7 @@ void main() {
 
         // Reflected water caustics, light bouncing off water onto surfaces
         #ifdef reflectedCaustics
+        if (directLit && rainDirect * transitionFade > 0.0)
         {
             vec3 sunDirWorld = normalize(mat3(gbufferModelViewInverse) * (shadowLightPosition * 0.01));
             vec3 reflCaust = reflectedWaterCaustics(

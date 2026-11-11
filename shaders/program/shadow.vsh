@@ -146,11 +146,9 @@ void main() {
     gl_Position = position;
     gl_Position.z /= 6.0;
 
-    iswater = 0.0;
-    if (mc_Entity.x == 13000) {
-        iswater = 1.00;
-        gl_Position.z -= 0.0003;
-    }
+    // Water is marked and stores its depth in shadow.fsh, terrain under it is lit from that depth.
+    iswater = (mc_Entity.x == 13000) ? 1.0 : 0.0;
+    if (iswater > 0.5) gl_Position.z -= 0.0003;
     	
     if (mc_Entity.x == 11000 ||
         mc_Entity.x == 11010 ||

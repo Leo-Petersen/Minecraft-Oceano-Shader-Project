@@ -1,9 +1,27 @@
-vec3 waterCaustics(vec3 worldpos, float shadowVisibility){
+// Raw caustic pattern from the wave normals
+float waterCausticPattern(vec3 worldpos) {
 	vec3 pos = worldpos + cameraPosition;
 	float caustics = dot(getWaveHeight(pos.xz - pos.y, 1.0, 0.0, 0.0).xyz * 2.0 - 1.0, vec3(1.0));
 			caustics = caustics * 0.1 + 0.9;
 			caustics = clamp(caustics, 0.0, 1.0);
-			caustics = pow(caustics, 8.0) * 14.0;
+	return pow(caustics, 8.0) * 14.0;
+}
+
+// Pattern value for flat water: normal (0,0,1) gives 0.8^8 * 14 = 2.3488
+const float waterCausticFlatValue = 2.3488;
+
+// Caustic intensity used by the light shafts
+vec3 waterCaustics(vec3 worldpos, float shadowVisibility){
+	float caustics = waterCausticPattern(worldpos);
+			caustics = mix(1.0, caustics, shadowVisibility);
+			caustics = (caustics * 0.5) + 0.5;
+
+	return vec3(caustics);
+}
+
+// Caustic light on surfaces under water
+vec3 waterCausticsLight(vec3 worldpos, float shadowVisibility){
+	float caustics = waterCausticPattern(worldpos) / waterCausticFlatValue;
 			caustics = mix(1.0, caustics, shadowVisibility);
 			caustics = (caustics * 0.5) + 0.5;
 
@@ -37,14 +55,16 @@ vec3 reflectedWaterCaustics(
     const float causticMaxDist = 4.0;
     float stepSize = causticMaxDist / float(causticSteps);
 
-    vec3 lastAbovePos = worldPos;
-    vec3 waterHitPos  = vec3(0.0);
+    // The march is a straight line and ShadowSpace() is linear, so its shadow-space position is start + t * step
+    vec4 sStart = ShadowSpace(worldPos);
+    vec4 sStep  = shadowProjection * (shadowModelView * vec4(toWaterDir * stepSize, 0.0));
+
+    float lastAboveT = 0.0;
+    float waterHitT  = 0.0;
     bool found = false;
 
     for (int i = 1; i <= causticSteps; i++) {
-        vec3 samplePos = worldPos + toWaterDir * float(i) * stepSize;
-
-        vec4 sCoord = ShadowSpace(samplePos);
+        vec4 sCoord = sStart + sStep * float(i);
         sCoord.xy *= distort(sCoord.xy);
         sCoord.z /= 6.0;
         vec2 sUV = sCoord.xy * 0.5 + 0.5;
@@ -53,32 +73,33 @@ vec3 reflectedWaterCaustics(
 
         float waterTag = texture2D(shadowcolor1, sUV).r;
         if (waterTag > 0.5) {
-            waterHitPos = samplePos;
+            waterHitT = float(i);
             found = true;
             break;
         }
-        lastAbovePos = samplePos;
+        lastAboveT = float(i);
     }
 
     if (!found) return vec3(0.0);
 
     // Reject if water is too far from the fragment, basically stops caustics from appearing too far from water
-    float waterDist = length(waterHitPos - worldPos);
+    // (toWaterDir is normalized, so the distance is t * stepSize)
+    float waterDist = waterHitT * stepSize;
     if (waterDist > 8.0) return vec3(0.0);
 
     // Bisection, refine the boundary between last non-water and first water sample
-    vec3 lo = lastAbovePos;
-    vec3 hi = waterHitPos;
+    float lo = lastAboveT;
+    float hi = waterHitT;
     for (int j = 0; j < 5; j++) {
-        vec3 mid = (lo + hi) * 0.5;
-        vec4 sCoord = ShadowSpace(mid);
+        float mid = (lo + hi) * 0.5;
+        vec4 sCoord = sStart + sStep * mid;
         sCoord.xy *= distort(sCoord.xy);
         sCoord.z /= 6.0;
         vec2 sUV = sCoord.xy * 0.5 + 0.5;
         float waterTag = texture2D(shadowcolor1, sUV).r;
         if (waterTag > 0.5) hi = mid; else lo = mid;
     }
-    float waterY = ((lo + hi) * 0.5).y;
+    float waterY = worldPos.y + toWaterDir.y * stepSize * ((lo + hi) * 0.5);
 
     if (waterY >= worldPos.y) return vec3(0.0);
 

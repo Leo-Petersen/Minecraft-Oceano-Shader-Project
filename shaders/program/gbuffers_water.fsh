@@ -65,6 +65,7 @@ vec3 parallaxViewVec = vec3(viewVector.x, viewVector.y * tangentW, viewVector.z)
 #define pomViewVector parallaxViewVec
 #include "/lib/parallax.glsl"
 
+
 vec3 toNDC(vec3 pos){
 	vec4 iProjDiag = vec4(gbufferProjectionInverse[0].x, gbufferProjectionInverse[1].y, gbufferProjectionInverse[2].zw);
     vec3 p3 = pos * 2. - 1.;
@@ -121,30 +122,26 @@ void main() {
 	float processedTorchLight = processTorchLight(rawTorchLight, rawSkyLight, processedSkyLight, 
 	                                               handlight, darknessLightFactor);
 
-	#ifdef Reflections
-	float waterTransparency = 1.0 - iswater;
-	#else
-	float waterTransparency = 1.0 - iswater * 0.3;
-	#endif
-
-	vec4 color = (iswater > 0.5 ? texture2D(texture, texcoord) : textureGrad(texture, surfUV, dFdxy[0], dFdxy[1])) * glcolor;
+	vec4 color = (iswater > 0.5) ? vec4(0.0) : textureGrad(texture, surfUV, dFdxy[0], dFdxy[1]) * glcolor;
 	vec3 albedo = color.rgb;
 
 	// Water Lighting //
 	if (iswater > 0.5) {
-		float skylightMap = texture2D(colortex2, texcoord).t;
-		skylightMap = clamp(skylightMap, min_skyLightMap, 1.0);
-		skylightMap = pow(skylightMap, 0.1);
-		
-		float transparencyFactor = 0.35 * getTransparencyFactor() * skylightMap;
-		
-		color *= texture2D(lightmap, lmcoord);
+		// The water surface adds no coloured light
+		color.rgb = vec3(0.0);
+
+		// The water surface absorbs nothing
 		if (isEyeInWater < 1.0) {
-			color.a *= (waterTransparency + 0.6);
-			color.rgb *= transparencyFactor;
+			color.a = 0.0;
 		} else {
+			float skylightMap = texture2D(colortex2, texcoord).t;
+			skylightMap = clamp(skylightMap, min_skyLightMap, 1.0);
+			skylightMap = pow(skylightMap, 0.1);
+			float transparencyFactor = 0.35 * getTransparencyFactor() * skylightMap;
+
+			color = texture2D(texture, texcoord) * glcolor * texture2D(lightmap, lmcoord);
 			color.rgb *= transparencyFactor;
-			color.a *= 0.5;
+			color.a   *= 0.5;
 		}
 	}
 	// Transparent Lighting //
@@ -313,6 +310,8 @@ void main() {
 		else if (ishoney > 0.5) labSSS = 0.8;
 		else if (isice   > 0.5) labSSS = 0.6;
 	}
+
+	if (iswater < 0.5 && color.a <= 0.01) discard;
 
 /* DRAWBUFFERS:01253 */
 	gl_FragData[0] = color;

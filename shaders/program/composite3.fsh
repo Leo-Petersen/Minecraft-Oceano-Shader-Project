@@ -326,9 +326,6 @@ void main() {
 		// 	eta = 1.0 / 1.333;  // Water
 		// }
 					
-		vec3  bedViewPos      = reconstructViewPosOpaque(texcoord, Depth1);
-		float depthDifference = max((-bedViewPos.z) - (-viewPos.z), 0.0);
-
 		// Distortion vector
 		float aspectRatio = viewWidth / viewHeight;
 		float fovScale    = gbufferProjection[1][1] / 1.37;
@@ -341,34 +338,12 @@ void main() {
 		float destWater = float(destMat > 0.08 && destMat < 0.10);
 
 		vec2 refractCoord = (destWater > 0.5) ? clamp(newCoord, vec2(0.001), vec2(0.999)) : texcoord;
-		vec2 chromaOffset = waterNormal.xy * 0.008 * float(destWater > 0.5) * 0;
 
 		vec3 refractedColor;
 		{
-			vec2 rC = clamp(refractCoord + chromaOffset, vec2(0.001), vec2(0.999));
-			vec2 bC = clamp(refractCoord - chromaOffset, vec2(0.001), vec2(0.999));
-
-			float rMat = texture2D(colortex2, rC).p;
-			float bMat = texture2D(colortex2, bC).p;
-			if (!(rMat > 0.08 && rMat < 0.10)) rC = refractCoord;
-			if (!(bMat > 0.08 && bMat < 0.10)) bC = refractCoord;
-
-			refractedColor.r = textureLod(colortex0, rC, 0.0).r;
-			refractedColor.g = textureLod(colortex0, refractCoord, 0.0).g;
-			refractedColor.b = textureLod(colortex0, bC, 0.0).b;
-
-			if (destWater > 0.5) {
-				vec3 bedRefr = reconstructViewPosOpaque(refractCoord, texture2D(depthtex1, refractCoord).r);
-				depthDifference = max((-bedRefr.z) - (-viewPos.z), 0.0);
-			}
+			refractedColor = textureLod(colortex0, refractCoord, 0.0).rgb;
 		}
 
-		if (isEyeInWater < 0.5) {
-			vec3 waterAbsorption = vec3(0.6, 0.85, 0.9);
-			float absorptionFactor = exp(-depthDifference * 0.08);
-			refractedColor *= mix(waterAbsorption, vec3(1.0), absorptionFactor);
-		}
-		
 		float fresnel = pow(1.0 - normalDotEye, 5.0);
 			  fresnel = mix(0.02, 1.0, fresnel);
 
@@ -496,8 +471,8 @@ void main() {
 			float distFactor = length(worldPos.xz) / 120.0;
 				distFactor = pow(distFactor, 2.2);
 				distFactor = exp(-1.2 * distFactor);
-			float puddleMask = texture2D(colortex13, texcoord).g;
-			color.rgb = puddles(color.rgb, worldPos, reflectedskyBoxCol, viewPos.xyz, lightMap, iswet, distFactor, puddleMask);
+			vec2 puddleData = unpackPuddle(texture2D(colortex13, texcoord).g);
+			color.rgb = puddles(color.rgb, worldPos, reflectedskyBoxCol, viewPos.xyz, lightMap, iswet, distFactor, puddleData.x, puddleData.y);
 		}
 	#endif
 	

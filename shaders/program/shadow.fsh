@@ -1,4 +1,8 @@
 
+/*
+const int shadowcolor1Format = RG16;
+*/
+
 uniform sampler2D texture;
 
 uniform float rainStrength;
@@ -21,5 +25,5 @@ void main() {
 	
 /* DRAWBUFFERS:01 */
 	gl_FragData[0] = fragcolor;
-	gl_FragData[1] = vec4(iswater, 0.0, 0.0, 1.0);
+	gl_FragData[1] = vec4(iswater, gl_FragCoord.z, 0.0, 1.0);
 }

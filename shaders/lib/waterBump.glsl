@@ -71,7 +71,7 @@ float getWaterBump(vec2 posxz, float waveM, float waveZ, float iswater, float vi
     wave *= mix(0.3, 1.0, iswater) * 0.05;
 
     #ifdef RainRipples
-        if (iswater > 0.5 && rainStrength > 0.01) {
+        if (iswater > 0.5 && rainStrength > 0.01 && viewDist < 70.0) {
             float rt = frameTimeCounter;
             float rings = rainRipple(posxz * 1.4, rt)
                         + rainRipple(posxz * 1.4 + 41.7, rt * 1.17) * 0.7;

@@ -55,7 +55,7 @@ float puddleFbm(vec2 wp){
     float f = puddleBaseFreq;
     float v = 0.0, a = 0.6, tot = 0.0;
     for (int i = 0; i < puddleOctaves; i++){
-        v   += a * texture2D(noisetex, wp * f).x;
+        v   += a * textureLod(noisetex, wp * f, 0.0).x;
         tot += a;
         f   *= 2.0;   // lacunarity 2
         a   *= 0.5;   // gain 0.5
@@ -80,23 +80,42 @@ float getRainPuddles(vec2 worldPos, float iswet){
 #define poolFillFreq 0.5 
 
 float getPoolFill(vec2 worldPos){
-    float n = texture2D(noisetex, worldPos * puddleBaseFreq * poolFillFreq + vec2(0.37, 0.83)).x;
+    float n = textureLod(noisetex, worldPos * puddleBaseFreq * poolFillFreq + vec2(0.37, 0.83), 0.0).x;
     n = smoothstep(0.2, 0.8, n);
     return min(mix(poolFillMin, poolFillRamp, n), poolFillCap);
+}
+
+// Wet film and standing water share one 8-bit channel
+float packPuddle(float film, float water){
+    return (floor(clamp(film, 0.0, 1.0) * 15.0 + 0.5) * 16.0 + floor(clamp(water, 0.0, 1.0) * 15.0 + 0.5)) / 255.0;
+}
+vec2 unpackPuddle(float v){
+    float b = floor(v * 255.0 + 0.5);
+    return vec2(floor(b / 16.0), mod(b, 16.0)) / 15.0;
 }
 
 #ifdef puddleReflection
 float rippleH(vec2 p){ return raindropNoise(10.0 * p); }
 
-vec3 puddles(in vec3 color, in vec3 worldPos, in vec3 reflectedskyBoxCol, in vec3 viewPos, in vec2 lightMap, float iswet, float distFactor, float puddleMask) {
+vec3 puddles(in vec3 color, in vec3 worldPos, in vec3 reflectedskyBoxCol, in vec3 viewPos, in vec2 lightMap, float iswet, float distFactor, float puddleMask, float standingWater) {
     if (puddleMask < 0.001 || isEyeInWater > 0.9) return color;
 
-    vec2  rp = worldPos.xz + cameraPosition.xz;
-    float e  = 0.15;
-    float hx = rippleH(rp + vec2(e,0)) - rippleH(rp - vec2(e,0));
-    float hy = rippleH(rp + vec2(0,e)) - rippleH(rp - vec2(0,e));
+    // Final blend weight
+    float skyAccess = pow(lightMap.t, 8.0);
+    float m = puddleMask * distFactor * skyAccess;
+    if (m < 0.004) return color;
 
-    vec3  waterN = normalize(viewNormal + vec3(-hx, 0.0, -hy) * rainStrength * 0.6);
+    float hx = 0.0, hy = 0.0;
+    if (standingWater > 0.01 && rainStrength > 0.0) {
+        vec2  rp = worldPos.xz + cameraPosition.xz;
+        float e  = 0.15;
+        float h0 = rippleH(rp);
+        hx = (rippleH(rp + vec2(e,0)) - h0) * 2.0;
+        hy = (rippleH(rp + vec2(0,e)) - h0) * 2.0;
+    }
+
+    // raindrop ripples only form on the standing water part of the puddle!!! (This makes a huge difference in the look of puddles, and is physically correct)
+    vec3  waterN = normalize(viewNormal + vec3(-hx, 0.0, -hy) * rainStrength * 0.6 * standingWater);
 
     #define puddleSheen 0.06
     float ndv     = clamp(dot(waterN, -normalize(viewPos.xyz)), 0.0, 1.0);
@@ -105,9 +124,6 @@ vec3 puddles(in vec3 color, in vec3 worldPos, in vec3 reflectedskyBoxCol, in vec
     reflectedskyBoxCol *= (1.0 - time[5] * 0.84);
     vec4  refl    = raytracePuddles(reflectedskyBoxCol, viewPos.xyz, waterN, 6);
     vec3  reflCol = mix(reflectedskyBoxCol, refl.rgb, refl.a);
-
-    float skyAccess = pow(lightMap.t, 8.0);
-    float m = puddleMask * distFactor * skyAccess;
 
     color = mix(color, reflCol, fresnel * m);
     return color;

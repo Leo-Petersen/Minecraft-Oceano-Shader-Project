@@ -38,12 +38,35 @@ float getShadowBias(vec3 SampleCoords) {
     return baseBias + slopeBias;
 }
 
-vec3 TransparentShadowHardware(vec3 SampleCoords, float transparencyFactor, float bias) {
+#include "/lib/waterMedium.glsl"
+
+// Length of the sunlight path through water above this point, in blocks, or -1 if no water is above it
+const float waterShadowOffset = 0.00015;
+
+float shadowWaterLightPath(vec3 SampleCoords) {
+    vec2 casterData = textureLod(shadowcolor1, SampleCoords.xy, 0.0).rg;
+    if (casterData.r < 0.5) return -1.0;
+    float depthBelow = max(SampleCoords.z - (casterData.g + waterShadowOffset), 0.0);
+    float airPath = depthBelow * 12.0 / abs(shadowProjection[2][2]);   // shadow depth to blocks
+
+    vec3 lightDirWorld = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+    float verticalDepth = airPath * max(lightDirWorld.y, 0.0);
+    return verticalDepth / waterRefractedLightDir(lightDirWorld).y;
+}
+
+vec3 TransparentShadowHardware(vec3 SampleCoords, vec3 centerCoords, float transparencyFactor, float bias, inout float waterLightPath) {
     vec3 biasedCoords = vec3(SampleCoords.xy, SampleCoords.z - bias);
-    
+
+    float shadowOpaque = shadow2D(shadowtex1, biasedCoords).r;      // opaque only
+
+    if (shadowOpaque <= 0.0) return vec3(0.0);
+
+    if (waterLightPath >= 0.0) {
+        return sunlightCol * waterTransmittancePath(waterLightPath) * shadowOpaque;
+    }
+
     // Hardware PCF shadow sampling
     float shadowTransparent = shadow2D(shadowtex0, biasedCoords).r; // all blockers
-    float shadowOpaque = shadow2D(shadowtex1, biasedCoords).r;      // opaque only
     
     if (shadowTransparent > 0.99) {
         return sunlightCol;
@@ -54,7 +77,13 @@ vec3 TransparentShadowHardware(vec3 SampleCoords, float transparencyFactor, floa
     }
 
     if (shadowOpaque > shadowTransparent + 0.01) {
-        vec4 shadowCol = texture2D(shadowcolor0, SampleCoords.xy);
+        // A translucent caster is in front. first time for this pixel, is it water...?
+        if (waterLightPath < -1.5) waterLightPath = shadowWaterLightPath(centerCoords);
+        if (waterLightPath >= 0.0) {
+            return sunlightCol * waterTransmittancePath(waterLightPath) * shadowOpaque;
+        }
+
+        vec4 shadowCol = textureLod(shadowcolor0, SampleCoords.xy, 0.0);
         vec3 transmittedColor = shadowCol.rgb * (1.0 - shadowCol.a);
         
         return mix(transmittedColor * transparencyFactor, sunlightCol, shadowTransparent) * shadowOpaque;
